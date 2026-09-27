@@ -1,0 +1,112 @@
+[
+  {
+    "timestamp": 0.0,
+    "action": "reach",
+    "imu": {
+      "ax": 0.12,
+      "ay": 0.31,
+      "az": 9.81,
+      "gx": 0.02,
+      "gy": 0.04,
+      "gz": 0.01
+    },
+    "force": {
+      "thumb": 120,
+      "index": 150,
+      "middle": 100,
+      "palm": 200
+    },
+    "torque": {
+      "torque": 0.0,
+      "angle": 0.0
+    }
+  },
+  {
+    "timestamp": 0.1,
+    "action": "reach",
+    "imu": {
+      "ax": 0.14,
+      "ay": 0.32,
+      "az": 9.80,
+      "gx": 0.03,
+      "gy": 0.05,
+      "gz": 0.02
+    },
+    "force": {
+      "thumb": 125,
+      "index": 155,
+      "middle": 105,
+      "palm": 205
+    },
+    "torque": {
+      "torque": 0.1,
+      "angle": 1.0
+    }
+  },
+  {
+    "timestamp": 0.2,
+    "action": "grasp",
+    "imu": {
+      "ax": 0.20,
+      "ay": 0.40,
+      "az": 9.75,
+      "gx": 0.05,
+      "gy": 0.07,
+      "gz": 0.03
+    },
+    "force": {
+      "thumb": 300,
+      "index": 350,
+      "middle": 250,
+      "palm": 400
+    },
+    "torque": {
+      "torque": 1.5,
+      "angle": 10.0
+    }
+  },
+  {
+    "timestamp": 0.3,
+    "action": "tighten",
+    "imu": {
+      "ax": 0.25,
+      "ay": 0.45,
+      "az": 9.70,
+      "gx": 0.08,
+      "gy": 0.10,
+      "gz": 0.05
+    },
+    "force": {
+      "thumb": 450,
+      "index": 500,
+      "middle": 400,
+      "palm": 550
+    },
+    "torque": {
+      "torque": 3.0,
+      "angle": 25.0
+    }
+  },
+  {
+    "timestamp": 0.4,
+    "action": "release",
+    "imu": {
+      "ax": 0.10,
+      "ay": 0.25,
+      "az": 9.82,
+      "gx": 0.01,
+      "gy": 0.03,
+      "gz": 0.01
+    },
+    "force": {
+      "thumb": 100,
+      "index": 120,
+      "middle": 90,
+      "palm": 180
+    },
+    "torque": {
+      "torque": 0.2,
+      "angle": 26.0
+    }
+  }
+]

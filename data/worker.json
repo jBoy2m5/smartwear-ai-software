@@ -1,0 +1,134 @@
+[
+  {
+    "timestamp": 0.0,
+    "action": "reach",
+    "imu": {
+      "ax": 0.15,
+      "ay": 0.35,
+      "az": 9.78,
+      "gx": 0.03,
+      "gy": 0.05,
+      "gz": 0.02
+    },
+    "force": {
+      "thumb": 130,
+      "index": 160,
+      "middle": 110,
+      "palm": 210
+    },
+    "torque": {
+      "torque": 0.0,
+      "angle": 0.0
+    }
+  },
+  {
+    "timestamp": 0.2,
+    "action": "reach",
+    "imu": {
+      "ax": 0.18,
+      "ay": 0.38,
+      "az": 9.75,
+      "gx": 0.04,
+      "gy": 0.06,
+      "gz": 0.03
+    },
+    "force": {
+      "thumb": 140,
+      "index": 170,
+      "middle": 120,
+      "palm": 220
+    },
+    "torque": {
+      "torque": 0.2,
+      "angle": 2.0
+    }
+  },
+  {
+    "timestamp": 0.4,
+    "action": "grasp",
+    "imu": {
+      "ax": 0.25,
+      "ay": 0.48,
+      "az": 9.68,
+      "gx": 0.07,
+      "gy": 0.11,
+      "gz": 0.05
+    },
+    "force": {
+      "thumb": 320,
+      "index": 370,
+      "middle": 270,
+      "palm": 420
+    },
+    "torque": {
+      "torque": 1.7,
+      "angle": 12.0
+    }
+  },
+  {
+    "timestamp": 0.6,
+    "action": "align",
+    "imu": {
+      "ax": 0.35,
+      "ay": 0.55,
+      "az": 9.60,
+      "gx": 0.12,
+      "gy": 0.15,
+      "gz": 0.08
+    },
+    "force": {
+      "thumb": 280,
+      "index": 300,
+      "middle": 230,
+      "palm": 380
+    },
+    "torque": {
+      "torque": 1.0,
+      "angle": 18.0
+    }
+  },
+  {
+    "timestamp": 0.8,
+    "action": "tighten",
+    "imu": {
+      "ax": 0.30,
+      "ay": 0.50,
+      "az": 9.65,
+      "gx": 0.10,
+      "gy": 0.13,
+      "gz": 0.07
+    },
+    "force": {
+      "thumb": 480,
+      "index": 530,
+      "middle": 430,
+      "palm": 570
+    },
+    "torque": {
+      "torque": 3.2,
+      "angle": 27.0
+    }
+  },
+  {
+    "timestamp": 1.0,
+    "action": "release",
+    "imu": {
+      "ax": 0.12,
+      "ay": 0.28,
+      "az": 9.80,
+      "gx": 0.02,
+      "gy": 0.04,
+      "gz": 0.02
+    },
+    "force": {
+      "thumb": 110,
+      "index": 130,
+      "middle": 100,
+      "palm": 190
+    },
+    "torque": {
+      "torque": 0.3,
+      "angle": 28.0
+    }
+  }
+]
