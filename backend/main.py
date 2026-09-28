@@ -19,6 +19,7 @@ from backend.core.exceptions import (
 from backend.core.logging import configure_logging
 from backend.db import build_database
 from backend.services import SessionService
+from backend.websocket import router as websocket_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -49,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type", "X-API-Key"],
     )
     application.include_router(api_router, prefix=runtime_settings.api_prefix)
+    application.include_router(websocket_router)
 
     @application.exception_handler(ResourceNotFoundError)
     async def handle_not_found(_: Request, exc: ResourceNotFoundError) -> JSONResponse:
