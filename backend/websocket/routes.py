@@ -13,7 +13,6 @@ from backend.websocket.manager import ConnectionManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Live telemetry"])
-manager = ConnectionManager()
 
 
 @router.websocket("/ws/live-stream")
@@ -24,6 +23,7 @@ async def live_stream(
 ) -> None:
     """Broadcast validated telemetry or stream backend mock telemetry."""
     settings: Settings = websocket.app.state.settings
+    manager: ConnectionManager = websocket.app.state.connection_manager
     if settings.api_key and api_key != settings.api_key:
         await websocket.close(code=1008, reason="Invalid or missing API key")
         return
@@ -34,7 +34,7 @@ async def live_stream(
             async for message in TelemetrySimulator().stream():
                 await manager.send(websocket, message.model_dump(mode="json"))
         else:
-            await _receive_and_broadcast(websocket)
+            await _receive_and_broadcast(websocket, manager)
     except WebSocketDisconnect:
         logger.debug("WebSocket client disconnected")
     except RuntimeError:
@@ -43,7 +43,10 @@ async def live_stream(
         await manager.disconnect(websocket)
 
 
-async def _receive_and_broadcast(websocket: WebSocket) -> None:
+async def _receive_and_broadcast(
+    websocket: WebSocket,
+    manager: ConnectionManager,
+) -> None:
     """Validate inbound messages before broadcasting them."""
     while True:
         payload = await websocket.receive_json()

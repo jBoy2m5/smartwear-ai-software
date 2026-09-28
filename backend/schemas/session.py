@@ -164,6 +164,32 @@ class DashboardSummary(StrictSchema):
     total_muda_detected_seconds: float = Field(ge=0)
 
 
+class DashboardChartPoint(StrictSchema):
+    """One session point used by dashboard charts."""
+
+    session_id: str
+    similarity_score: float = Field(ge=0, le=100)
+    muda_detected_seconds: float = Field(ge=0)
+    updated_at: datetime
+
+
+class DashboardCharts(StrictSchema):
+    """Time-ordered chart series derived from persisted sessions."""
+
+    points: list[DashboardChartPoint]
+
+
+class DashboardUpdate(StrictSchema):
+    """Realtime dashboard event derived from an ingested analysis result."""
+
+    event: str = Field(default="DASHBOARD_UPDATE", pattern=r"^DASHBOARD_UPDATE$")
+    session_id: str
+    current_action: str
+    similarity_score: float = Field(ge=0, le=100)
+    force: float = Field(ge=0, allow_inf_nan=False)
+    warning: str | None = None
+
+
 class KeyFrameResponse(StrictSchema):
     """Metadata returned after a keyframe upload."""
 

@@ -2,7 +2,10 @@
 
 from backend.schemas.session import (
     ActionPhaseInput,
+    DashboardCharts,
+    DashboardChartPoint,
     DashboardSummary,
+    DashboardUpdate,
     DtwMetricsInput,
     ExportStatus,
     IngestResponse,
@@ -18,7 +21,10 @@ from backend.schemas.telemetry import TelemetryUpdate
 
 __all__ = [
     "ActionPhaseInput",
+    "DashboardCharts",
+    "DashboardChartPoint",
     "DashboardSummary",
+    "DashboardUpdate",
     "DtwMetricsInput",
     "ExportStatus",
     "IngestResponse",

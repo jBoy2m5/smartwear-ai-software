@@ -8,6 +8,7 @@ from typing import Literal, Protocol
 from fastapi import HTTPException, Request, status
 
 from backend.schemas import (
+    DashboardCharts,
     DashboardSummary,
     IngestResponse,
     KeyFrameResponse,
@@ -27,6 +28,8 @@ class SessionServicePort(Protocol):
     def get_session(self, session_id: str) -> SessionDetail: ...
 
     def dashboard_summary(self) -> DashboardSummary: ...
+
+    def dashboard_charts(self, *, limit: int) -> DashboardCharts: ...
 
     def get_sop_path(self, session_id: str) -> Path: ...
 

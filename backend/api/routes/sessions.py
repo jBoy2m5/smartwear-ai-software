@@ -12,6 +12,7 @@ from backend.api.dependencies import SessionServicePort, get_session_service
 from backend.core.config import get_settings
 from backend.schemas import (
     DashboardSummary,
+    DashboardUpdate,
     IngestResponse,
     KeyFrameResponse,
     PaginatedSessions,
@@ -33,13 +34,31 @@ router = APIRouter(
 
 
 @router.post("/ingest", response_model=IngestResponse, status_code=status.HTTP_201_CREATED)
-def ingest_session(
+async def ingest_session(
     payload: SessionInput,
     response: Response,
+    request: Request,
     service: Service,
 ) -> IngestResponse:
     """Validate, persist, and process one complete analysis session."""
     result = service.ingest(payload)
+    current_action = payload.action_phases[-1].phase if payload.action_phases else "UNKNOWN"
+    peak_forces = [point.force for point in payload.robot_trajectory_points]
+    peak_forces.extend(
+        phase.peak_force_N
+        for phase in payload.action_phases
+        if phase.peak_force_N is not None
+    )
+    dashboard_event = DashboardUpdate(
+        session_id=payload.session_id,
+        current_action=current_action,
+        similarity_score=payload.dtw_metrics.similarity_score,
+        force=max(peak_forces, default=0.0),
+        warning="MUDA" if payload.dtw_metrics.muda_detected_seconds > 0 else None,
+    )
+    await request.app.state.connection_manager.broadcast(
+        dashboard_event.model_dump(mode="json")
+    )
     if not result.created:
         response.status_code = status.HTTP_200_OK
     return result

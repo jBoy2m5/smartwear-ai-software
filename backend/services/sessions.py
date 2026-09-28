@@ -20,6 +20,8 @@ from backend.db.session import Database
 from backend.models import AnalysisSession
 from backend.repositories import SessionRepository
 from backend.schemas import (
+    DashboardCharts,
+    DashboardChartPoint,
     DashboardSummary,
     ExportStatus,
     IngestResponse,
@@ -126,6 +128,21 @@ class SessionService:
         """Return aggregate operational metrics."""
         with self.database.transaction() as db_session:
             return DashboardSummary.model_validate(SessionRepository(db_session).dashboard())
+
+    def dashboard_charts(self, *, limit: int) -> DashboardCharts:
+        """Return chronological session metrics for dashboard charts."""
+        with self.database.transaction() as db_session:
+            entities, _ = SessionRepository(db_session).list(limit=limit, offset=0)
+            points = [
+                DashboardChartPoint(
+                    session_id=entity.session_id,
+                    similarity_score=entity.dtw_metrics.similarity_score,
+                    muda_detected_seconds=entity.dtw_metrics.muda_detected_seconds,
+                    updated_at=entity.updated_at,
+                )
+                for entity in reversed(entities)
+            ]
+        return DashboardCharts(points=points)
 
     def get_sop_path(self, session_id: str) -> Path:
         """Resolve an existing generated SOP file."""

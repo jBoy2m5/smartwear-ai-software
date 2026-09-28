@@ -129,9 +129,26 @@ class BackendIntegrationTests(unittest.TestCase):
         listing = self.client.get("/api/v1/sessions/?limit=10&offset=0")
         detail = self.client.get("/api/v1/sessions/CYCLE_DENSO_001")
         dashboard = self.client.get("/api/v1/sessions/dashboard/summary")
+        history = self.client.get("/api/v1/dashboard/history")
+        charts = self.client.get("/api/v1/dashboard/charts")
+        kpis = self.client.get("/api/v1/dashboard/kpis")
         self.assertEqual(listing.json()["total"], 1)
         self.assertEqual(detail.json()["dtw_metrics"]["similarity_score"], 91.5)
         self.assertEqual(dashboard.json()["expert_sessions"], 1)
+        self.assertEqual(history.json()["total"], 1)
+        self.assertEqual(charts.json()["points"][0]["similarity_score"], 91.5)
+        self.assertEqual(kpis.json()["total_sessions"], 1)
+
+    def test_ingest_broadcasts_dashboard_event(self) -> None:
+        with self.client.websocket_connect("/ws/live-stream") as websocket:
+            response = self.client.post("/api/v1/sessions/ingest", json=sample_payload())
+            event = websocket.receive_json()
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(event["event"], "DASHBOARD_UPDATE")
+        self.assertEqual(event["session_id"], "CYCLE_DENSO_001")
+        self.assertEqual(event["current_action"], "ASSEMBLY")
+        self.assertEqual(event["force"], 5.4)
+        self.assertEqual(event["warning"], "MUDA")
 
     def test_sop_and_robot_outputs_are_downloadable(self) -> None:
         self.ingest()

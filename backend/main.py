@@ -21,6 +21,7 @@ from backend.core.logging import configure_logging
 from backend.db import build_database
 from backend.services import RobotDatasetExporter, SessionService, SopGenerator
 from backend.websocket import router as websocket_router
+from backend.websocket.manager import ConnectionManager
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -55,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     application.state.settings = runtime_settings
+    application.state.connection_manager = ConnectionManager()
     application.mount(
         "/static",
         StaticFiles(directory=runtime_settings.static_dir, check_dir=False),
