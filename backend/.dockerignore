@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.coverage
+.env
+.gitignore
+.pytest_cache/
+.test_*/
+artifacts/
+data/
+tests/
+
