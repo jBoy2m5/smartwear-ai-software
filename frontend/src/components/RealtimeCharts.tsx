@@ -9,7 +9,7 @@ export default function RealtimeCharts({ telemetry }: { telemetry: TelemetryData
     setData(prev => {
       const newPoint = {
         time: new Date(telemetry.timestamp).toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 1 }),
-        force: telemetry.sensor_telemetry.force_emg_N,
+        force: telemetry.sensor_telemetry.force_total_N,
         velocity: telemetry.sensor_telemetry.wrist_velocity_mps
       };
       const newData = [...prev, newPoint];
@@ -37,11 +37,11 @@ export default function RealtimeCharts({ telemetry }: { telemetry: TelemetryData
             <p className="text-xs text-gray-500">Muscle effort & grip strength</p>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-cyberGreen font-mono font-bold text-3xl">{telemetry.sensor_telemetry.force_emg_N.toFixed(1)}</span>
+            <span className="text-cyberGreen font-mono font-bold text-3xl">{telemetry.sensor_telemetry.force_total_N.toFixed(1)}</span>
             <span className="text-cyberGreen/60 text-sm font-mono">N</span>
           </div>
         </div>
-        <div className="flex-1 min-h-[150px] z-10">
+        <div className="flex-1 min-h-[80px] z-10">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <defs>
@@ -61,6 +61,30 @@ export default function RealtimeCharts({ telemetry }: { telemetry: TelemetryData
               <Area type="monotone" dataKey="force" stroke="#00E676" strokeWidth={2} fillOpacity={1} fill="url(#colorForce)" isAnimationActive={false} />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+        
+        {/* Finger Force Bars */}
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 z-10 w-full pt-2 border-t border-slate-700/50 shrink-0">
+          {Object.entries(telemetry.sensor_telemetry.force_fingers_N).map(([finger, value]) => {
+            const pct = Math.min(100, (value / 10) * 100);
+            const isHigh = value > 5;
+            return (
+              <div key={finger} className="flex flex-col">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] text-gray-400 font-mono uppercase font-semibold">{finger}</span>
+                  <span className="text-[10px] font-bold font-mono text-white">
+                    {value.toFixed(1)}<span className="text-gray-500 ml-0.5">N</span>
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/50 shrink-0">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-[16ms] ease-linear ${isHigh ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]' : 'bg-cyberGreen shadow-[0_0_8px_rgba(0,230,118,0.5)]'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

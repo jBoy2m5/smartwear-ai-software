@@ -22,7 +22,13 @@ export interface TelemetryData {
     muda_type: string;
   };
   sensor_telemetry: {
-    force_emg_N: number;
+    force_total_N: number;
+    force_fingers_N: {
+      thumb: number;
+      index: number;
+      middle: number;
+      palm: number;
+    };
     wrist_velocity_mps: number;
     head_stability_score: number;
     battery_cap: number;
@@ -78,7 +84,12 @@ class MockDataEngine {
       const cycleElapsed = elapsed % 20; // 20s cycle
       const isMuda = cycleElapsed > baseline;
       
-      const forceEmg = Math.max(0, 10 + Math.sin(t / 200) * 5 + (Math.random() - 0.5) * 2);
+      const thumb = Math.max(0, 3 + Math.sin(t / 200) * 3 + (Math.random() - 0.5));
+      const index = Math.max(0, 3 + Math.sin(t / 250) * 3 + (Math.random() - 0.5));
+      const middle = Math.max(0, 2 + Math.sin(t / 300) * 2 + (Math.random() - 0.5));
+      const palm = Math.max(0, 2 + Math.cos(t / 400) * 2 + (Math.random() - 0.5));
+      const forceTotal = thumb + index + middle + palm;
+      
       const wristVel = Math.abs(Math.cos(t / 500) * 1.5 + (Math.random() - 0.5) * 0.2);
 
       const data: TelemetryData = {
@@ -94,7 +105,13 @@ class MockDataEngine {
           muda_type: isMuda ? "Thao tác tay chệch hướng / Tốn thời gian tìm vị trí ốc" : ""
         },
         sensor_telemetry: {
-          force_emg_N: Number(forceEmg.toFixed(2)),
+          force_total_N: Number(forceTotal.toFixed(2)),
+          force_fingers_N: {
+            thumb: Number(thumb.toFixed(2)),
+            index: Number(index.toFixed(2)),
+            middle: Number(middle.toFixed(2)),
+            palm: Number(palm.toFixed(2))
+          },
           wrist_velocity_mps: Number(wristVel.toFixed(2)),
           head_stability_score: 95.0 - (Math.random() * 5),
           battery_cap: 85,
