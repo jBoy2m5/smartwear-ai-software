@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .coverage
 .env
+.venv/
 data/
 artifacts/
 .test_*/
