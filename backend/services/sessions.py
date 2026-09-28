@@ -37,6 +37,12 @@ class SopGeneratorPort(Protocol):
     def generate(self, payload: SessionInput) -> Path: ...
 
 
+class RobotExporterPort(Protocol):
+    """Port implemented by a backend-owned robot dataset exporter."""
+
+    def export(self, payload: SessionInput) -> object: ...
+
+
 class SessionService:
     """Coordinate persistence and backend-owned session resources."""
 
@@ -51,29 +57,52 @@ class SessionService:
         database: Database,
         settings: Settings,
         sop_generator: SopGeneratorPort | None = None,
+        robot_exporter: RobotExporterPort | None = None,
     ) -> None:
         self.database = database
         self.settings = settings
         self.sop_generator = sop_generator
+        self.robot_exporter = robot_exporter
 
     def ingest(self, payload: SessionInput) -> IngestResponse:
         """Upsert a validated session; artifact modules complete it later."""
         with self.database.transaction() as db_session:
             entity, created = SessionRepository(db_session).upsert(payload)
-        if self.sop_generator is not None:
-            try:
+        try:
+            if self.sop_generator is not None:
                 self.sop_generator.generate(payload)
-            except Exception as exc:
-                self._set_export_status(payload.session_id, ExportStatus.FAILED, str(exc))
-                raise ArtifactGenerationError("SOP generation failed") from exc
+            if self.robot_exporter is not None:
+                self.robot_exporter.export(payload)
+        except Exception as exc:
+            self._set_export_status(payload.session_id, ExportStatus.FAILED, str(exc))
+            raise ArtifactGenerationError("Artifact generation failed") from exc
+
+        all_artifacts_ready = self.sop_generator is not None and self.robot_exporter is not None
+        export_status = ExportStatus.COMPLETED if all_artifacts_ready else ExportStatus.PENDING
+        if all_artifacts_ready:
+            self._set_export_status(payload.session_id, export_status)
         return IngestResponse(
             session_id=entity.session_id,
             created=created,
-            export_status=ExportStatus.PENDING,
-            message="Session stored; artifact generation is pending",
+            export_status=export_status,
+            message=(
+                "Session stored and output artifacts generated"
+                if all_artifacts_ready
+                else "Session stored; artifact generation is pending"
+            ),
             sop_download_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/download-sop"
                 if self.sop_generator is not None
+                else None
+            ),
+            robot_json_url=(
+                f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=json"
+                if self.robot_exporter is not None
+                else None
+            ),
+            robot_export_url=(
+                f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=rosbag"
+                if self.robot_exporter is not None
                 else None
             ),
         )

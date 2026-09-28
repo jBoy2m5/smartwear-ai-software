@@ -18,7 +18,7 @@ from backend.core.exceptions import (
 )
 from backend.core.logging import configure_logging
 from backend.db import build_database
-from backend.services import SessionService, SopGenerator
+from backend.services import RobotDatasetExporter, SessionService, SopGenerator
 from backend.websocket import router as websocket_router
 
 
@@ -36,6 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             database,
             runtime_settings,
             sop_generator=SopGenerator(runtime_settings.artifact_dir),
+            robot_exporter=RobotDatasetExporter(runtime_settings.artifact_dir),
         )
         yield
         database.dispose()
