@@ -1,45 +1,27 @@
-# Dữ liệu cảm biến mô phỏng
+# Camera thật và cảm biến giả theo cùng bản quay
 
-Chỉ dùng thư viện chuẩn Python. Không chạy webcam, chuẩn hóa camera hoặc ghép dữ liệu.
+Camera lưu điểm bàn tay **thật** và `action_estimate` từ các điểm đó. `hand_state` là `OPEN`, `CLOSED`, `OTHER` hoặc `NONE`. `label` là nhãn ước đoán `REACH`, `GRAB`, `ASSEMBLY`, `RELEASE`, `OPEN`, `OTHER` hoặc `NO_HAND`. Nắm tay trong hình không chứng minh rằng người đó thật sự cầm vật. `ASSEMBLY` chỉ nghĩa là tay khép và tương đối yên.
 
-## Chạy bằng PowerShell
+IMU, lực và torque **vẫn là số mô phỏng** vì chưa có các thiết bị đo tương ứng. Chương trình mới nhìn trạng thái bàn tay trong bản quay để thay đổi các số giả; nó không còn gán “giây 2–4 luôn là nắm”. Số lực giả tăng khi camera thấy tay khép, nhưng không phải số đo lực của người trong video. Torque giả khi nhãn `ASSEMBLY` cũng không xác nhận có dụng cụ siết.
+
+## Chạy với bản camera mới đã ghi
+
+Từ `C:\Task\smartwear-ai`:
 
 ```powershell
-Set-Location C:\Task\smartwear-ai
-.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py
-.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --duration-s 14 --sampling-rate-hz 100 --random-seed 42 --noise-level 0.02 --output .\data\simulated\sensors_14s.jsonl
-.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file --output .\data\simulated\sensors_camera_duration.jsonl
+.\ai\.venv\Scripts\python.exe -B .\ai\preprocessing\normalize_camera.py --input .\ai\camera_data_20260928_225209_301112.jsonl --output .\data\processed\camera_data_20260928_225209_301112.normalized.jsonl
+.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file .\data\processed\camera_data_20260928_225209_301112.normalized.jsonl --output .\data\simulated\sensors_from_camera_20260928_225209_301112.jsonl
 .\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\sensors -p "test_*.py" -v
 ```
 
-Mặc định: `duration_s=7`, `sampling_rate_hz=100`, `random_seed=42`, `noise_level=0.02`; 700 dòng từ 0 đến 6990 ms. Đường dẫn đầu ra mặc định luôn tính từ repository. `--output` và đường dẫn `--camera-file` do người dùng cung cấp tính từ thư mục làm việc nếu là đường dẫn tương đối.
+Để ghi bản mới bằng webcam, chạy `python -B .\ai\camera_test.py` bằng Python hệ thống có OpenCV/MediaPipe. Camera tạo file `ai\camera_data_<thời gian>.jsonl` mới, gồm `timestamp`, `camera`, `hands`, `action_estimate`. Đưa đường dẫn file đó vào `--input` khi chuẩn hóa. Các lệnh mở đầu ra bằng chế độ tạo mới, **không ghi đè** dữ liệu cũ; đổi tên `--output` nếu chạy lại.
 
-**Không ghi đè:** chương trình mở đầu ra bằng chế độ `x`; file tồn tại gây lỗi. Khi chạy lại hãy chọn tên mới bằng `--output`. Không có cờ ghi đè. Nếu quá trình bị ngắt, file một phần có thể còn lại; hãy dùng tên mới.
+## File và nguồn gốc
 
-## Schema và giả định
+- `normalized_camera...jsonl`: `frame_id`, `timestamp_ms`, `relative_time_s`, `camera`, `hands`, `action_estimate`. Dữ liệu bàn tay đến từ webcam/MediaPipe; nhãn là **ước đoán từ hình bàn tay**.
+- `sensors_from_camera...jsonl`: `timestamp_ms`, `imu_head`, `imu_wrist`, `force_emg_raw`, `torque`. Chỉ các giá trị cảm biến này được tạo giả. Mỗi bản ghi dùng timestamp của một khung camera; đây **không phải hai đồng hồ được đồng bộ độc lập**.
+- `sensors_from_camera...meta.json`: ghi file camera nguồn, SHA-256, seed, số mẫu và các trường giả lập.
 
-Mỗi dòng JSON chứa:
+Gia tốc m/s², vận tốc góc rad/s, torque N·m, góc độ chỉ là **quy ước của bộ mô phỏng**, chưa được hiệu chuẩn. `force_emg_raw` không có đơn vị, không phải Newton hay Fx/Fy/Fz. Bộ mô phỏng không dùng những con số này để xác nhận hành động thật.
 
-| Trường | Ý nghĩa / đơn vị giả định |
-|---|---|
-| `timestamp_ms` | Số nguyên ms tương đối từ đầu phiên mô phỏng |
-| `imu_head`, `imu_wrist` | Mỗi đối tượng gồm `ax, ay, az, gx, gy, gz` |
-| `ax, ay, az` | Gia tốc giả định m/s², nền trọng lực +9.81 trên trục z |
-| `gx, gy, gz` | Vận tốc góc giả định rad/s |
-| `force_emg_raw` | Giá trị thô giả lập không đơn vị, nền khoảng 100, giữ lực khoảng 800; **KHÔNG phải Newton hay Fx/Fy/Fz** |
-| `torque.torque` | Mô-men giả định N·m, đỉnh khoảng 3 |
-| `torque.angle` | Góc dụng cụ giả định độ, khoảng 0–30 |
-
-Các đơn vị và trục là quy ước của bộ mô phỏng, chưa hiệu chuẩn thiết bị. Gia tốc/góc không được tích phân thành mô hình vật lý. Góc tăng trong ASSEMBLY và trở về 0 trong RELEASE. `force_emg_raw` chỉ là một tín hiệu đại diện, không phải hai phép đo FSR và sEMG độc lập, cũng không phải sóng sEMG sinh lý.
-
-Chu kỳ lập trình sẵn: [0,2) s REACH (cổ tay chuyển động nhiều), [2,4) GRAB (lực tăng mượt), [4,6) ASSEMBLY (cổ tay ổn định, giữ lực, torque hoạt động), [6,7) RELEASE (lực giảm). Lặp mỗi 7 giây. Không ghi nhãn thao tác vào bản ghi; đây không phải AI phân đoạn. Dữ liệu **chưa căn chỉnh theo hành động thực trong video**.
-
-Nhiễu uniform độc lập, tái tạo bằng seed. `noise_level` trong [0,1], mặc định 0.02; hệ số biên độ lần lượt: gia tốc 1, vận tốc góc 0.2, tín hiệu thô 1000, torque 3, góc 30. Lực/torque/góc chặn dưới tại 0. Mức nhiễu cao có thể che xu hướng; 0 tắt nhiễu. Tái tạo byte giống nhau với cùng cấu hình và cùng môi trường Python.
-
-Thời lượng phải hữu hạn và >0; tần số phải nguyên trong [1,1000] Hz để timestamp ms không trùng. Timestamp được tính trực tiếp `i*1000//rate`, không cộng dồn số thực. Với tần số không chia hết 1000, khoảng cách xen kẽ các số ms nguyên (ví dụ 60 Hz: 16/17 ms). Số mẫu bình thường là ceil(duration_s*rate), khoảng thời gian lý tưởng không gồm điểm cuối.
-
-`--camera-file` không kèm đường dẫn đọc `data/processed/normalized_camera.jsonl` chỉ đọc. Có thể chỉ định đường dẫn khác. Chế độ này thay thế thời lượng bằng mốc cuối camera và lấy thêm mẫu tới hoặc vượt mốc đó tối đa một khoảng lấy mẫu. Camera hiện tại kết thúc ở 48240 ms: 4825 mẫu 100 Hz từ 0 đến 48240. Mốc camera đầu 303 ms không bị dịch về 0. Không ghép hàng, không đồng bộ thời gian, không suy luận thao tác từ camera.
-
-## Giao diện đọc thay thế được
-
-`read_sensor_records(path)` trả iterator các dict đã kiểm tra schema, số hữu hạn và timestamp tăng. `simulated_records(...)` cũng trả iterator cùng cấu trúc. Phần tiêu thụ chỉ cần nhận iterable và lặp `for record in source`. Sau này nguồn phần cứng có thể trả cùng cấu trúc qua iterator khác; cần chuyển đổi đơn vị và quy ước thời gian trong adapter phần cứng. Chưa triển khai adapter hay đồng bộ thật.
+Hai file cũ `sensors_default.jsonl` và `sensors_camera_duration.jsonl` là **bản demo theo kịch bản thời gian trước đây**; giữ lại để đối chiếu, không dùng chúng làm bằng chứng cho hành động trong camera. Bộ mô phỏng hiện tại yêu cầu `--camera-file` có `action_estimate` từ camera.

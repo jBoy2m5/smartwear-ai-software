@@ -1,93 +1,74 @@
 import json
-import math
-import statistics
 import tempfile
 import unittest
 from pathlib import Path
 
-from simulate_sensors import (simulated_records, read_sensor_records,
-                              write_sensor_records, camera_end_ms, validate_record)
+from simulate_sensors import (read_camera_records, read_sensor_records,
+                              simulate_from_camera, write_sensor_records)
+
+
+def camera_frame(timestamp, state, label, wrist_x=0.5):
+    points = [{"id": i, "x": 0.5, "y": 0.5} for i in range(21)]
+    points[0].update(x=wrist_x, y=0.8)
+    points[9].update(x=0.5, y=0.4)
+    return {"timestamp_ms": timestamp, "hands": [{"landmarks": points}],
+            "action_estimate": {"label": label, "hand_state": state,
+                                "source": "camera_landmarks"}}
 
 
 class SensorTests(unittest.TestCase):
-    def test_default_schema_and_reproducibility(self):
-        rows = list(simulated_records())
-        self.assertEqual(len(rows), 700)
-        self.assertEqual([r['timestamp_ms'] for r in rows], list(range(0, 7000, 10)))
-        self.assertEqual(rows, list(simulated_records()))
-        self.assertNotEqual(rows, list(simulated_records(random_seed=43)))
-        for row in rows:
-            validate_record(json.loads(json.dumps(row, allow_nan=False)))
-            self.assertEqual(set(row), {'timestamp_ms', 'imu_head', 'imu_wrist',
-                                        'force_emg_raw', 'torque'})
+    def test_camera_controls_timing_and_force(self):
+        frames = [camera_frame(303, "OPEN", "OPEN"),
+                  camera_frame(503, "CLOSED", "GRAB"),
+                  camera_frame(703, "CLOSED", "GRAB"),
+                  camera_frame(903, "CLOSED", "ASSEMBLY"),
+                  camera_frame(1103, "OPEN", "RELEASE")]
+        rows = list(simulate_from_camera(frames, noise_level=0))
+        self.assertEqual([r["timestamp_ms"] for r in rows], [303, 503, 703, 903, 1103])
+        self.assertEqual(len(rows), len(frames))
+        self.assertGreater(rows[2]["force_emg_raw"], rows[1]["force_emg_raw"])
+        self.assertGreater(rows[3]["torque"]["torque"], 0)
+        self.assertEqual(rows[0]["torque"]["torque"], 0)
+        self.assertLess(rows[4]["force_emg_raw"], rows[3]["force_emg_raw"])
+        self.assertEqual(rows, list(simulate_from_camera(frames, noise_level=0)))
 
-    def test_invalid_parameters(self):
-        for kwargs in ({'duration_s': 0}, {'duration_s': float('nan')},
-                       {'duration_s': float('inf')}, {'sampling_rate_hz': 0},
-                       {'sampling_rate_hz': 1001}, {'sampling_rate_hz': 99.5},
-                       {'noise_level': -1}, {'noise_level': float('nan')},
-                       {'noise_level': 2}, {'random_seed': 1.5}):
-            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
-                list(simulated_records(**kwargs))
+    def test_same_clock_time_can_have_different_hand_state(self):
+        open_frame = [camera_frame(3000, "OPEN", "OPEN")]
+        closed_frame = [camera_frame(3000, "CLOSED", "GRAB")]
+        open_force = list(simulate_from_camera(open_frame, noise_level=0))[0]["force_emg_raw"]
+        closed_force = list(simulate_from_camera(closed_frame, noise_level=0))[0]["force_emg_raw"]
+        self.assertEqual(open_force, closed_force)  # no elapsed time yet
+        # After another frame, the camera state controls the simulated signal.
+        open_frame.append(camera_frame(3200, "OPEN", "OPEN"))
+        closed_frame.append(camera_frame(3200, "CLOSED", "GRAB"))
+        self.assertLess(list(simulate_from_camera(open_frame, noise_level=0))[1]["force_emg_raw"],
+                        list(simulate_from_camera(closed_frame, noise_level=0))[1]["force_emg_raw"])
 
-    def test_rates_and_camera_endpoint(self):
-        for rate in (1, 60, 100, 333, 1000):
-            rows = list(simulated_records(sampling_rate_hz=rate, until_timestamp_ms=48241))
-            times = [r['timestamp_ms'] for r in rows]
-            self.assertEqual(times, [i * 1000 // rate for i in range(len(rows))])
-            self.assertTrue(all(b > a for a, b in zip(times, times[1:])))
-            self.assertLess(times[-2], 48241)
-            self.assertGreaterEqual(times[-1], 48241)
-        rows = list(simulated_records(until_timestamp_ms=48240))
-        self.assertEqual((len(rows), rows[-1]['timestamp_ms']), (4825, 48240))
-
-    def test_phase_trends(self):
-        rows = list(simulated_records())
-        mean_force = lambda start, end: statistics.mean(r['force_emg_raw'] for r in rows[start:end])
-        self.assertLess(mean_force(200, 250), mean_force(250, 300))
-        self.assertLess(mean_force(250, 300), mean_force(300, 350))
-        self.assertLess(mean_force(300, 350), mean_force(350, 400))
-        self.assertGreater(mean_force(600, 625), mean_force(625, 650))
-        self.assertGreater(mean_force(625, 650), mean_force(650, 675))
-        self.assertGreater(mean_force(650, 675), mean_force(675, 700))
-        self.assertTrue(all(780 <= r['force_emg_raw'] <= 820 for r in rows[400:600]))
-        movement = lambda part, name: statistics.mean(math.hypot(r[name]['ax'], r[name]['ay']) for r in part)
-        self.assertGreater(movement(rows[:200], 'imu_wrist'), 5 * movement(rows[400:600], 'imu_wrist'))
-        self.assertGreater(movement(rows[:200], 'imu_wrist'), 5 * movement(rows[:200], 'imu_head'))
-        self.assertGreater(statistics.mean(r['torque']['torque'] for r in rows[400:600]), 1)
-        self.assertLess(statistics.mean(r['torque']['torque'] for r in rows[:400]), 0.04)
-
-    def test_continuity_and_cycle(self):
-        rows = list(simulated_records(duration_s=14, noise_level=0))
-        for a, b in zip(rows[:700], rows[700:]):
-            self.assertEqual({k: v for k, v in a.items() if k != 'timestamp_ms'},
-                             {k: v for k, v in b.items() if k != 'timestamp_ms'})
-        for index in (200, 400, 600, 700):
-            a, b = rows[index - 1:index + 1]
-            self.assertLess(abs(a['force_emg_raw'] - b['force_emg_raw']), 1)
-            self.assertLess(abs(a['torque']['torque'] - b['torque']['torque']), 0.01)
-            self.assertLess(abs(a['torque']['angle'] - b['torque']['angle']), 0.02)
-
-    def test_io_and_overwrite_protection(self):
+    def test_camera_provenance_and_io(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / 'sensors.jsonl'
-            write_sensor_records(path, simulated_records())
-            before = path.read_bytes()
-            self.assertEqual(list(read_sensor_records(path)), list(simulated_records()))
+            camera = Path(directory) / "camera.jsonl"
+            frames = [camera_frame(303, "OPEN", "OPEN"), camera_frame(503, "CLOSED", "GRAB")]
+            camera.write_text("".join(json.dumps(frame) + "\n" for frame in frames))
+            self.assertEqual(list(read_camera_records(camera)), frames)
+            sensor = Path(directory) / "sensor.jsonl"
+            write_sensor_records(sensor, simulate_from_camera(read_camera_records(camera)))
+            before = sensor.read_bytes()
+            self.assertEqual(len(list(read_sensor_records(sensor))), 2)
             with self.assertRaises(FileExistsError):
-                write_sensor_records(path, simulated_records())
-            self.assertEqual(before, path.read_bytes())
-            camera = Path(directory) / 'camera.jsonl'
-            camera.write_text('{"timestamp_ms":303}\n{"timestamp_ms":48240}\n')
-            original = camera.read_bytes()
-            self.assertEqual(camera_end_ms(camera), 48240)
-            self.assertEqual(original, camera.read_bytes())
-            for content in ('', '{"timestamp_ms":3}\n{"timestamp_ms":3}\n',
-                            '{"timestamp_ms":4}\n{"timestamp_ms":3}\n'):
-                camera.write_text(content)
-                with self.assertRaises(ValueError):
-                    camera_end_ms(camera)
+                write_sensor_records(sensor, simulate_from_camera(frames))
+            self.assertEqual(sensor.read_bytes(), before)
+            frames[1]["action_estimate"]["source"] = "invented"
+            camera.write_text("".join(json.dumps(frame) + "\n" for frame in frames))
+            with self.assertRaises(ValueError):
+                list(read_camera_records(camera))
+
+    def test_invalid_noise_and_nonincreasing_time(self):
+        frame = camera_frame(300, "OPEN", "OPEN")
+        with self.assertRaises(ValueError):
+            list(simulate_from_camera([frame], noise_level=-1))
+        with self.assertRaises(ValueError):
+            list(simulate_from_camera([frame, frame]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
