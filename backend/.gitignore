@@ -5,6 +5,11 @@ __pycache__/
 .env
 .venv/
 data/
-artifacts/
+static/pdf/*
+!static/pdf/.gitkeep
+static/images/*
+!static/images/.gitkeep
+static/dataset/*
+!static/dataset/.gitkeep
 .test_*/
 

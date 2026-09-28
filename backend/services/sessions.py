@@ -131,7 +131,7 @@ class SessionService:
         """Resolve an existing generated SOP file."""
         self._require_session(session_id)
         for suffix in (".pdf", ".html"):
-            candidate = self.settings.artifact_dir / f"sop_{session_id}{suffix}"
+            candidate = self.settings.pdf_dir / f"sop_{session_id}{suffix}"
             if candidate.is_file():
                 return candidate
         raise ArtifactNotFoundError(f"SOP artifact for '{session_id}' was not found")
@@ -148,7 +148,7 @@ class SessionService:
             "db3": f"rosbag_{session_id}.db3",
             "rosbag": f"rosbag_{session_id}.zip",
         }
-        candidate = self.settings.artifact_dir / names[export_format]
+        candidate = self.settings.dataset_dir / names[export_format]
         if not candidate.is_file():
             raise ArtifactNotFoundError(f"Robot artifact for '{session_id}' was not found")
         return candidate

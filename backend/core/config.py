@@ -23,8 +23,10 @@ class Settings(BaseModel):
     environment: Literal["development", "test", "production"] = "development"
     api_prefix: str = "/api/v1"
     database_url: str = f"sqlite:///{(BACKEND_ROOT / 'data' / 'smartwear.db').as_posix()}"
-    artifact_dir: Path = BACKEND_ROOT / "artifacts"
-    keyframe_dir: Path = BACKEND_ROOT / "data" / "keyframes"
+    static_dir: Path = BACKEND_ROOT / "static"
+    pdf_dir: Path = BACKEND_ROOT / "static" / "pdf"
+    keyframe_dir: Path = BACKEND_ROOT / "static" / "images"
+    dataset_dir: Path = BACKEND_ROOT / "static" / "dataset"
     api_key: str | None = None
     cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://localhost:5173")
     log_level: str = "INFO"
@@ -65,8 +67,10 @@ class Settings(BaseModel):
             "SMARTWEAR_ENVIRONMENT": "environment",
             "SMARTWEAR_API_PREFIX": "api_prefix",
             "SMARTWEAR_DATABASE_URL": "database_url",
-            "SMARTWEAR_ARTIFACT_DIR": "artifact_dir",
+            "SMARTWEAR_STATIC_DIR": "static_dir",
+            "SMARTWEAR_PDF_DIR": "pdf_dir",
             "SMARTWEAR_KEYFRAME_DIR": "keyframe_dir",
+            "SMARTWEAR_DATASET_DIR": "dataset_dir",
             "SMARTWEAR_API_KEY": "api_key",
             "SMARTWEAR_LOG_LEVEL": "log_level",
             "SMARTWEAR_MAX_PAGE_SIZE": "max_page_size",

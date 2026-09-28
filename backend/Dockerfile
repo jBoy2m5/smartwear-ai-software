@@ -15,7 +15,8 @@ RUN python -m pip install --upgrade pip \
 
 COPY . /app/backend
 
-RUN mkdir -p /app/backend/data /app/backend/artifacts \
+RUN mkdir -p /app/backend/data /app/backend/static/pdf \
+    /app/backend/static/images /app/backend/static/dataset \
     && chown -R smartwear:smartwear /app/backend
 
 USER smartwear

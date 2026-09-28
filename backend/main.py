@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend import __version__
 from backend.api.router import api_router
@@ -29,14 +30,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         configure_logging(runtime_settings.log_level)
+        for directory in (
+            runtime_settings.static_dir,
+            runtime_settings.pdf_dir,
+            runtime_settings.keyframe_dir,
+            runtime_settings.dataset_dir,
+        ):
+            directory.mkdir(parents=True, exist_ok=True)
         database = build_database(runtime_settings)
         database.create_schema()
         application.state.database = database
         application.state.session_service = SessionService(
             database,
             runtime_settings,
-            sop_generator=SopGenerator(runtime_settings.artifact_dir),
-            robot_exporter=RobotDatasetExporter(runtime_settings.artifact_dir),
+            sop_generator=SopGenerator(runtime_settings.pdf_dir),
+            robot_exporter=RobotDatasetExporter(runtime_settings.dataset_dir),
         )
         yield
         database.dispose()
@@ -47,6 +55,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     application.state.settings = runtime_settings
+    application.mount(
+        "/static",
+        StaticFiles(directory=runtime_settings.static_dir, check_dir=False),
+        name="static",
+    )
     application.add_middleware(
         CORSMiddleware,
         allow_origins=list(runtime_settings.cors_origins),

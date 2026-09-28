@@ -6,7 +6,9 @@ __pycache__/
 .gitignore
 .pytest_cache/
 .test_*/
-artifacts/
 data/
+static/pdf/*
+static/images/*
+static/dataset/*
 tests/
 

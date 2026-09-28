@@ -86,8 +86,10 @@ class BackendIntegrationTests(unittest.TestCase):
         self.settings = Settings(
             environment="test",
             database_url=f"sqlite:///{(self.test_root / 'smartwear.db').as_posix()}",
-            artifact_dir=self.test_root / "artifacts",
-            keyframe_dir=self.test_root / "keyframes",
+            static_dir=self.test_root / "static",
+            pdf_dir=self.test_root / "static" / "pdf",
+            keyframe_dir=self.test_root / "static" / "images",
+            dataset_dir=self.test_root / "static" / "dataset",
         )
         self.app = create_app(self.settings)
         self.client = TestClient(self.app)
@@ -197,7 +199,7 @@ class BackendIntegrationTests(unittest.TestCase):
         self.assertEqual(failed.status_code, 500)
         self.assertEqual(detail.json()["export_status"], "FAILED")
 
-        service.robot_exporter = RobotDatasetExporter(self.settings.artifact_dir)
+        service.robot_exporter = RobotDatasetExporter(self.settings.dataset_dir)
         recovered = self.client.post("/api/v1/sessions/ingest", json=sample_payload())
         self.assertEqual(recovered.status_code, 200)
         self.assertEqual(recovered.json()["export_status"], "COMPLETED")
