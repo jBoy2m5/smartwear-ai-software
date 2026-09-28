@@ -125,3 +125,18 @@ class SessionRepository:
         self.session.flush()
         return True
 
+    def update_export_status(
+        self,
+        session_id: str,
+        status: str,
+        error: str | None = None,
+    ) -> None:
+        """Update artifact generation state for a persisted session."""
+        entity = self.session.get(AnalysisSession, session_id)
+        if entity is None:
+            return
+        entity.export_status = status
+        entity.export_error = error
+        entity.updated_at = utc_now()
+        self.session.flush()
+

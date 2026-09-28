@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path, PurePath
-from typing import Literal
+from typing import Literal, Protocol
 
 from PIL import Image, UnidentifiedImageError
 
 from backend.core.config import Settings
 from backend.core.exceptions import (
+    ArtifactGenerationError,
     ArtifactNotFoundError,
     InvalidKeyFrameError,
     ResourceNotFoundError,
@@ -30,6 +31,12 @@ from backend.schemas import (
 )
 
 
+class SopGeneratorPort(Protocol):
+    """Port implemented by a backend-owned SOP generator."""
+
+    def generate(self, payload: SessionInput) -> Path: ...
+
+
 class SessionService:
     """Coordinate persistence and backend-owned session resources."""
 
@@ -39,19 +46,36 @@ class SessionService:
         "image/webp": "WEBP",
     }
 
-    def __init__(self, database: Database, settings: Settings) -> None:
+    def __init__(
+        self,
+        database: Database,
+        settings: Settings,
+        sop_generator: SopGeneratorPort | None = None,
+    ) -> None:
         self.database = database
         self.settings = settings
+        self.sop_generator = sop_generator
 
     def ingest(self, payload: SessionInput) -> IngestResponse:
         """Upsert a validated session; artifact modules complete it later."""
         with self.database.transaction() as db_session:
             entity, created = SessionRepository(db_session).upsert(payload)
+        if self.sop_generator is not None:
+            try:
+                self.sop_generator.generate(payload)
+            except Exception as exc:
+                self._set_export_status(payload.session_id, ExportStatus.FAILED, str(exc))
+                raise ArtifactGenerationError("SOP generation failed") from exc
         return IngestResponse(
             session_id=entity.session_id,
             created=created,
             export_status=ExportStatus.PENDING,
             message="Session stored; artifact generation is pending",
+            sop_download_url=(
+                f"{self.settings.api_prefix}/sessions/{entity.session_id}/download-sop"
+                if self.sop_generator is not None
+                else None
+            ),
         )
 
     def list_sessions(self, *, limit: int, offset: int) -> PaginatedSessions:
@@ -143,6 +167,20 @@ class SessionService:
         finally:
             temporary_path.unlink(missing_ok=True)
 
+        if self.sop_generator is not None:
+            detail = self.get_session(session_id)
+            contract_fields = {
+                "session_id",
+                "worker_type",
+                "key_frames",
+                "action_phases",
+                "dtw_metrics",
+                "robot_trajectory_points",
+            }
+            self.sop_generator.generate(
+                SessionInput.model_validate(detail.model_dump(include=contract_fields))
+            )
+
         return KeyFrameResponse(
             session_id=session_id,
             filename=safe_filename,
@@ -163,6 +201,15 @@ class SessionService:
         with self.database.transaction() as db_session:
             if SessionRepository(db_session).get(session_id) is None:
                 raise ResourceNotFoundError(f"Session '{session_id}' was not found")
+
+    def _set_export_status(
+        self,
+        session_id: str,
+        status: ExportStatus,
+        error: str | None = None,
+    ) -> None:
+        with self.database.transaction() as db_session:
+            SessionRepository(db_session).update_export_status(session_id, status.value, error)
 
     @staticmethod
     def _safe_filename(filename: str) -> str:

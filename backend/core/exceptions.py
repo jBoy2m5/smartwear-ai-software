@@ -20,3 +20,7 @@ class InvalidKeyFrameError(BackendError):
 class UndeclaredKeyFrameError(BackendError):
     """Raised when a keyframe was not declared by the AI contract."""
 
+
+class ArtifactGenerationError(BackendError):
+    """Raised when one or more output artifacts cannot be generated."""
+
