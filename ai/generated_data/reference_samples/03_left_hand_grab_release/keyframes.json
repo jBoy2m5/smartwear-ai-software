@@ -1,0 +1,92 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\reference_samples\\03_left_hand_grab_release\\camera.jsonl",
+  "camera_sha256": "0b6f25d08935374f53d99c371bc54cb4c6d66f8126f2ae13b0eed41acf70ba63",
+  "multimodal_sha256": "46b016a79a2ff2312c22e1f31e3f432d11daa0c226a79576d14585e680f4af05",
+  "segments_sha256": "5e3525b1146bf3e3ec016273ea4f3a3163a144f4f9f8377f493eeb5c81a6f9a3",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 0,
+      "end_ms": 48,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 0,
+      "end_ms": 48,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 48,
+      "end_ms": 142,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 3,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 48,
+      "end_ms": 2242,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 4,
+      "hand": "left",
+      "label": "GRAB",
+      "start_ms": 142,
+      "end_ms": 842,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0004_left_GRAB_frame_000010.png",
+      "frame_id": 10,
+      "timestamp_ms": 468,
+      "video_frame_index": 10
+    },
+    {
+      "segment_id": 5,
+      "hand": "left",
+      "label": "RELEASE",
+      "start_ms": 842,
+      "end_ms": 1496,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0005_left_RELEASE_frame_000025.png",
+      "frame_id": 25,
+      "timestamp_ms": 1166,
+      "video_frame_index": 25
+    },
+    {
+      "segment_id": 6,
+      "hand": "left",
+      "label": "OPEN",
+      "start_ms": 1496,
+      "end_ms": 2242,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0006_left_OPEN_frame_000040.png",
+      "frame_id": 40,
+      "timestamp_ms": 1868,
+      "video_frame_index": 40
+    }
+  ],
+  "status": "completed",
+  "video_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\reference_samples\\03_left_hand_grab_release\\camera.avi",
+  "video_sha256": "5a61fd6b1b6fe86f15bdfe2eef260b5e1f09715e76f47ad3d5b5c3a2ab24c52e",
+  "extracted_count": 3,
+  "skipped_count": 4
+}

@@ -1,5 +1,6 @@
 """Capture two hands, save independent actions, then run the session pipeline."""
 
+import argparse
 import json
 import tempfile
 import time
@@ -8,11 +9,14 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 from hand_observation import SIDES, TwoHandActionDetector
+from analysis.compare_sessions import compare_sessions, load_session, sha256_file
+from analysis.select_reference import select_reference
 from process_recording import DEFAULT_OUTPUT_ROOT, process_recording
 from video_recording import RecordingVideo
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SESSION_ROOT = DEFAULT_OUTPUT_ROOT
+REFERENCE_ROOT = SCRIPT_DIR / "generated_data" / "reference_samples"
 MODEL_PATH = SCRIPT_DIR / "hand_landmarker.task"
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/"
              "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task")
@@ -129,16 +133,65 @@ def record_camera():
     return output
 
 
-def main():
+def finish_recording(output, role=None, expert_session=None):
+    """Process one recording, then optionally identify and compare its role."""
+    output = Path(output)
+    if role == "worker" and expert_session is None:
+        raise ValueError("Worker recording needs --expert-session")
+    if role != "worker" and expert_session is not None:
+        raise ValueError("--expert-session is only used with --role worker")
+    if expert_session is not None:
+        load_session(expert_session, "expert")
+    auto_reference = role is None and REFERENCE_ROOT.is_dir()
+    if auto_reference:
+        role = "worker"
+    combined = process_recording(output, output_root=SESSION_ROOT, session_dir=output.parent)
+    if role is not None:
+        marker = output.parent / "session_role.json"
+        document = {"schema_version": "smartwear.session_role.v1", "role": role,
+                    "segments_sha256": sha256_file(output.parent / "action_segments.json")}
+        with marker.open("x", encoding="utf-8", newline="\n") as stream:
+            json.dump(document, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+        print(f"Vai tro phien: {role}")
+    if auto_reference:
+        result, selected = select_reference(output.parent, REFERENCE_ROOT)
+        print(f"Mau demo gan nhat: {selected['title']}")
+        print(f"Ket qua so sanh: {result}")
+    elif role == "worker":
+        result = compare_sessions(expert_session, output.parent)
+        print(f"Ket qua so sanh: {result}")
+    return combined
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--role", choices=("expert", "worker"),
+                        help="Mark this new session as a reference or a worker recording")
+    parser.add_argument("--expert-session", type=Path,
+                        help="Existing expert session to compare automatically after recording")
+    args = parser.parse_args(argv)
+    if args.role == "worker" and args.expert_session is None:
+        parser.error("--role worker requires --expert-session")
+    if args.role != "worker" and args.expert_session is not None:
+        parser.error("--expert-session requires --role worker")
+    if args.expert_session is not None:
+        try:
+            load_session(args.expert_session, "expert")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            parser.error(f"Invalid expert session: {exc}")
     try:
         output = record_camera()
     except (OSError, RuntimeError, ValueError, ImportError) as exc:
         raise SystemExit(f"Loi camera: {exc}") from exc
     try:
-        process_recording(output, output_root=SESSION_ROOT, session_dir=output.parent)
+        finish_recording(output, args.role, args.expert_session)
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"Khong hoan tat xu ly tu dong: {exc}")
-        print(f'Thu lai: python -B "{SCRIPT_DIR / "process_recording.py"}" --input "{output}"')
+        if (output.parent / "multimodal.jsonl").is_file():
+            print("Du lieu camera va xu ly da duoc giu lai; co the so sanh lai phien nay.")
+        else:
+            print(f'Thu lai: python -B "{SCRIPT_DIR / "process_recording.py"}" --input "{output}"')
         raise SystemExit(1) from exc
 
 

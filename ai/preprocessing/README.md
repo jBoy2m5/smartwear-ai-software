@@ -10,7 +10,7 @@ python -B .\ai\camera_test.py
 Camera hiện hai dòng riêng: LEFT (tay trái) và RIGHT (tay phải).
 Một tay có thể GRAB trong khi tay kia OPEN hoặc REACH. Nhấn Q để dừng.
 Chương trình tự chạy: chuẩn hóa → cảm biến giả → multimodal → chia đoạn từng tay
-→ trích ảnh tiêu biểu.
+→ trích ảnh tiêu biểu → chọn mẫu demo gần nhất → so sánh.
 
 Ngay khi camera mở, chương trình tạo một thư mục phiên và ghi cả ba file gốc
 `camera.jsonl`, `camera.avi`, `camera.video.json` trực tiếp trong thư mục đó.
@@ -31,7 +31,50 @@ C:\Task\smartwear-ai\ai\generated_data\sessions\camera_data_<ngày giờ>_<mã r
     action_segments.json
     keyframes.json          ← danh sách ảnh và lý do bỏ qua từng đoạn
     keyframes/              ← các ảnh PNG thật của các đoạn hợp lệ
+    session_role.json       ← phiên công nhân khi dùng các mẫu demo
+    analysis_result.json    ← so sánh với mẫu demo gần nhất
 ```
+
+## Thử so sánh bằng ba video mẫu có sẵn
+
+Chỉ cần chạy `python -B .\ai\camera_test.py`, quay thao tác của bạn và nhấn Q.
+Chương trình tự xử lý phiên của bạn như một phiên worker, chọn đoạn mẫu demo gần
+nhất trong `ai/generated_data/reference_samples`, rồi tạo `analysis_result.json`
+trong thư mục phiên của bạn. Không cần gõ vai trò hay chép đường dẫn mẫu.
+
+Ba đoạn mẫu được **cắt từ một video camera đã ghi trước đó**, mỗi đoạn khoảng
+2 giây. Chúng là bài tập để thử chức năng, chưa được chuyên gia nhà máy xác nhận:
+
+- `01_two_hands_reach_grab`: hai tay mở/đưa tới rồi nắm; cuối đoạn tay trái mở.
+- `02_right_hand_grab_hold`: hai tay nắm; tay trái rời khung, tay phải tiếp tục giữ.
+- `03_left_hand_grab_release`: tay trái nắm, thả rồi mở; tay phải không thấy rõ.
+
+Mỗi mẫu có `camera.avi` để xem, `reference_sample.json` ghi mô tả và nguồn gốc,
+cùng các file xử lý như một phiên thường. `session_role.json` ghi đây là mẫu demo.
+Phần chọn mẫu dùng DTW để tìm đoạn gần nhất trong **ba mẫu có sẵn**, không tự tạo
+một thao tác chuẩn mới.
+
+File kết quả so sánh hai tay riêng biệt bằng DTW trên các đoạn hành động nhìn thấy từ camera;
+`alignment` nêu hai đoạn được ghép, chênh lệch thời gian và đường dẫn ảnh tiêu biểu
+nếu video có ảnh. `review_candidates` chỉ là các đoạn cần xem lại video, chưa phải
+kết luận thao tác sai hoặc Muda. Chỉ số `normalized_dtw_cost` càng thấp thì chuỗi
+hành động nhìn thấy càng giống; đây không phải điểm chất lượng đã hiệu chuẩn.
+
+Tay không thấy rõ (`NO_HAND`, `OTHER`, `ambiguous`) được ghi trong `*_omitted`,
+không chấm như hành động đúng. Nếu không có hành động nhìn thấy để so sánh,
+chương trình báo thiếu dữ liệu. Lực, IMU, torque giả không dùng để so sánh.
+Nếu sau này có video thao tác chuẩn thật của chuyên gia, vẫn có thể quay mẫu đó
+bằng `python -B .\ai\camera_test.py --role expert` và chọn thủ công khi quay worker
+bằng `--role worker --expert-session <đường dẫn phiên chuyên gia>`.
+Các phiên cũ chưa có `session_role.json` vẫn có thể so sánh khi chỉ rõ hai
+đường dẫn bằng lệnh sau:
+
+```powershell
+python -B .\ai\analysis\compare_sessions.py --expert-session "<duong_dan_phien_mau>" --worker-session "<duong_dan_phien_cong_nhan>"
+```
+
+File kết quả không ghi đè. Muốn so sánh lại, dùng một tên file `.json` mới trong
+chính thư mục phiên worker với tùy chọn `--output`.
 
 Không ghi đè dữ liệu. Nếu lỗi, dừng các bước sau và giữ bản camera để thử lại.
 Đóng cưỡng bức chương trình không tự chạy bước xử lý. Chạy lại một bản camera
