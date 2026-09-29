@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 from hand_observation import HandActionDetector, observation
+from process_recording import process_recording
 
 
 # ============================================================
@@ -438,3 +439,12 @@ print("Da dung camera.")
 print(
     f"Da luu du lieu vao: {OUTPUT_FILE}"
 )
+
+# The camera file is closed and the device released before processing begins.
+try:
+    process_recording(OUTPUT_FILE)
+except (OSError, ValueError, RuntimeError) as exc:
+    print(f"Khong hoan tat xu ly tu dong: {exc}")
+    print("Co the thu lai bang lenh:")
+    print(f'python -B "{SCRIPT_DIR / "process_recording.py"}" --input "{OUTPUT_FILE}"')
+    raise SystemExit(1)
