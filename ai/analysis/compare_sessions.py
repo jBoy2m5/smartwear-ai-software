@@ -1,14 +1,18 @@
-"""Compare two recorded two-hand sessions using camera-derived action segments.
+"""Compare camera action segments and aligned sensor summaries for two sessions.
 
 This is a prototype alignment, not a calibrated quality or Muda assessment.
-Simulated IMU, force, and torque values are deliberately never read.
+Sensor summaries prefer verified hardware input and identify simulated fallback.
 """
 
 import argparse
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analysis.compare_sensors import compare_sensor_segments  # noqa: E402
 
 SIDES = ("left", "right")
 VISIBLE_LABELS = {"OPEN", "REACH", "GRAB", "ASSEMBLY", "RELEASE"}
@@ -166,14 +170,18 @@ def build_comparison(expert_session, worker_session):
         tracks[side] = result
     if all(track["status"] != "compared" for track in tracks.values()):
         raise ValueError("No comparable visible actions in either hand")
-    document = {"schema_version": "smartwear.analysis_comparison.v1",
+    document = {"schema_version": "smartwear.analysis_comparison.v2",
                 "expert_session": expert_dir.name, "worker_session": worker_dir.name,
                 "expert_segments_sha256": expert_hash, "worker_segments_sha256": worker_hash,
-                "method": "segment_label_duration_dtw_per_hand",
-                "uses_simulated_sensors": False,
-                "score_note": "Lower DTW cost means closer visible action patterns; it is not a calibrated worker score.",
+                "method": "segment_label_duration_dtw_per_hand_with_sensor_summary",
+                "score_note": "DTW cost ranks visible camera actions only; sensor values are reported separately.",
                 "review_note": "Candidates need video review; they are not confirmed waste or mistakes.",
                 "hands": tracks}
+    sensor_result = compare_sensor_segments(expert_dir, worker_dir, document)
+    document["sensor_comparison"] = sensor_result
+    document["uses_simulated_sensors"] = sensor_result["status"] == "simulated_demo_comparison" or any(
+        source["source"] != "measured_hardware" for source in
+        (sensor_result["expert_source"], sensor_result["worker_source"]))
     return document
 
 

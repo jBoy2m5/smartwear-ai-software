@@ -62,7 +62,33 @@ hành động nhìn thấy càng giống; đây không phải điểm chất lư
 
 Tay không thấy rõ (`NO_HAND`, `OTHER`, `ambiguous`) được ghi trong `*_omitted`,
 không chấm như hành động đúng. Nếu không có hành động nhìn thấy để so sánh,
-chương trình báo thiếu dữ liệu. Lực, IMU, torque giả không dùng để so sánh.
+chương trình báo thiếu dữ liệu.
+
+`analysis_result.json` phiên bản v2 có thêm `sensor_comparison`. Với mỗi cặp đoạn
+đã ghép, file ghi trung bình và đỉnh của `force_emg_raw`, torque, cùng mức chuyển
+động IMU cổ tay và đầu. `worker_minus_expert` là số của phiên worker trừ mẫu
+khi **cùng nhãn hành động**. Nếu hai nhãn khác nhau, vẫn hiện số của hai bên
+để xem nhưng không lấy hiệu.
+Chương trình lấy dữ liệu theo thứ tự: `real_sensors.jsonl` có metadata hợp lệ,
+rồi `sensors.jsonl` mô phỏng đã được lưu, cuối cùng sinh số mô phỏng trong bộ nhớ
+nếu file sensor không còn. Nguồn của **cả hai phiên** được ghi trong kết quả.
+Nếu một bên đo thật còn bên kia mô phỏng, hai bộ số chỉ được đặt cạnh nhau,
+`worker_minus_expert` là `null` vì chúng không cùng thang đo. Hai bộ đo thật chỉ
+được trừ khi cùng đơn vị và `calibration_id`. Hai bộ số mô phỏng vẫn có chênh
+lệch để xem demo, nhưng không đại diện lực người thật tạo ra.
+
+Để bộ thu phần cứng sau này được ưu tiên, lưu `real_sensors.jsonl` trong thư mục
+phiên với cùng schema `smartwear.sensors.v2` và timestamp khớp **từng khung camera**.
+File `real_sensors.meta.json` cần `source: measured_hardware`,
+`schema_version: smartwear.sensors_meta.v2`, SHA-256 của camera và sensor,
+`sample_count`, `first_timestamp_ms`, `last_timestamp_ms`, `calibration_id` và
+`units` gồm `force`, `torque`, `angle`, `acceleration`, `angular_speed`. Chưa có adapter
+phần cứng hoặc đồng bộ đồng hồ thiết bị tự động. File thật sai nguồn/hash/thời
+gian sẽ báo lỗi, không âm thầm thay bằng số giả. `force_emg_raw` của bộ mô phỏng
+không phải Newton; đơn vị thật chỉ lấy từ metadata thiết bị.
+
+Mẫu gần nhất vẫn được chọn bằng **hành động camera và thời gian**; số cảm biến
+được báo cáo sau đó, không làm thay đổi mẫu được chọn.
 Nếu sau này có video thao tác chuẩn thật của chuyên gia, vẫn có thể quay mẫu đó
 bằng `python -B .\ai\camera_test.py --role expert` và chọn thủ công khi quay worker
 bằng `--role worker --expert-session <đường dẫn phiên chuyên gia>`.

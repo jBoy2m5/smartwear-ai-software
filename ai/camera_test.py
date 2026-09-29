@@ -161,6 +161,13 @@ def finish_recording(output, role=None, expert_session=None):
     elif role == "worker":
         result = compare_sessions(expert_session, output.parent)
         print(f"Ket qua so sanh: {result}")
+    if auto_reference or role == "worker":
+        source = json.loads(result.read_text(encoding="utf-8"))["sensor_comparison"]["status"]
+        print("Nguon so sanh cam bien: " + {
+            "measured_comparison": "hai bo do that cung don vi va hieu chuan",
+            "simulated_demo_comparison": "so mo phong, khong phai luc do that",
+            "incompatible_sources_no_numeric_delta": "nguon khac nhau; khong tru hai gia tri",
+        }[source])
     return combined
 
 
