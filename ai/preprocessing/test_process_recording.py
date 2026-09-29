@@ -32,8 +32,16 @@ class RecordingPipelineTests(unittest.TestCase):
         self.assertEqual([r["timestamp_ms"] for r in rows], [303, 403, 703])
         self.assertEqual(len(rows), 3)
         self.assertTrue(second.with_name("sensors.meta.json").exists())
+        segmentation = json.loads(second.with_name("action_segments.json").read_text())
+        self.assertEqual(segmentation["frame_count"], 3)
+        self.assertEqual(segmentation["segment_count"], 2)
+        self.assertEqual(segmentation["segment_counts_by_hand"], {"left": 1, "right": 1})
+        self.assertEqual(segmentation["segments"][0]["label"], "NO_HAND")
+        self.assertEqual(segmentation["segments"][0]["duration_ms"], 400)
         for row, frame in zip(rows, self.frames):
-            self.assertEqual(row["action_estimate"], frame["action_estimate"])
+            for side in ("left", "right"):
+                self.assertEqual(row["hand_actions"][side]["label"], "NO_HAND")
+                self.assertIsNone(row["hand_sensors"][side]["force_emg_raw"])
             self.assertEqual(row["provenance"]["sensors"], "simulated_from_camera_observations")
         self.assertEqual(self.raw.read_bytes(), original)
         for path, contents in before.items():
@@ -55,6 +63,7 @@ class RecordingPipelineTests(unittest.TestCase):
             process_recording(self.raw, self.outputs)
         self.assertFalse(list(self.outputs.rglob("sensors.jsonl")))
         self.assertFalse(list(self.outputs.rglob("multimodal.jsonl")))
+        self.assertFalse(list(self.outputs.rglob("action_segments.json")))
         self.assertEqual(self.raw.read_bytes(), before)
 
 

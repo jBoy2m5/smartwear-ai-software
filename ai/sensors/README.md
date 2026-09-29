@@ -1,27 +1,45 @@
-# Camera thật và cảm biến giả theo cùng bản quay
+# Cảm biến giả cho hai tay
 
-Camera lưu điểm bàn tay **thật** và `action_estimate` từ các điểm đó. `hand_state` là `OPEN`, `CLOSED`, `OTHER` hoặc `NONE`. `label` là nhãn ước đoán `REACH`, `GRAB`, `ASSEMBLY`, `RELEASE`, `OPEN`, `OTHER` hoặc `NO_HAND`. Nắm tay trong hình không chứng minh rằng người đó thật sự cầm vật. `ASSEMBLY` chỉ nghĩa là tay khép và tương đối yên.
+Chạy camera như trước:
+```powershell
+cd C:\Task\smartwear-ai
+python -B .\ai\camera_test.py
+```
+Nhấn Q: phần xử lý tự tạo sensors.jsonl và sensors.meta.json trong thư mục
+C:\Task\smartwear-ai\data\sessions\<tên phiên>.
 
-IMU, lực và torque **vẫn là số mô phỏng** vì chưa có các thiết bị đo tương ứng. Chương trình mới nhìn trạng thái bàn tay trong bản quay để thay đổi các số giả; nó không còn gán “giây 2–4 luôn là nắm”. Số lực giả tăng khi camera thấy tay khép, nhưng không phải số đo lực của người trong video. Torque giả khi nhãn `ASSEMBLY` cũng không xác nhận có dụng cụ siết.
+## Dữ liệu mới (v2)
 
-## Chạy với bản camera mới đã ghi
+- imu_head: một IMU đầu giả.
+- hand_sensors.left: số giả cho cổ tay trái, tín hiệu lực và torque.
+- hand_sensors.right: số giả cho cổ tay phải, tín hiệu lực và torque.
+- tracking_status: detected, missing hoặc ambiguous.
+- Mỗi tay dùng nhãn camera và tọa độ của chính tay đó; trạng thái, tín hiệu,
+  seed nhiễu độc lập. Thay đổi tay trái không làm đổi số giả của tay phải.
+- Nếu tay mất/không xác định: imu_wrist, force_emg_raw và torque là null.
+  Khi thấy lại tay, bắt đầu tín hiệu mới, không nối lực/torque cũ qua khoảng mất.
+- Đổi thứ tự các bàn tay trong kết quả MediaPipe không hoán đổi số giả hai bên.
+- Timestamp sao chép từ khung camera, không phải đồng bộ hai đồng hồ thiết bị.
+- Các nguồn v1 vẫn đọc được theo cách một tay cũ; không trộn v1/v2.
 
-Từ `C:\Task\smartwear-ai`:
+Số giả biến đổi theo hình bàn tay, không phải đo lực thật. force_emg_raw không
+có đơn vị, không phải Newton hoặc sóng sEMG sinh lý. IMU m/s² và rad/s, torque
+N·m và góc độ chỉ là quy ước của mô phỏng, chưa hiệu chuẩn.
+
+## Metadata
+
+File .meta.json ghi schema_version, SHA-256 camera/cảm biến, seed, noise_level,
+số mẫu, khoảng thời gian, số lượng nhãn riêng từng tay và simulated_fields.
+Cùng dữ liệu/cấu hình/seed sinh lại kết quả nhất quán trong môi trường hiện tại.
+Các file cũ data/simulated/sensors_default.jsonl và sensors_camera_duration.jsonl
+là demo theo lịch cố định; không dùng để ghép với bản camera mới.
+
+## Chạy riêng nếu cần
 
 ```powershell
-.\ai\.venv\Scripts\python.exe -B .\ai\preprocessing\normalize_camera.py --input .\ai\camera_data_20260928_225209_301112.jsonl --output .\data\processed\camera_data_20260928_225209_301112.normalized.jsonl
-.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file .\data\processed\camera_data_20260928_225209_301112.normalized.jsonl --output .\data\simulated\sensors_from_camera_20260928_225209_301112.jsonl
-.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\sensors -p "test_*.py" -v
+.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file .\data\sessions\<tên phiên>\camera.normalized.jsonl --output .\data\simulated\sensors_new.jsonl
 ```
 
-Để ghi bản mới bằng webcam, chạy `python -B .\ai\camera_test.py` bằng Python hệ thống có OpenCV/MediaPipe. Camera tạo file `ai\camera_data_<thời gian>.jsonl` mới, gồm `timestamp`, `camera`, `hands`, `action_estimate`. Đưa đường dẫn file đó vào `--input` khi chuẩn hóa. Các lệnh mở đầu ra bằng chế độ tạo mới, **không ghi đè** dữ liệu cũ; đổi tên `--output` nếu chạy lại.
-
-## File và nguồn gốc
-
-- `normalized_camera...jsonl`: `frame_id`, `timestamp_ms`, `relative_time_s`, `camera`, `hands`, `action_estimate`. Dữ liệu bàn tay đến từ webcam/MediaPipe; nhãn là **ước đoán từ hình bàn tay**.
-- `sensors_from_camera...jsonl`: `timestamp_ms`, `imu_head`, `imu_wrist`, `force_emg_raw`, `torque`. Chỉ các giá trị cảm biến này được tạo giả. Mỗi bản ghi dùng timestamp của một khung camera; đây **không phải hai đồng hồ được đồng bộ độc lập**.
-- `sensors_from_camera...meta.json`: ghi file camera nguồn, SHA-256, seed, số mẫu và các trường giả lập.
-
-Gia tốc m/s², vận tốc góc rad/s, torque N·m, góc độ chỉ là **quy ước của bộ mô phỏng**, chưa được hiệu chuẩn. `force_emg_raw` không có đơn vị, không phải Newton hay Fx/Fy/Fz. Bộ mô phỏng không dùng những con số này để xác nhận hành động thật.
-
-Hai file cũ `sensors_default.jsonl` và `sensors_camera_duration.jsonl` là **bản demo theo kịch bản thời gian trước đây**; giữ lại để đối chiếu, không dùng chúng làm bằng chứng cho hành động trong camera. Bộ mô phỏng hiện tại yêu cầu `--camera-file` có `action_estimate` từ camera.
+Đổi đường dẫn <tên phiên> thành thư mục thực tế. Không ghi đè đầu ra.
+Để chuyển bản camera cũ sang cả pipeline hai tay, chạy process_recording.py
+với --input là file camera gốc. Chi tiết schema và luồng: ai/preprocessing/README.md.

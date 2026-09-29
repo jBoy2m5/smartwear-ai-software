@@ -1,96 +1,167 @@
-# Ghép camera và cảm biến mô phỏng
+# SmartWear AI — camera và xử lý hai tay
 
-## Chạy tự động từ camera
+## Chạy một lần
 
 ```powershell
 cd C:\Task\smartwear-ai
 python -B .\ai\camera_test.py
 ```
 
-Thao tác trước camera, nhấn Q trong cửa sổ camera để dừng. Chương trình đóng
-file ghi, tắt camera rồi tự chạy chuẩn hóa → mô phỏng cảm biến → ghép multimodal.
-Nhận diện và hiển thị nhãn camera hoạt động như trước.
+Camera hiện hai dòng riêng: LEFT (tay trái) và RIGHT (tay phải).
+Một tay có thể GRAB trong khi tay kia OPEN hoặc REACH. Nhấn Q để dừng.
+Chương trình tự chạy: chuẩn hóa → cảm biến giả → multimodal → chia đoạn từng tay.
 
-File camera gốc vẫn ở `C:\Task\smartwear-ai\ai\camera_data_<ngày giờ>.jsonl`.
-Kết quả xử lý mới nằm trong một thư mục riêng cho mỗi lần chạy:
-
+Mỗi lần xử lý có thư mục riêng:
 ```text
 C:\Task\smartwear-ai\data\sessions\camera_data_<ngày giờ>_<mã riêng>\
     camera.normalized.jsonl
     sensors.jsonl
     sensors.meta.json
-    multimodal.jsonl          ← kết quả cuối cùng
+    multimodal.jsonl
+    action_segments.json
 ```
 
-PowerShell hiện tiến độ 1/3, 2/3, 3/3 và đường dẫn kết quả khi hoàn tất.
-Số dòng tùy bản quay mới, không cố định 403. Nếu camera chưa ghi được dòng nào,
-chương trình báo không có dữ liệu. Nếu xử lý lỗi, các bước sau dừng, dữ liệu gốc
-được giữ và PowerShell hiện lệnh thử lại. Các lần thử lại dùng thư mục mới.
-Việc đóng cưỡng bức chương trình không kích hoạt bước xử lý sau camera.
+File camera gốc nằm tại C:\Task\smartwear-ai\ai\camera_data_<ngày giờ>.jsonl.
+Không ghi đè dữ liệu. Nếu lỗi, dừng các bước sau và giữ bản camera để thử lại.
+Đóng cưỡng bức chương trình không tự chạy bước xử lý.
 
-Để tự động xử lý một file camera đã có, dùng:
+## Vai trò các file Python
 
-```powershell
-python -B .\ai\process_recording.py --input .\ai\camera_data_20260928_232738_214687.jsonl
+- camera_test.py: ghi hình bàn tay, vẽ điểm, hiện hai nhãn; Q kích hoạt xử lý.
+- hand_observation.py: nhận diện riêng cho trái/phải, quản lý lịch sử mỗi tay.
+- normalize_camera.py: chuẩn hóa bản ghi mới hoặc chuyển bản camera cũ sang v2.
+- sensors/simulate_sensors.py: tạo số giả độc lập cho mỗi tay.
+- build_multimodal.py: kiểm tra nguồn/thời điểm và ghép camera với số giả.
+- segment_actions.py: gom nhãn liên tiếp riêng cho từng tay.
+- process_recording.py: gọi bốn bước tự động.
+
+## Cách xác định tay
+
+Dùng nhãn Left/Right của MediaPipe, không dùng vị trí trong danh sách hoặc
+bên trái/bên phải màn hình. Thứ tự phát hiện đảo vẫn giữ lịch sử theo tay.
+Chương trình dành cho **hai tay của một người**, không nhận dạng danh tính nhiều người.
+
+Mỗi tay có tracking_status:
+- detected: có đúng một tay hợp lệ mang nhãn bên này.
+- missing: không thấy tay đó, label = NO_HAND, hand_state = NONE.
+- ambiguous: không phân biệt chắc tay (nhãn trùng, unknown, điểm lỗi...);
+  label = OTHER, hand_state = OTHER; màn hình hiện UNCERTAIN.
+
+Nếu có nhãn unknown hoặc hai tay cùng được gán Left/Right, cả hai nhánh chuyển
+ambiguous để không chọn bừa. Điểm gốc vẫn được lưu. Tay mất/không xác định sẽ
+đặt lại lịch sử; tay còn lại không bị ảnh hưởng khi vẫn xác định được.
+Khoảng cách khung >500 ms cũng đặt lại lịch sử nhận diện.
+
+Trái/phải phụ thuộc MediaPipe. Che khuất, giao nhau hoặc góc khó vẫn có thể làm
+mô hình gán sai bên; chương trình chưa bảo đảm theo dõi danh tính khi nhãn bị
+đảo sai. Các nhãn hành động là quy tắc hình bàn tay, không chứng minh công nhân
+đã cầm vật hay lắp ráp thật.
+
+## Schema v2 — thay đổi so với v1
+
+Raw: smartwear.camera_raw.v2. Chuẩn hóa: smartwear.camera.v2.
+Giữ hands là danh sách tọa độ gốc; thay action_estimate chung bằng:
+```json
+{
+  "hand_actions": {
+    "left": {
+      "label": "GRAB", "hand_state": "CLOSED",
+      "source": "camera_landmarks", "tracking_status": "detected", "hand_index": 1
+    },
+    "right": {
+      "label": "OPEN", "hand_state": "OPEN",
+      "source": "camera_landmarks", "tracking_status": "detected", "hand_index": 0
+    }
+  }
+}
 ```
 
-Pipeline dùng cùng Python đang chạy để gọi các bước, không cài thêm thư viện.
-Chỉ khởi động camera cần Python có OpenCV/MediaPipe. Bộ xử lý sau camera dùng
-thư viện chuẩn Python. Dữ liệu mô phỏng tiếp tục được ghi nguồn gốc rõ ràng.
+hand_index chỉ liên kết với hands trong cùng khung; left/right mới là nhánh
+xuyên suốt phiên. action_origin cho biết recorded_per_hand (đã ghi lúc quay)
+hay recomputed_from_legacy_landmarks (tính lại từ bản cũ).
 
-## Chạy riêng bước ghép
-
-`build_multimodal.py` tạo một dòng chung cho mỗi thời điểm: camera nhìn thấy
-bàn tay thế nào, nhãn hành động ước đoán là gì và các số cảm biến giả là bao nhiêu.
-Không cần quay lại camera. Dùng cặp file đã có cùng phiên ghi:
-
-```powershell
-cd C:\Task\smartwear-ai
-.\ai\.venv\Scripts\python.exe -B .\ai\preprocessing\build_multimodal.py --camera-file .\data\processed\camera_data_20260928_225209_301112.normalized.jsonl --sensor-file .\data\simulated\sensors_from_camera_20260928_225209_301112.jsonl --output .\data\processed\multimodal_20260928_225209_301112.jsonl
+Sensor: smartwear.sensors.v2. Một imu_head chung, và:
+```text
+hand_sensors.left  → tracking_status, imu_wrist, force_emg_raw, torque
+hand_sensors.right → tracking_status, imu_wrist, force_emg_raw, torque
 ```
 
-Nếu đầu ra đã tồn tại, đổi tên `--output`, ví dụ thêm `_run2`. Chương trình từ
-chối ghi đè, không thay đổi đầu vào. Không dùng hai file demo theo chu kỳ cũ
-`sensors_default.jsonl` / `sensors_camera_duration.jsonl` cho bước ghép này.
+Khi missing/ambiguous, các giá trị cảm biến của tay đó là null, không phải 0.
+Các số được sinh có nguồn simulated_from_camera_observations; không phải đo thật.
 
-## Dữ liệu đầu ra mới: smartwear.multimodal.v1
+Multimodal: smartwear.multimodal.v2, gồm timestamp_ms, frame_id, relative_time_s,
+camera, hands, hand_actions, action_origin, imu_head, hand_sensors và provenance.
+Chỉ ghép nếu cùng schema, cùng số dòng, timestamp tăng/khớp và SHA-256 đúng.
+Metadata ghi nguồn camera, hash cảm biến, danh sách các trường giả và số nhãn
+riêng cho mỗi tay. Không nội suy hoặc bù khung thiếu.
 
-- Giữ nguyên `frame_id`, `timestamp_ms`, `relative_time_s`, `camera`, `hands`,
-  `action_estimate` từ camera đã chuẩn hóa. `hands` là các điểm do MediaPipe
-  ước lượng từ hình ảnh thật, không phải ảnh/video được lưu trong JSONL.
-- Giữ nguyên `imu_head`, `imu_wrist`, `force_emg_raw`, `torque` từ file cảm biến.
-- Thêm `schema_version` và `provenance` ghi rõ nguồn camera, nhãn ước đoán,
-  những trường mô phỏng, cách ghép thời gian và SHA-256 của hai file đầu vào.
+force_emg_raw không có đơn vị, không phải Newton hay sóng sEMG sinh lý.
+IMU m/s² và rad/s, torque N·m và góc độ là quy ước mô phỏng.
+Timestamp sensor được sao chép từ camera, chưa đồng bộ đồng hồ phần cứng độc lập.
 
-Đây là schema mới cho bước ghép nội bộ, chưa phải Analysis Result JSON hay
-API Contract của Layer 4. Schema file camera/cảm biến cũ không đổi.
+## action_segments.json — hai dòng thời gian độc lập
 
-`force_emg_raw` không có đơn vị, không phải Newton hay sóng sEMG sinh lý.
-Gia tốc m/s², vận tốc góc rad/s, torque N·m và góc độ là quy ước mô phỏng.
-Nhãn GRAB/ASSEMBLY không chứng minh đã cầm vật/lắp ráp thật.
+Schema smartwear.action_segments.v2. Mỗi phần tử segments có:
+- hand: left hoặc right; label; tracking_status.
+- segment_id: mã đoạn trong toàn file.
+- start_frame_id / end_frame_id: khung đầu/cuối, tính cả hai.
+- frame_count: số khung trong đoạn.
+- start_ms: thời điểm khung đầu.
+- last_observed_ms: thời điểm khung cuối thực sự mang nhãn này.
+- end_ms, duration_ms: mốc cuối dùng tính thời lượng và end_ms - start_ms.
+- end_reason: label_change, data_gap, recording_end.
+- end_is_observation_limit: true nếu hết dữ liệu/gián đoạn, chưa biết thao tác
+  ngoài đời đã kết thúc chưa.
 
-## Quy tắc ghép
+Mỗi khung thuộc đúng một đoạn **trên mỗi tay**. Đổi nhãn hoặc tracking_status
+thì tách đoạn. Giữ NO_HAND/OTHER và các đoạn ngắn. Không dùng số giả để nhận diện.
+Hai tay có thể có đoạn chồng thời gian; không cộng thời lượng hai tay để tính
+thời gian làm việc của công nhân. segment_counts_by_hand thống kê từng bên.
 
-Chỉ chấp nhận hai file cùng số dòng, timestamp tăng và khớp chính xác từng dòng.
-File `.meta.json` cạnh file sensor phải xác nhận nguồn mô phỏng, SHA-256 của
-đúng file camera, số mẫu và khoảng thời gian. Có thể chỉ định metadata bằng
-`--sensor-metadata`. Không tự bù dữ liệu thiếu hoặc ghép thời điểm gần nhất.
-Mọi kiểm tra dữ liệu hoàn tất trước khi tạo đầu ra.
+Đổi nhãn bình thường: end_ms là mốc khung đầu của nhãn sau.
+Gián đoạn >500 ms: tách đoạn, chốt tại khung trước gián đoạn và ghi data_gaps.
+Đoạn cuối: chốt tại timestamp cuối, không tự cộng thời gian. Đoạn một khung ở
+cuối có duration_ms = 0 vì không có thêm thời gian quan sát.
+Có thể đổi ngưỡng khi chạy riêng segment_actions.py bằng --max-gap-ms.
 
-Timestamp cảm biến được sao chép từ camera; bước này không đồng bộ các đồng hồ
-phần cứng độc lập. Toàn bộ phiên được đọc vào bộ nhớ, phù hợp bản demo ngắn.
+## Bản ghi cũ
 
-## Xem kết quả và kiểm thử
+Các file v1 vẫn giữ nguyên. Chạy process_recording.py với raw camera cũ để tạo
+phiên v2 mới; nhãn chung cũ không bị sao chép thành nhãn của cả hai tay.
+Hành động trái/phải được tính lại từ landmarks và handedness gốc. Nếu bản cũ
+không có đủ thông tin phân biệt bên, trạng thái là ambiguous.
+
+Đọc/ghép sensor và chia đoạn v1 vẫn được hỗ trợ theo chế độ một tay cũ.
+Không ghép lẫn v1/v2; không thể suy ra số cảm biến riêng của hai tay từ file sensor
+v1. Hãy chạy lại từ bản camera gốc để tạo đầy đủ v2.
 
 ```powershell
-Get-Content .\data\processed\multimodal_20260928_225209_301112.jsonl |
-    ForEach-Object { $_ | ConvertFrom-Json } |
-    Where-Object { $_.action_estimate.label -eq 'GRAB' } |
-    Select-Object -First 5 timestamp_ms,
-        @{Name='action'; Expression={$_.action_estimate.label}},
-        force_emg_raw, @{Name='torque'; Expression={$_.torque.torque}}
+python -B .\ai\process_recording.py --input .\ai\camera_data_20260929_112902_905889.jsonl
+```
 
+## Xem kết quả
+
+Thay đường dẫn phiên dưới đây bằng đường dẫn PowerShell thông báo:
+```powershell
+$session = 'C:\Task\smartwear-ai\data\sessions\<tên phiên>'
+Get-Content "$session\multimodal.jsonl" |
+  ForEach-Object { $_ | ConvertFrom-Json } |
+  Select-Object -First 20 timestamp_ms,
+    @{Name='TayTrai'; Expression={$_.hand_actions.left.label}},
+    @{Name='TayPhai'; Expression={$_.hand_actions.right.label}}
+
+$result = Get-Content "$session\action_segments.json" -Raw | ConvertFrom-Json
+$result.segments | Format-Table hand,label,tracking_status,start_ms,end_ms,duration_ms
+```
+
+## Kiểm thử
+
+```powershell
 .\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\preprocessing -p "test_*.py" -v
+.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\sensors -p "test_*.py" -v
 ```
 
-File mẫu có 403 dòng, từ 702 đến 16737 ms. Không đổi mốc bắt đầu thành 0.
+Kiểm thử dùng điểm bàn tay mẫu, cả hai động tác đối lập, đảo thứ tự, đổi vị trí,
+mất/xuất hiện lại tay, nhãn mơ hồ, chuyển đổi dữ liệu cũ và pipeline thật qua các
+file. Chưa thay thế kiểm tra độ chính xác ngoài đời với webcam.
+Các bước xử lý dùng thư viện chuẩn Python; chỉ camera cần OpenCV/MediaPipe.

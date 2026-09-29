@@ -9,14 +9,21 @@ import hashlib
 import json
 import math
 import random
+import sys
 from collections import Counter
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "ai"))
+from hand_observation import SIDES, select_hands, validate_hand_actions
+
 AXES = ("ax", "ay", "az", "gx", "gy", "gz")
 STATES = {"OPEN", "CLOSED", "OTHER", "NONE"}
 LABELS = {"OPEN", "REACH", "GRAB", "ASSEMBLY", "RELEASE", "OTHER", "NO_HAND"}
+V2_SIMULATED_FIELDS = ["imu_head"] + [
+    f"hand_sensors.{side}.{field}" for side in SIDES
+    for field in ("imu_wrist", "force_emg_raw", "torque")]
 
 
 def validate_config(random_seed, noise_level):
@@ -35,16 +42,21 @@ def read_camera_records(path):
             timestamp = frame["timestamp_ms"]
             if type(timestamp) is not int or timestamp <= previous:
                 raise ValueError("Camera timestamps must be increasing integers")
-            estimate = frame["action_estimate"]
-            if (estimate.get("source") != "camera_landmarks"
-                    or estimate.get("hand_state") not in STATES
-                    or estimate.get("label") not in LABELS):
-                raise ValueError("Camera action estimate is missing or has unknown provenance")
+            if frame.get("schema_version") == "smartwear.camera.v2":
+                validate_hand_actions(frame.get("hand_actions"), frame.get("hands"))
+            elif frame.get("schema_version") is None:
+                estimate = frame["action_estimate"]
+                if (estimate.get("source") != "camera_landmarks"
+                        or estimate.get("hand_state") not in STATES
+                        or estimate.get("label") not in LABELS):
+                    raise ValueError("Camera action estimate is missing or has unknown provenance")
+            else:
+                raise ValueError("Unsupported camera schema; normalize the raw recording first")
             previous = timestamp
             yield frame
 
 
-def simulate_from_camera(frames, random_seed=42, noise_level=0.02):
+def _simulate_single_hand(frames, random_seed=42, noise_level=0.02):
     validate_config(random_seed, noise_level)
     rng = random.Random(random_seed)
     previous_time = None
@@ -105,13 +117,90 @@ def simulate_from_camera(frames, random_seed=42, noise_level=0.02):
         previous_wrist = wrist
 
 
+def simulate_from_camera(frames, random_seed=42, noise_level=0.02):
+    """Version 2 keeps separate state/RNG per anatomical hand; v1 stays readable."""
+    validate_config(random_seed, noise_level)
+    frames = list(frames)
+    if not frames:
+        return
+    versions = {frame.get("schema_version") for frame in frames}
+    if versions == {None}:
+        yield from _simulate_single_hand(frames, random_seed, noise_level)
+        return
+    if versions != {"smartwear.camera.v2"}:
+        raise ValueError("Mixed or unsupported camera schemas")
+    previous = -1
+    for frame in frames:
+        timestamp = frame["timestamp_ms"]
+        if type(timestamp) is not int or timestamp <= previous:
+            raise ValueError("Camera timestamps must strictly increase")
+        validate_hand_actions(frame.get("hand_actions"), frame.get("hands"))
+        previous = timestamp
+    # The single head channel has its own deterministic sequence.
+    head_frames = [{"timestamp_ms": f["timestamp_ms"], "hands": [],
+                    "action_estimate": {"label": "NO_HAND", "hand_state": "NONE"}}
+                   for f in frames]
+    rows = [{"schema_version": "smartwear.sensors.v2", "timestamp_ms": h["timestamp_ms"],
+             "imu_head": h["imu_head"], "hand_sensors": {}}
+            for h in _simulate_single_hand(head_frames, random_seed, noise_level)]
+    for side_number, side in enumerate(SIDES):
+        run = []
+
+        def flush_run():
+            if not run:
+                return
+            # A reappearing hand starts afresh, rather than inheriting force,
+            # motion, or torque from before it disappeared or from the other hand.
+            seed = random_seed + 1009 * (side_number + 1) + run[0][1]["timestamp_ms"]
+            samples = _simulate_single_hand((f for _, f in run), seed, noise_level)
+            for (index, _), sample in zip(run, samples):
+                rows[index]["hand_sensors"][side].update(
+                    {field: sample[field] for field in ("imu_wrist", "force_emg_raw", "torque")})
+            run.clear()
+
+        for index, frame in enumerate(frames):
+            action = frame["hand_actions"][side]
+            rows[index]["hand_sensors"][side] = {
+                "tracking_status": action["tracking_status"],
+                "imu_wrist": None, "force_emg_raw": None, "torque": None}
+            if run and frame["timestamp_ms"] - run[-1][1]["timestamp_ms"] > 500:
+                flush_run()
+            if action["tracking_status"] != "detected":
+                flush_run()
+                continue
+            _, hand = select_hands(frame["hands"])[side]
+            run.append((index, {"timestamp_ms": frame["timestamp_ms"],
+                                "hands": [hand], "action_estimate": action}))
+        flush_run()
+    yield from rows
+
+
 def validate_record(record):
     timestamp = record["timestamp_ms"]
     if type(timestamp) is not int or timestamp < 0:
         raise ValueError("Invalid timestamp_ms")
-    values = [record["force_emg_raw"], record["torque"]["torque"], record["torque"]["angle"]]
-    for name in ("imu_head", "imu_wrist"):
-        values.extend(record[name][axis] for axis in AXES)
+    values = [record["imu_head"][axis] for axis in AXES]
+    if record.get("schema_version") == "smartwear.sensors.v2":
+        hands = record.get("hand_sensors")
+        if not isinstance(hands, dict) or set(hands) != set(SIDES):
+            raise ValueError("Expected left and right hand_sensors")
+        for side in SIDES:
+            hand = hands[side]
+            if hand.get("tracking_status") not in ("detected", "missing", "ambiguous"):
+                raise ValueError("Invalid sensor tracking status")
+            if hand["tracking_status"] != "detected":
+                if any(hand.get(field) is not None for field in ("imu_wrist", "force_emg_raw", "torque")):
+                    raise ValueError("Unavailable hand sensors must be null")
+                continue
+            if not isinstance(hand.get("imu_wrist"), dict) or not isinstance(hand.get("torque"), dict):
+                raise ValueError("Detected hand requires sensor values")
+            values.extend(hand["imu_wrist"][axis] for axis in AXES)
+            values.extend([hand["force_emg_raw"], hand["torque"]["torque"], hand["torque"]["angle"]])
+    elif record.get("schema_version") is None:
+        values.extend(record["imu_wrist"][axis] for axis in AXES)
+        values.extend([record["force_emg_raw"], record["torque"]["torque"], record["torque"]["angle"]])
+    else:
+        raise ValueError("Unsupported sensor schema")
     if any(type(value) not in (int, float) or not math.isfinite(value) for value in values):
         raise ValueError("Sensor values must be finite numbers")
 
@@ -173,11 +262,19 @@ def main():
             "last_timestamp_ms": last,
             "random_seed": args.random_seed,
             "noise_level": args.noise_level,
-            "camera_action_counts": dict(Counter(f["action_estimate"]["label"] for f in frames)),
+            "camera_action_counts": (dict(Counter(f["action_estimate"]["label"] for f in frames))
+                                     if frames[0].get("schema_version") is None else {}),
             "simulated_fields": ["imu_head", "imu_wrist", "force_emg_raw", "torque"],
             "time_note": "Timestamps copied from camera frames, not independently synchronized clocks",
             "unit_note": "IMU m/s^2 and rad/s, torque N*m and degrees are simulator assumptions; force_emg_raw is unitless",
         }
+        metadata["sensors_sha256"] = hashlib.sha256(args.output.read_bytes()).hexdigest()
+        if frames[0].get("schema_version") == "smartwear.camera.v2":
+            metadata["schema_version"] = "smartwear.sensors_meta.v2"
+            metadata["simulated_fields"] = V2_SIMULATED_FIELDS
+            metadata["camera_action_counts"] = {
+                side: dict(Counter(f["hand_actions"][side]["label"] for f in frames))
+                for side in SIDES}
         with metadata_path.open("x", encoding="utf-8") as stream:
             json.dump(metadata, stream, ensure_ascii=False, indent=2)
     except (OSError, ValueError, KeyError, TypeError) as exc:

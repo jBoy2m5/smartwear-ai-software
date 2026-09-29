@@ -25,6 +25,7 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
     normalized = session / "camera.normalized.jsonl"
     sensors = session / "sensors.jsonl"
     combined = session / "multimodal.jsonl"
+    segments = session / "action_segments.json"
     steps = [
         ("Chuan hoa camera", AI_DIR / "preprocessing" / "normalize_camera.py",
          ["--input", camera_file, "--output", normalized]),
@@ -32,10 +33,12 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
          ["--camera-file", normalized, "--output", sensors]),
         ("Ghep du lieu multimodal", AI_DIR / "preprocessing" / "build_multimodal.py",
          ["--camera-file", normalized, "--sensor-file", sensors, "--output", combined]),
+        ("Chia doan hanh dong", AI_DIR / "preprocessing" / "segment_actions.py",
+         ["--input", combined, "--output", segments]),
     ]
     print(f"Thu muc ket qua: {session}", flush=True)
     for number, (name, script, args) in enumerate(steps, 1):
-        print(f"[{number}/3] {name}...", flush=True)
+        print(f"[{number}/{len(steps)}] {name}...", flush=True)
         result = subprocess.run(
             [sys.executable, "-B", str(script), *map(str, args)],
             capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -45,6 +48,7 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
                                f"File camera van duoc giu tai: {camera_file}\n"
                                f"Ket qua chua hoan tat: {session}")
     print(f"HOAN TAT. File ket qua: {combined}", flush=True)
+    print(f"Cac doan hanh dong: {segments}", flush=True)
     print("IMU, luc/EMG va torque la so mo phong.", flush=True)
     return combined
 

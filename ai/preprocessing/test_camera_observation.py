@@ -43,15 +43,18 @@ class CameraObservationTests(unittest.TestCase):
             output = Path(directory) / "normalized.jsonl"
             frames = [
                 {"timestamp": i * 50, "camera": {"frame_width": 640, "frame_height": 480},
-                 "hands": [{"landmarks": fake_hand(closed=i >= 3)}]}
+                 "hands": [{"hand_index": 0, "handedness": "Right",
+                            "landmarks": fake_hand(closed=i >= 3)}]}
                 for i in range(6)
             ]
             raw.write_text("".join(json.dumps(f) + "\n" for f in frames), encoding="utf-8")
             before = raw.read_bytes()
             self.assertEqual(normalize_camera_data(raw, output), 6)
             rows = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
-            self.assertEqual(rows[2]["action_estimate"]["hand_state"], "OPEN")
-            self.assertEqual(rows[5]["action_estimate"]["label"], "GRAB")
+            self.assertEqual(rows[2]["hand_actions"]["right"]["hand_state"], "OPEN")
+            self.assertEqual(rows[5]["hand_actions"]["right"]["label"], "GRAB")
+            self.assertEqual(rows[5]["hand_actions"]["left"]["label"], "NO_HAND")
+            self.assertEqual(rows[5]["action_origin"], "recomputed_from_legacy_landmarks")
             self.assertEqual(raw.read_bytes(), before)
             with self.assertRaises(FileExistsError):
                 normalize_camera_data(raw, output)
