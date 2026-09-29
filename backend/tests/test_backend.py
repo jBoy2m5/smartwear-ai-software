@@ -90,6 +90,7 @@ class BackendIntegrationTests(unittest.TestCase):
             pdf_dir=self.test_root / "static" / "pdf",
             keyframe_dir=self.test_root / "static" / "images",
             dataset_dir=self.test_root / "static" / "dataset",
+            max_page_size=50,
         )
         self.app = create_app(self.settings)
         self.client = TestClient(self.app)
@@ -108,6 +109,47 @@ class BackendIntegrationTests(unittest.TestCase):
     def test_health_and_readiness(self) -> None:
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/ready").json(), {"status": "ready"})
+
+    def test_openapi_contract_and_static_serving(self) -> None:
+        openapi = self.client.get("/openapi.json")
+        self.assertEqual(openapi.status_code, 200)
+        required = set(openapi.json()["components"]["schemas"]["SessionInput"]["required"])
+        self.assertEqual(
+            required,
+            {
+                "session_id",
+                "worker_type",
+                "key_frames",
+                "action_phases",
+                "dtw_metrics",
+                "robot_trajectory_points",
+            },
+        )
+
+        probe = self.settings.static_dir / "acceptance.txt"
+        probe.write_text("static-ok", encoding="ascii")
+        response = self.client.get("/static/acceptance.txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, "static-ok")
+
+    def test_runtime_page_limit_is_enforced(self) -> None:
+        allowed = self.client.get("/api/v1/sessions/?limit=50")
+        rejected = self.client.get("/api/v1/sessions/?limit=51")
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(rejected.status_code, 422)
+
+    def test_unexpected_errors_return_safe_json(self) -> None:
+        @self.app.get("/_acceptance/unhandled")
+        def raise_unhandled() -> None:
+            raise RuntimeError("sensitive implementation detail")
+
+        self.client.close()
+        self.client = TestClient(self.app, raise_server_exceptions=False)
+        self.client.__enter__()
+        response = self.client.get("/_acceptance/unhandled")
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {"detail": "Internal server error"})
+        self.assertNotIn("sensitive", response.text)
 
     def test_ingest_is_idempotent_and_normalized(self) -> None:
         first = self.ingest()
@@ -153,6 +195,9 @@ class BackendIntegrationTests(unittest.TestCase):
     def test_sop_and_robot_outputs_are_downloadable(self) -> None:
         self.ingest()
         sop = self.client.get("/api/v1/sessions/CYCLE_DENSO_001/download-sop")
+        sop_html = self.client.get(
+            "/api/v1/sessions/CYCLE_DENSO_001/download-sop?format=html"
+        )
         robot_json = self.client.get(
             "/api/v1/sessions/CYCLE_DENSO_001/export-rosbag?format=json"
         )
@@ -161,6 +206,8 @@ class BackendIntegrationTests(unittest.TestCase):
             "/api/v1/sessions/CYCLE_DENSO_001/export-rosbag?format=rosbag"
         )
         self.assertTrue(sop.content.startswith(b"%PDF"))
+        self.assertIn("text/html", sop_html.headers["content-type"])
+        self.assertIn("Standard Operating Procedure", sop_html.text)
         self.assertEqual(len(robot_json.json()["topics"]), 2)
         self.assertTrue(db3.content.startswith(b"SQLite format 3"))
         with zipfile.ZipFile(io.BytesIO(archive.content)) as rosbag:

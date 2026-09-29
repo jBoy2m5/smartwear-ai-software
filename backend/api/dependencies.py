@@ -31,7 +31,11 @@ class SessionServicePort(Protocol):
 
     def dashboard_charts(self, *, limit: int) -> DashboardCharts: ...
 
-    def get_sop_path(self, session_id: str) -> Path: ...
+    def get_sop_path(
+        self,
+        session_id: str,
+        output_format: Literal["pdf", "html"],
+    ) -> Path: ...
 
     def get_robot_export_path(
         self,
@@ -59,4 +63,15 @@ def get_session_service(request: Request) -> SessionServicePort:
             detail="Session service is not initialized",
         )
     return service
+
+
+def enforce_page_limit(request: Request, limit: int) -> int:
+    """Validate pagination against the settings of the active app instance."""
+    settings: Settings = request.app.state.settings
+    if limit > settings.max_page_size:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"limit must be less than or equal to {settings.max_page_size}",
+        )
+    return limit
 

@@ -144,13 +144,16 @@ class SessionService:
             ]
         return DashboardCharts(points=points)
 
-    def get_sop_path(self, session_id: str) -> Path:
+    def get_sop_path(
+        self,
+        session_id: str,
+        output_format: Literal["pdf", "html"] = "pdf",
+    ) -> Path:
         """Resolve an existing generated SOP file."""
         self._require_session(session_id)
-        for suffix in (".pdf", ".html"):
-            candidate = self.settings.pdf_dir / f"sop_{session_id}{suffix}"
-            if candidate.is_file():
-                return candidate
+        candidate = self.settings.pdf_dir / f"sop_{session_id}.{output_format}"
+        if candidate.is_file():
+            return candidate
         raise ArtifactNotFoundError(f"SOP artifact for '{session_id}' was not found")
 
     def get_robot_export_path(

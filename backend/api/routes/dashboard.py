@@ -2,11 +2,10 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, Request
 
 from backend.api.auth import require_api_key
-from backend.api.dependencies import SessionServicePort, get_session_service
-from backend.core.config import get_settings
+from backend.api.dependencies import SessionServicePort, enforce_page_limit, get_session_service
 from backend.schemas import DashboardCharts, DashboardSummary, PaginatedSessions, SessionDetail
 
 
@@ -24,11 +23,13 @@ router = APIRouter(
 
 @router.get("/history", response_model=PaginatedSessions)
 def history(
+    request: Request,
     service: Service,
-    limit: int = Query(default=25, ge=1, le=get_settings().max_page_size),
+    limit: int = Query(default=25, ge=1, le=1_000),
     offset: int = Query(default=0, ge=0),
 ) -> PaginatedSessions:
     """Return paginated analysis history for dashboard tables."""
+    enforce_page_limit(request, limit)
     return service.list_sessions(limit=limit, offset=offset)
 
 
@@ -52,9 +53,11 @@ def kpis(service: Service) -> DashboardSummary:
 
 @router.get("/charts", response_model=DashboardCharts)
 def charts(
+    request: Request,
     service: Service,
-    limit: int = Query(default=50, ge=1, le=get_settings().max_page_size),
+    limit: int = Query(default=50, ge=1, le=1_000),
 ) -> DashboardCharts:
     """Return chronological similarity and muda chart series."""
+    enforce_page_limit(request, limit)
     return service.dashboard_charts(limit=limit)
 

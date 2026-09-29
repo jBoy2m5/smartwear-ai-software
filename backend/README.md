@@ -41,7 +41,8 @@ backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload
 ```
 
 The service listens on `http://127.0.0.1:8000`. Interactive OpenAPI documentation
-is available at `http://127.0.0.1:8000/docs`.
+is available at `http://127.0.0.1:8000/docs`, ReDoc at `/redoc`, and the generated
+OpenAPI document at `/openapi.json`.
 
 ## Configuration
 
@@ -53,11 +54,15 @@ complete example.
 | `SMARTWEAR_ENVIRONMENT` | `development` | `development`, `test`, or `production` |
 | `SMARTWEAR_API_PREFIX` | `/api/v1` | REST API prefix |
 | `SMARTWEAR_DATABASE_URL` | SQLite under `backend/data` | SQLAlchemy database URL |
-| `SMARTWEAR_ARTIFACT_DIR` | `backend/artifacts` | SOP and robot export directory |
-| `SMARTWEAR_KEYFRAME_DIR` | `backend/data/keyframes` | Uploaded keyframe directory |
+| `SMARTWEAR_STATIC_DIR` | `backend/static` | Root mounted at `/static` |
+| `SMARTWEAR_PDF_DIR` | `backend/static/pdf` | Generated SOP PDF directory |
+| `SMARTWEAR_KEYFRAME_DIR` | `backend/static/images` | Uploaded keyframe directory |
+| `SMARTWEAR_DATASET_DIR` | `backend/static/dataset` | JSON and ROS2 export directory |
 | `SMARTWEAR_CORS_ORIGINS` | local frontend origins | JSON array or comma-separated origins |
 | `SMARTWEAR_API_KEY` | unset | Required in production |
 | `SMARTWEAR_LOG_LEVEL` | `INFO` | Backend log level |
+| `SMARTWEAR_MAX_PAGE_SIZE` | `100` | Maximum REST collection page size |
+| `SMARTWEAR_MAX_KEYFRAME_BYTES` | `10485760` | Maximum keyframe upload size |
 
 When an API key is configured, REST clients send `X-API-Key`; WebSocket clients use
 the `api_key` query parameter.
@@ -70,10 +75,15 @@ the `api_key` query parameter.
 | `GET` | `/api/v1/sessions/` | List sessions with offset pagination |
 | `GET` | `/api/v1/sessions/dashboard/summary` | Aggregate operational metrics |
 | `GET` | `/api/v1/sessions/{session_id}` | Return a complete session |
-| `GET` | `/api/v1/sessions/{session_id}/download-sop` | Download SOP PDF |
+| `GET` | `/api/v1/sessions/{session_id}/download-sop` | Download SOP as `pdf` or `html` |
 | `GET` | `/api/v1/sessions/{session_id}/export-rosbag` | Download `json`, `db3`, or `rosbag` |
 | `PUT` | `/api/v1/sessions/{session_id}/keyframes/{filename}` | Upload a declared image |
 | `GET` | `/api/v1/sessions/{session_id}/keyframes/{filename}` | Download an image |
+| `GET` | `/api/v1/dashboard/history` | Paginated dashboard history |
+| `GET` | `/api/v1/dashboard/sessions/{session_id}` | Dashboard session detail |
+| `GET` | `/api/v1/dashboard/statistics` | Aggregate dashboard statistics |
+| `GET` | `/api/v1/dashboard/kpis` | Current dashboard KPI snapshot |
+| `GET` | `/api/v1/dashboard/charts` | Chronological dashboard chart data |
 | `GET` | `/health` | Process liveness |
 | `GET` | `/ready` | Application readiness |
 
@@ -151,10 +161,12 @@ The container runs as a non-root user. Production startup fails fast when
 
 - `backend/data/smartwear.db`: normalized SQLite database
 - `backend/data/keyframes/{session_id}`: validated keyframe images
-- `backend/artifacts/sop_{session_id}.pdf`: SOP report
-- `backend/artifacts/robot_dataset_{session_id}.json`: portable robot dataset
-- `backend/artifacts/rosbag_{session_id}.db3`: ROS2 SQLite bag
-- `backend/artifacts/rosbag_{session_id}.zip`: bag DB3 plus `metadata.yaml`
+- `backend/static/pdf/sop_{session_id}.pdf`: printable SOP report
+- `backend/static/pdf/sop_{session_id}.html`: standalone HTML SOP report
+- `backend/static/images/{session_id}/`: validated keyframe images
+- `backend/static/dataset/robot_dataset_{session_id}.json`: portable robot dataset
+- `backend/static/dataset/rosbag_{session_id}.db3`: ROS2 SQLite bag
+- `backend/static/dataset/rosbag_{session_id}.zip`: bag DB3 plus `metadata.yaml`
 
 These runtime directories are ignored by Git and remain inside the backend boundary.
 

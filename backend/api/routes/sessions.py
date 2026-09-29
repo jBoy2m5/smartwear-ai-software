@@ -8,8 +8,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
 from fastapi.responses import FileResponse
 
 from backend.api.auth import require_api_key
-from backend.api.dependencies import SessionServicePort, get_session_service
-from backend.core.config import get_settings
+from backend.api.dependencies import SessionServicePort, enforce_page_limit, get_session_service
 from backend.schemas import (
     DashboardSummary,
     DashboardUpdate,
@@ -66,11 +65,13 @@ async def ingest_session(
 
 @router.get("/", response_model=PaginatedSessions)
 def list_sessions(
+    request: Request,
     service: Service,
-    limit: int = Query(default=25, ge=1, le=get_settings().max_page_size),
+    limit: int = Query(default=25, ge=1, le=1_000),
     offset: int = Query(default=0, ge=0),
 ) -> PaginatedSessions:
     """List persisted sessions in descending update order."""
+    enforce_page_limit(request, limit)
     return service.list_sessions(limit=limit, offset=offset)
 
 
@@ -87,9 +88,13 @@ def get_session(session_id: SessionId, service: Service) -> SessionDetail:
 
 
 @router.get("/{session_id}/download-sop", response_class=FileResponse)
-def download_sop(session_id: SessionId, service: Service) -> FileResponse:
+def download_sop(
+    session_id: SessionId,
+    service: Service,
+    output_format: Literal["pdf", "html"] = Query(default="pdf", alias="format"),
+) -> FileResponse:
     """Download the generated SOP report."""
-    path = service.get_sop_path(session_id)
+    path = service.get_sop_path(session_id, output_format)
     media_type = "application/pdf" if path.suffix.lower() == ".pdf" else "text/html"
     return FileResponse(path, media_type=media_type, filename=path.name)
 

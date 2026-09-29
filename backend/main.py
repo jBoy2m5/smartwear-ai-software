@@ -1,6 +1,7 @@
 """ASGI application entry point."""
 
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +23,9 @@ from backend.db import build_database
 from backend.services import RobotDatasetExporter, SessionService, SopGenerator
 from backend.websocket import router as websocket_router
 from backend.websocket.manager import ConnectionManager
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -82,7 +86,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(InvalidKeyFrameError)
     async def handle_invalid_keyframe(_: Request, exc: InvalidKeyFrameError) -> JSONResponse:
-        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": str(exc)})
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": str(exc)},
+        )
 
     @application.exception_handler(BackendError)
     async def handle_backend_error(_: Request, exc: BackendError) -> JSONResponse:
@@ -92,6 +99,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             else status.HTTP_500_INTERNAL_SERVER_ERROR
         )
         return JSONResponse(status_code=status_code, content={"detail": str(exc)})
+
+    @application.exception_handler(Exception)
+    async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+        """Log unexpected failures and return a stable, non-sensitive response."""
+        logger.error(
+            "Unhandled backend error method=%s path=%s",
+            request.method,
+            request.url.path,
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error"},
+        )
 
     @application.get("/health", tags=["System"])
     def health() -> dict[str, str]:
