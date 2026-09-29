@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.env
+.venv/
+data/
+static/pdf/*
+!static/pdf/.gitkeep
+static/images/*
+!static/images/.gitkeep
+static/dataset/*
+!static/dataset/.gitkeep
+.test_*/
+

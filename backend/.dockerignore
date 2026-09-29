@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.coverage
+.env
+.venv/
+.gitignore
+.pytest_cache/
+.test_*/
+data/
+static/pdf/*
+static/images/*
+static/dataset/*
+tests/
+
