@@ -2,8 +2,12 @@ import cv2
 import mediapipe as mp
 import json
 import time
+from datetime import datetime
 from pathlib import Path
 from urllib.request import urlretrieve
+
+from hand_observation import HandActionDetector, observation
+from process_recording import process_recording
 
 
 # ============================================================
@@ -17,8 +21,10 @@ MODEL_URL = (
     "hand_landmarker.task"
 )
 
-MODEL_PATH = Path("hand_landmarker.task")
-OUTPUT_FILE = Path("camera_data.jsonl")
+SCRIPT_DIR = Path(__file__).resolve().parent
+MODEL_PATH = SCRIPT_DIR / "hand_landmarker.task"
+# Save each recording separately so earlier camera data is not overwritten.
+OUTPUT_FILE = SCRIPT_DIR / f"camera_data_{datetime.now():%Y%m%d_%H%M%S_%f}.jsonl"
 
 
 # ============================================================
@@ -107,11 +113,14 @@ with HandLandmarker.create_from_options(
 
     with open(
         OUTPUT_FILE,
-        "w",
+        "x",
         encoding="utf-8"
     ) as file:
 
         start_time = time.perf_counter()
+        action_detector = HandActionDetector()
+        previous_action = None
+        previous_timestamp_ms = -1
 
         while True:
 
@@ -149,6 +158,8 @@ with HandLandmarker.create_from_options(
                     - start_time
                 ) * 1000
             )
+            timestamp_ms = max(previous_timestamp_ms + 1, timestamp_ms)
+            previous_timestamp_ms = timestamp_ms
 
 
             # =================================================
@@ -315,6 +326,14 @@ with HandLandmarker.create_from_options(
                         world_landmarks
                 })
 
+            # Save camera-derived action and hand state alongside the landmarks.
+            primary_hand = frame_data["hands"][0]["landmarks"] if frame_data["hands"] else None
+            action_label = action_detector.update(timestamp_ms, primary_hand)
+            frame_data["action_estimate"] = observation(action_label, action_detector.pose)
+            if action_label != previous_action:
+                print(f"{timestamp_ms / 1000:.2f}s  {action_label}")
+                previous_action = action_label
+
 
             # =================================================
             # Save JSONL
@@ -383,6 +402,16 @@ with HandLandmarker.create_from_options(
                 2
             )
 
+            cv2.putText(
+                frame,
+                f"Action: {action_label}",
+                (20, 155),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.85,
+                (0, 255, 255),
+                2
+            )
+
 
             cv2.imshow(
                 "SmartWear AI - Camera",
@@ -410,3 +439,12 @@ print("Da dung camera.")
 print(
     f"Da luu du lieu vao: {OUTPUT_FILE}"
 )
+
+# The camera file is closed and the device released before processing begins.
+try:
+    process_recording(OUTPUT_FILE)
+except (OSError, ValueError, RuntimeError) as exc:
+    print(f"Khong hoan tat xu ly tu dong: {exc}")
+    print("Co the thu lai bang lenh:")
+    print(f'python -B "{SCRIPT_DIR / "process_recording.py"}" --input "{OUTPUT_FILE}"')
+    raise SystemExit(1)
