@@ -1,15 +1,18 @@
 """Capture two hands, save independent actions, then run the session pipeline."""
 
 import json
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
 from urllib.request import urlretrieve
 
 from hand_observation import SIDES, TwoHandActionDetector
-from process_recording import process_recording
+from process_recording import DEFAULT_OUTPUT_ROOT, process_recording
+from video_recording import RecordingVideo
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+SESSION_ROOT = DEFAULT_OUTPUT_ROOT
 MODEL_PATH = SCRIPT_DIR / "hand_landmarker.task"
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/"
              "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task")
@@ -70,10 +73,18 @@ def record_camera():
         min_hand_detection_confidence=0.5, min_hand_presence_confidence=0.5,
         min_tracking_confidence=0.5)
     camera = cv2.VideoCapture(0)
-    output = SCRIPT_DIR / f"camera_data_{datetime.now():%Y%m%d_%H%M%S_%f}.jsonl"
+    output = None
+    video = None
     try:
         if not camera.isOpened():
             raise RuntimeError("Khong mo duoc camera.")
+        SESSION_ROOT.mkdir(parents=True, exist_ok=True)
+        session = Path(tempfile.mkdtemp(
+            prefix=f"camera_data_{datetime.now():%Y%m%d_%H%M%S_%f}_",
+            dir=SESSION_ROOT))
+        output = session / "camera.jsonl"
+        video = RecordingVideo(output, cv2)
+        print(f"Thu muc phien: {session}")
         print("Camera da mo. LEFT = tay trai, RIGHT = tay phai. Nhan Q de dung.")
         with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker, \
                 output.open("x", encoding="utf-8", newline="\n") as stream:
@@ -93,6 +104,8 @@ def record_camera():
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 result = landmarker.detect_for_video(image, timestamp)
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0], detector)
+                # Save the same mirrored image used by MediaPipe, before drawing UI.
+                data["video_frame_index"] = video.write(frame)
                 stream.write(json.dumps(data, ensure_ascii=False, allow_nan=False) + "\n")
                 stream.flush()
                 current = tuple((data["hand_actions"][side]["label"],
@@ -105,9 +118,14 @@ def record_camera():
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     finally:
+        if video is not None:
+            video.close()
         camera.release()
         cv2.destroyAllWindows()
+    manifest = video.save_manifest()
     print(f"Da luu du lieu camera: {output}")
+    if manifest:
+        print(f"Da luu video: {video.video_file}")
     return output
 
 
@@ -117,7 +135,7 @@ def main():
     except (OSError, RuntimeError, ValueError, ImportError) as exc:
         raise SystemExit(f"Loi camera: {exc}") from exc
     try:
-        process_recording(output)
+        process_recording(output, output_root=SESSION_ROOT, session_dir=output.parent)
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"Khong hoan tat xu ly tu dong: {exc}")
         print(f'Thu lai: python -B "{SCRIPT_DIR / "process_recording.py"}" --input "{output}"')

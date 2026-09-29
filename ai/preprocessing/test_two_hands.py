@@ -56,7 +56,22 @@ class TwoHandTests(unittest.TestCase):
         device = SimpleNamespace(isOpened=lambda: True, read=lambda: (True, frame),
                                  release=lambda: events.append("released"))
         keys = iter((0, 0, ord("q")))
+        class Writer:
+            def __init__(self, path):
+                self.path = Path(path)
+
+            def isOpened(self):
+                return True
+
+            def write(self, image):
+                pass
+
+            def release(self):
+                self.path.write_bytes(b"mock video bytes")
+
         cv = SimpleNamespace(VideoCapture=lambda index: device, flip=lambda f, axis: f,
+                             VideoWriter=lambda path, *args: Writer(path),
+                             VideoWriter_fourcc=lambda *args: 1,
                              cvtColor=lambda f, mode: f, COLOR_BGR2RGB=1,
                              FONT_HERSHEY_SIMPLEX=0, circle=lambda *args: None,
                              putText=lambda *args: None, imshow=lambda *args: None,
@@ -84,12 +99,20 @@ class TwoHandTests(unittest.TestCase):
             model.write_text("test double")
             with patch.dict(sys.modules, {"cv2": cv, "mediapipe": mp}), \
                     patch.object(camera_test, "SCRIPT_DIR", root), \
+                    patch.object(camera_test, "SESSION_ROOT", root / "sessions"), \
                     patch.object(camera_test, "MODEL_PATH", model):
                 output = camera_test.record_camera()
+            self.assertEqual(output.name, "camera.jsonl")
+            self.assertEqual(output.parent.parent, root / "sessions")
             rows = [json.loads(line) for line in output.read_text().splitlines()]
             self.assertEqual(len(rows), 3)
             self.assertEqual(rows[-1]["hand_actions"]["left"]["label"], "GRAB")
             self.assertEqual(rows[-1]["hand_actions"]["right"]["label"], "OPEN")
+            self.assertEqual([r["video_frame_index"] for r in rows], [0, 1, 2])
+            manifest = json.loads(output.with_suffix(".video.json").read_text())
+            self.assertEqual(manifest["frame_count"], 3)
+            self.assertEqual(manifest["video_file"], output.with_suffix(".avi").name)
+            self.assertEqual(output.with_suffix(".avi").parent, output.parent)
             self.assertEqual(events, ["landmarker_closed", "released", "closed"])
 
     def test_opposite_actions_and_order_changes_keep_identity(self):
@@ -220,6 +243,8 @@ class TwoHandTests(unittest.TestCase):
                 self.assertEqual(row["hands"], camera["hands"])
                 self.assertEqual(row["timestamp_ms"], camera["timestamp"])
             doc = json.loads(combined.with_name("action_segments.json").read_text())
+            keyframes = json.loads(combined.with_name("keyframes.json").read_text())
+            self.assertEqual(keyframes["status"], "skipped_no_video")
             self.assertEqual(doc["schema_version"], "smartwear.action_segments.v2")
             for side in SIDES:
                 segments = [s for s in doc["segments"] if s["hand"] == side]

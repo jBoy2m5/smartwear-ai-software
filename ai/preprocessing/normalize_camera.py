@@ -49,6 +49,10 @@ def normalize_camera_data(input_path, output_path):
                 "hand_actions": actions,
                 "action_origin": "recorded_per_hand" if version else "recomputed_from_legacy_landmarks",
             }
+            if "video_frame_index" in data:
+                if type(data["video_frame_index"]) is not int or data["video_frame_index"] != frame_id:
+                    raise ValueError("Video frame indices must match the camera row sequence")
+                normalized["video_frame_index"] = data["video_frame_index"]
             target.write(json.dumps(normalized, ensure_ascii=False, allow_nan=False) + "\n")
             previous_ms = timestamp_ms
             frame_id += 1
@@ -62,7 +66,7 @@ def main():
     parser.add_argument("--input", type=Path, default=ROOT / "ai" / "camera_data.jsonl")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    output = args.output or ROOT / "data" / "processed" / f"{args.input.stem}.normalized.jsonl"
+    output = args.output or ROOT / "ai" / "generated_data" / "processed" / f"{args.input.stem}.normalized.jsonl"
     try:
         count = normalize_camera_data(args.input, output)
     except (OSError, ValueError, KeyError, TypeError) as exc:

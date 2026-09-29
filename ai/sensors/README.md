@@ -6,7 +6,7 @@ cd C:\Task\smartwear-ai
 python -B .\ai\camera_test.py
 ```
 Nhấn Q: phần xử lý tự tạo sensors.jsonl và sensors.meta.json trong thư mục
-C:\Task\smartwear-ai\data\sessions\<tên phiên>.
+C:\Task\smartwear-ai\ai\generated_data\sessions\<tên phiên>.
 
 ## Dữ liệu mới (v2)
 
@@ -31,13 +31,13 @@ N·m và góc độ chỉ là quy ước của mô phỏng, chưa hiệu chuẩn
 File .meta.json ghi schema_version, SHA-256 camera/cảm biến, seed, noise_level,
 số mẫu, khoảng thời gian, số lượng nhãn riêng từng tay và simulated_fields.
 Cùng dữ liệu/cấu hình/seed sinh lại kết quả nhất quán trong môi trường hiện tại.
-Các file cũ data/simulated/sensors_default.jsonl và sensors_camera_duration.jsonl
+Các file cũ ai/generated_data/simulated/sensors_default.jsonl và sensors_camera_duration.jsonl
 là demo theo lịch cố định; không dùng để ghép với bản camera mới.
 
 ## Chạy riêng nếu cần
 
 ```powershell
-.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file .\data\sessions\<tên phiên>\camera.normalized.jsonl --output .\data\simulated\sensors_new.jsonl
+.\ai\.venv\Scripts\python.exe -B .\ai\sensors\simulate_sensors.py --camera-file .\ai\generated_data\sessions\<tên phiên>\camera.normalized.jsonl --output .\ai\generated_data\simulated\sensors_new.jsonl
 ```
 
 Đổi đường dẫn <tên phiên> thành thư mục thực tế. Không ghi đè đầu ra.

@@ -1,20 +1,20 @@
 {
   "source": "simulated_from_camera_observations",
-  "camera_file": "C:\\Task\\smartwear-ai\\data\\sessions\\camera_data_20260928_232738_214687_z_l0k1ci\\camera.normalized.jsonl",
-  "camera_sha256": "327979fde305762bb6baa37fdd8dbcd6e86e29f8cef1157749f9804ed79709f3",
-  "sample_count": 202,
-  "first_timestamp_ms": 699,
-  "last_timestamp_ms": 10185,
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\processed\\camera_data_20260928_225209_301112.normalized.jsonl",
+  "camera_sha256": "a1c7900125ee3345251afef59f015264d4048fd99e8ca93081fd737cb9a1bac1",
+  "sample_count": 403,
+  "first_timestamp_ms": 702,
+  "last_timestamp_ms": 16737,
   "random_seed": 42,
   "noise_level": 0.02,
   "camera_action_counts": {
-    "NO_HAND": 25,
+    "NO_HAND": 264,
     "OTHER": 2,
-    "OPEN": 35,
-    "REACH": 6,
-    "GRAB": 48,
-    "RELEASE": 41,
-    "ASSEMBLY": 45
+    "OPEN": 16,
+    "REACH": 8,
+    "GRAB": 78,
+    "RELEASE": 28,
+    "ASSEMBLY": 7
   },
   "simulated_fields": [
     "imu_head",

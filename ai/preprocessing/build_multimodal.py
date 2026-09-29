@@ -103,6 +103,10 @@ def build_multimodal(camera_path, sensor_path, output_path, metadata_path=None):
             row["provenance"].pop("action_estimate")
             row["provenance"].update(hand_actions="camera_landmarks_heuristic",
                                       hand_identity="mediapipe_handedness")
+        if "video_frame_index" in frame:
+            if type(frame["video_frame_index"]) is not int or frame["video_frame_index"] != index:
+                raise ValueError("Invalid camera/video frame mapping")
+            row["video_frame_index"] = frame["video_frame_index"]
         encoded.append(json.dumps(row, ensure_ascii=False, allow_nan=False))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

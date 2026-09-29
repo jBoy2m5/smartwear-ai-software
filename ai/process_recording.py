@@ -1,16 +1,17 @@
 """Run the complete offline pipeline for the exact camera file just recorded."""
 
 import argparse
+import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 AI_DIR = Path(__file__).resolve().parent
-DEFAULT_OUTPUT_ROOT = AI_DIR.parent / "data" / "sessions"
+DEFAULT_OUTPUT_ROOT = AI_DIR / "generated_data" / "sessions"
 
 
-def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
+def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT, session_dir=None):
     camera_file = Path(camera_file).resolve()
     if not camera_file.is_file():
         raise FileNotFoundError(f"Khong tim thay file camera: {camera_file}")
@@ -20,12 +21,18 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
 
     output_root = Path(output_root).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
-    # Every processing attempt is isolated, including retries after a failure.
-    session = Path(tempfile.mkdtemp(prefix=camera_file.stem + "_", dir=output_root))
+    if session_dir is None:
+        # Manual retries of older recordings get a fresh session; never overwrite.
+        session = Path(tempfile.mkdtemp(prefix=camera_file.stem + "_", dir=output_root))
+    else:
+        session = Path(session_dir).resolve()
+        if not session.is_dir() or session != camera_file.parent or session.parent != output_root:
+            raise ValueError("Session must be the camera file's directory inside output_root")
     normalized = session / "camera.normalized.jsonl"
     sensors = session / "sensors.jsonl"
     combined = session / "multimodal.jsonl"
     segments = session / "action_segments.json"
+    keyframes = session / "keyframes.json"
     steps = [
         ("Chuan hoa camera", AI_DIR / "preprocessing" / "normalize_camera.py",
          ["--input", camera_file, "--output", normalized]),
@@ -35,6 +42,9 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
          ["--camera-file", normalized, "--sensor-file", sensors, "--output", combined]),
         ("Chia doan hanh dong", AI_DIR / "preprocessing" / "segment_actions.py",
          ["--input", combined, "--output", segments]),
+        ("Trich anh tieu bieu", AI_DIR / "preprocessing" / "extract_keyframes.py",
+         ["--camera-file", camera_file, "--multimodal-file", combined,
+          "--segments-file", segments, "--output", keyframes]),
     ]
     print(f"Thu muc ket qua: {session}", flush=True)
     for number, (name, script, args) in enumerate(steps, 1):
@@ -49,6 +59,12 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT):
                                f"Ket qua chua hoan tat: {session}")
     print(f"HOAN TAT. File ket qua: {combined}", flush=True)
     print(f"Cac doan hanh dong: {segments}", flush=True)
+    keyframe_result = json.loads(keyframes.read_text(encoding="utf-8"))
+    if keyframe_result["status"] == "skipped_no_video":
+        print("Ban ghi cu khong co video: chua co anh tieu bieu.", flush=True)
+    else:
+        print(f"Anh tieu bieu: {keyframes.with_suffix('')} ({keyframe_result['extracted_count']} anh)", flush=True)
+    print(f"Danh sach anh: {keyframes}", flush=True)
     print("IMU, luc/EMG va torque la so mo phong.", flush=True)
     return combined
 

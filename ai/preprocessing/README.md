@@ -9,21 +9,34 @@ python -B .\ai\camera_test.py
 
 Camera hiện hai dòng riêng: LEFT (tay trái) và RIGHT (tay phải).
 Một tay có thể GRAB trong khi tay kia OPEN hoặc REACH. Nhấn Q để dừng.
-Chương trình tự chạy: chuẩn hóa → cảm biến giả → multimodal → chia đoạn từng tay.
+Chương trình tự chạy: chuẩn hóa → cảm biến giả → multimodal → chia đoạn từng tay
+→ trích ảnh tiêu biểu.
 
-Mỗi lần xử lý có thư mục riêng:
+Ngay khi camera mở, chương trình tạo một thư mục phiên và ghi cả ba file gốc
+`camera.jsonl`, `camera.avi`, `camera.video.json` trực tiếp trong thư mục đó.
+Video chứa hình đã lật gương
+giống hình MediaPipe phân tích, không có chữ hoặc điểm vẽ lên. Mỗi dòng JSONL
+có `video_frame_index`: số thứ tự đúng của hình trong video, bắt đầu từ 0.
+
+Mỗi lần quay và xử lý dùng chung một thư mục riêng:
 ```text
-C:\Task\smartwear-ai\data\sessions\camera_data_<ngày giờ>_<mã riêng>\
+C:\Task\smartwear-ai\ai\generated_data\sessions\camera_data_<ngày giờ>_<mã riêng>\
+    camera.jsonl             ← bàn tay, nhãn, timestamp và video_frame_index
+    camera.avi               ← video của chính phiên này
+    camera.video.json        ← số khung và SHA-256 để đối chiếu hai file gốc
     camera.normalized.jsonl
     sensors.jsonl
     sensors.meta.json
     multimodal.jsonl
     action_segments.json
+    keyframes.json          ← danh sách ảnh và lý do bỏ qua từng đoạn
+    keyframes/              ← các ảnh PNG thật của các đoạn hợp lệ
 ```
 
-File camera gốc nằm tại C:\Task\smartwear-ai\ai\camera_data_<ngày giờ>.jsonl.
 Không ghi đè dữ liệu. Nếu lỗi, dừng các bước sau và giữ bản camera để thử lại.
-Đóng cưỡng bức chương trình không tự chạy bước xử lý.
+Đóng cưỡng bức chương trình không tự chạy bước xử lý. Chạy lại một bản camera
+cũ bằng `python -B .\ai\process_recording.py --input <đường dẫn camera.jsonl>`
+sẽ tạo phiên xử lý mới; file gốc và phiên trước vẫn được giữ nguyên.
 
 ## Vai trò các file Python
 
@@ -33,7 +46,32 @@ Không ghi đè dữ liệu. Nếu lỗi, dừng các bước sau và giữ bả
 - sensors/simulate_sensors.py: tạo số giả độc lập cho mỗi tay.
 - build_multimodal.py: kiểm tra nguồn/thời điểm và ghép camera với số giả.
 - segment_actions.py: gom nhãn liên tiếp riêng cho từng tay.
-- process_recording.py: gọi bốn bước tự động.
+- video_recording.py: ghi video, đánh số khung và lập metadata nguồn.
+- extract_keyframes.py: dùng video và thời điểm trong đoạn để xuất ảnh PNG.
+- process_recording.py: gọi năm bước tự động.
+
+## Ảnh tiêu biểu
+
+Chương trình chọn khung được quan sát gần **giữa thời gian** của từng đoạn;
+không chọn theo số thứ tự khung và không giả định camera luôn đúng 30 FPS.
+Nếu hai khung cách đều giữa đoạn, chọn khung trước. Ảnh là toàn khung camera,
+không cắt riêng bàn tay. File ảnh ghi rõ `left` hoặc `right` trong tên; hai tay
+có thể tạo hai ảnh khác nhau ở cùng một thời điểm.
+
+`keyframes.json` có một mục cho **mọi đoạn** trong `action_segments.json`,
+liên kết bằng `segment_id`, chứa `hand`, `label`, `timestamp_ms`, `frame_id`,
+`image_path` và `status`. Đoạn `NO_HAND`, tay không xác định hoặc nhãn `OTHER`
+được ghi `skipped` với lý do; không tạo ảnh giả. Nếu bản ghi cũ không có video,
+toàn bộ mục ghi `no_recorded_video`, không báo đã trích ảnh thành công.
+
+File `.video.json` ghi SHA-256 của JSONL camera và video, số khung, kích thước,
+codec MJPG/AVI. Trước khi trích, chương trình kiểm tra metadata, chuỗi thời gian,
+nhãn và số lượng khung giải mã. Nếu video thiếu hoặc bị đổi, bước này báo lỗi;
+file camera gốc vẫn còn. Tốc độ phát video là quy ước mã hóa 30 FPS; thời gian
+thật lấy từ `timestamp` trong JSONL. Đây là điểm cần lưu ý khi xem lại video.
+
+Video và ảnh chứa hình camera thật. Nếu quay người khác ở nhà máy, cần xử lý
+quyền riêng tư trước khi chia sẻ file.
 
 ## Cách xác định tay
 
@@ -143,7 +181,7 @@ python -B .\ai\process_recording.py --input .\ai\camera_data_20260929_112902_905
 
 Thay đường dẫn phiên dưới đây bằng đường dẫn PowerShell thông báo:
 ```powershell
-$session = 'C:\Task\smartwear-ai\data\sessions\<tên phiên>'
+$session = 'C:\Task\smartwear-ai\ai\generated_data\sessions\<tên phiên>'
 Get-Content "$session\multimodal.jsonl" |
   ForEach-Object { $_ | ConvertFrom-Json } |
   Select-Object -First 20 timestamp_ms,
