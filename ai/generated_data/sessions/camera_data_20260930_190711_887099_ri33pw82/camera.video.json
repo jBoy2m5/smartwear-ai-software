@@ -1,9 +1,9 @@
 {
   "schema_version": "smartwear.recording_video.v1",
   "video_file": "camera.avi",
-  "video_sha256": "6c5eb42ed29f97698cd0a5f59f69a81077afbc26cbd51ef5809d78e453539036",
-  "camera_sha256": "3cec80e243dfc1cd41cbc7d2cf98b518ffddf5d6c0be0dc711891bc00f0ff34e",
-  "frame_count": 195,
+  "video_sha256": "ee2af6bfb942d8f7d6ae4cde9a4148f8d2f076f11360548a26a5215a18a04238",
+  "camera_sha256": "fb16f370f2389952b82ec1a40ecf17fac934583c57e667659b0cbfea14257ae5",
+  "frame_count": 130,
   "frame_width": 640,
   "frame_height": 480,
   "codec": "MJPG",

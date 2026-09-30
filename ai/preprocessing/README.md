@@ -60,6 +60,26 @@ nếu video có ảnh. `review_candidates` chỉ là các đoạn cần xem lạ
 kết luận thao tác sai hoặc Muda. Chỉ số `normalized_dtw_cost` càng thấp thì chuỗi
 hành động nhìn thấy càng giống; đây không phải điểm chất lượng đã hiệu chuẩn.
 
+`analysis_result.json` cũng có `muda_review`: các **đoạn nghi vấn để con người
+xem lại**, không phải kết luận Muda. `longer_visible_action` chỉ xuất hiện khi
+một đoạn cùng nhãn được ghép một-một với mẫu, dài hơn ít nhất 500 ms và 1,5 lần.
+`inserted_visible_action` là đoạn khác nhãn, dài ít nhất 300 ms và nằm giữa hai
+đoạn của worker cùng khớp một bước mẫu. Mỗi mục có tay, thời điểm, nhãn và ảnh
+để mở lại video. Đoạn khác nhãn đơn lẻ, mất tay hoặc ghép DTW nhiều-một không
+được tự động coi là lãng phí. Mẫu demo chưa phải quy trình chuẩn, nên cần xem
+video trước khi đưa ra nhận định.
+
+Phần mở rộng tìm `extra_visible_action` khi có một đoạn hành động nhìn thấy
+chen giữa hai nhãn khớp mẫu; `repeated_visible_action` khi chuỗi từ hai hành
+động trở lên được thực hiện lại; và `missing_visible_action` khi một bước mẫu
+ở giữa hai bước khớp không xuất hiện trong chuỗi camera của worker. Mỗi đoạn
+thêm phải dài ít nhất 300 ms. Trường hợp bỏ sót không có một khung worker thật
+cho hành động vắng mặt: `worker_time_hint_ms` là mốc gần vị trí đó,
+`expert_image_path` là ảnh bước mẫu, còn `start_ms`/`end_ms` là null. Nếu camera
+mất tay/không chắc ở mốc này, chương trình không kết luận bỏ sót. Các nhãn bị
+thay thế mơ hồ hoặc thiếu ở đầu/cuối bản quay cũng không được tự động gọi là
+bỏ sót. `review_candidates` cũ vẫn được giữ nguyên.
+
 Tay không thấy rõ (`NO_HAND`, `OTHER`, `ambiguous`) được ghi trong `*_omitted`,
 không chấm như hành động đúng. Nếu không có hành động nhìn thấy để so sánh,
 chương trình báo thiếu dữ liệu.

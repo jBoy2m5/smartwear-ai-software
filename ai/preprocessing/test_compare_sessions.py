@@ -9,6 +9,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import camera_test
 from analysis.compare_sessions import align_track, compare_sessions, keyframe_paths, sha256_file
+from analysis.detect_muda import detect_muda_candidates
 from test_two_hands import frame_sequence, hand
 
 
@@ -46,6 +47,7 @@ class SessionComparisonTests(unittest.TestCase):
         self.assertEqual(result["schema_version"], "smartwear.analysis_comparison.v2")
         self.assertTrue(result["uses_simulated_sensors"])
         self.assertEqual(result["sensor_comparison"]["status"], "simulated_demo_comparison")
+        self.assertEqual(result["muda_review"]["status"], "review_candidates_only")
         self.assertTrue(result["sensor_comparison"]["hands"]["left"]["pairs"])
         self.assertEqual(result["hands"]["left"]["status"], "compared")
         self.assertEqual(result["hands"]["right"]["status"], "compared")
@@ -71,6 +73,89 @@ class SessionComparisonTests(unittest.TestCase):
         self.assertEqual(reasons, {"longer_visible_action", "different_visible_label"})
         self.assertGreater(result["normalized_dtw_cost"], 0)
         self.assertEqual(align_track(expert, expert)["normalized_dtw_cost"], 0)
+
+    def test_muda_review_requires_unambiguous_timing_or_surrounded_insertion(self):
+        def pair(eid, wid, elabel, wlabel, expert_ms, worker_ms):
+            return {"expert_segment_id": eid, "worker_segment_id": wid,
+                    "expert_label": elabel, "worker_label": wlabel,
+                    "same_label": elabel == wlabel,
+                    "expert_duration_ms": expert_ms, "worker_duration_ms": worker_ms,
+                    "worker_extra_ms": worker_ms - expert_ms,
+                    "worker_image_path": "keyframes/example.png"}
+
+        left_pairs = [pair(1, 10, "GRAB", "GRAB", 400, 1000),
+                      pair(2, 11, "OPEN", "OPEN", 400, 400),
+                      pair(2, 12, "OPEN", "GRAB", 400, 350),
+                      pair(2, 13, "OPEN", "OPEN", 400, 400),
+                      pair(3, 14, "REACH", "GRAB", 400, 700)]
+        right_pairs = [pair(4, 20, "GRAB", "GRAB", 400, 1000),
+                       pair(4, 21, "GRAB", "OPEN", 400, 350)]
+        tracks = {"left": {"status": "compared", "alignment": left_pairs},
+                  "right": {"status": "compared", "alignment": right_pairs}}
+        worker = {"left": [{"segment_id": wid, "start_ms": wid * 100,
+                            "end_ms": wid * 100 + duration,
+                            "duration_ms": duration}
+                           for wid, duration in ((10, 1000), (11, 400), (12, 350),
+                                                 (13, 400), (14, 700))],
+                  "right": [{"segment_id": 20, "start_ms": 0, "end_ms": 1000,
+                             "duration_ms": 1000},
+                            {"segment_id": 21, "start_ms": 1000, "end_ms": 1350,
+                             "duration_ms": 350}]}
+        result = detect_muda_candidates(tracks, worker)
+        self.assertEqual([item["reason"] for item in result["hands"]["left"]["candidates"]],
+                         ["longer_visible_action", "inserted_visible_action"])
+        self.assertEqual(result["hands"]["left"]["candidates"][0]["extra_ms"], 600)
+        self.assertEqual(result["hands"]["left"]["candidates"][1]["start_ms"], 1200)
+        self.assertEqual(result["hands"]["right"]["candidates"], [])
+
+    def test_muda_review_reports_missing_extra_and_repeated_visible_steps(self):
+        from analysis.detect_muda import detect_muda_candidates
+
+        def segment(number, label, start, end):
+            return {"segment_id": number, "label": label, "start_ms": start,
+                    "end_ms": end, "duration_ms": end - start}
+
+        def check(expert, worker, uncertain=None):
+            tracks = {side: {"status": "compared", "alignment": []}
+                      for side in ("left", "right")}
+            result = detect_muda_candidates(
+                tracks, {"left": worker, "right": []},
+                {"left": expert, "right": []},
+                {item["segment_id"]: "keyframes/expert.png" for item in expert},
+                {item["segment_id"]: "keyframes/worker.png" for item in worker},
+                {"left": uncertain or [], "right": []})
+            return result["hands"]["left"]["candidates"]
+
+        expert = [segment(1, "REACH", 0, 400), segment(2, "GRAB", 400, 800),
+                  segment(3, "OPEN", 800, 1200)]
+        missing_worker = [segment(10, "REACH", 0, 400),
+                          segment(11, "OPEN", 400, 800)]
+        missing = check(expert, missing_worker)
+        self.assertEqual([item["reason"] for item in missing], ["missing_visible_action"])
+        self.assertEqual(missing[0]["expert_segment_id"], 2)
+        self.assertEqual(missing[0]["worker_time_hint_ms"], 400)
+        self.assertEqual(missing[0]["expert_image_path"], "keyframes/expert.png")
+        self.assertIsNone(missing[0]["start_ms"])
+
+        extra_worker = [segment(10, "REACH", 0, 400),
+                        segment(11, "ASSEMBLY", 400, 800),
+                        segment(12, "GRAB", 800, 1200),
+                        segment(13, "OPEN", 1200, 1600)]
+        extra = check(expert, extra_worker)
+        self.assertEqual([item["reason"] for item in extra], ["extra_visible_action"])
+        self.assertEqual(extra[0]["worker_segment_id"], 11)
+
+        repeat_expert = expert[:2]
+        repeat_worker = [segment(10, "REACH", 0, 400),
+                         segment(11, "GRAB", 400, 800),
+                         segment(12, "REACH", 800, 1200),
+                         segment(13, "GRAB", 1200, 1600)]
+        repeated = check(repeat_expert, repeat_worker)
+        self.assertEqual([item["reason"] for item in repeated],
+                         ["repeated_visible_action", "repeated_visible_action"])
+
+        uncertain = [{"start_ms": 399, "end_ms": 401}]
+        self.assertEqual(check(expert, missing_worker, uncertain), [])
 
     def test_missing_or_ambiguous_hand_is_not_scored(self):
         expert = self.make_recording("expert", 5, 0, missing_left=True)

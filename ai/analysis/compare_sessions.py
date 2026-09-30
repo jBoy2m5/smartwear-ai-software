@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from analysis.compare_sensors import compare_sensor_segments  # noqa: E402
+from analysis.detect_muda import detect_muda_candidates  # noqa: E402
 
 SIDES = ("left", "right")
 VISIBLE_LABELS = {"OPEN", "REACH", "GRAB", "ASSEMBLY", "RELEASE"}
@@ -179,6 +180,14 @@ def build_comparison(expert_session, worker_session):
                 "hands": tracks}
     sensor_result = compare_sensor_segments(expert_dir, worker_dir, document)
     document["sensor_comparison"] = sensor_result
+    worker_segments = json.loads((worker_dir / "action_segments.json").read_text(
+        encoding="utf-8"))["segments"]
+    uncertain = {side: [segment for segment in worker_segments
+                        if segment["hand"] == side and
+                        (segment["tracking_status"] != "detected"
+                         or segment["label"] not in VISIBLE_LABELS)] for side in SIDES}
+    document["muda_review"] = detect_muda_candidates(
+        tracks, worker, expert, expert_images, worker_images, uncertain)
     document["uses_simulated_sensors"] = sensor_result["status"] == "simulated_demo_comparison" or any(
         source["source"] != "measured_hardware" for source in
         (sensor_result["expert_source"], sensor_result["worker_source"]))
