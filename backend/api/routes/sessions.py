@@ -5,6 +5,7 @@ from pathlib import Path as FilePath
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
+from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 from backend.api.auth import require_api_key
@@ -17,6 +18,13 @@ from backend.schemas import (
     PaginatedSessions,
     SessionDetail,
     SessionInput,
+)
+from backend.services.analysis_detail import (
+    get_expert_image,
+    image_urls,
+    load_analysis,
+    save_analysis,
+    save_expert_image,
 )
 
 
@@ -138,4 +146,52 @@ def download_keyframe(
     path: FilePath = service.get_keyframe_path(session_id, filename)
     media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
     return FileResponse(path, media_type=media_type, filename=path.name)
+
+
+@router.put("/{session_id}/analysis-result")
+async def upload_analysis_result(session_id: SessionId, request: Request, service: Service) -> dict:
+    """Attach the complete, unmodified AI comparison to an ingested DEMO session."""
+    service.get_session(session_id)  # Existing session and authentication are required.
+    try:
+        document = save_analysis(request.app.state.settings.keyframe_dir,
+                                 session_id, await request.body())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"session_id": session_id, "analysis_result": document,
+            "analysis_image_urls": image_urls(document, session_id,
+                                               request.app.state.settings.api_prefix)}
+
+
+@router.get("/{session_id}/analysis-result")
+def get_analysis_result(session_id: SessionId, request: Request, service: Service) -> dict:
+    """Return every AI comparison field plus browser-ready image URLs."""
+    service.get_session(session_id)
+    document = load_analysis(request.app.state.settings.keyframe_dir, session_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Analysis result has not been uploaded")
+    return {"session_id": session_id, "analysis_result": document,
+            "analysis_image_urls": image_urls(document, session_id,
+                                               request.app.state.settings.api_prefix)}
+
+
+@router.put("/{session_id}/analysis-images/expert/{filename}")
+async def upload_expert_image(session_id: SessionId, filename: str,
+                              request: Request, service: Service) -> dict:
+    """Upload a sample image that the attached comparison actually references."""
+    service.get_session(session_id)
+    if request.headers.get("content-type", "").split(";", 1)[0] != "image/png":
+        raise HTTPException(status_code=415, detail="Expert image must be image/png")
+    path = save_expert_image(request.app.state.settings.keyframe_dir, session_id,
+                             filename, await request.body(),
+                             request.app.state.settings.max_keyframe_bytes)
+    return {"session_id": session_id, "filename": path.name}
+
+
+@router.get("/{session_id}/analysis-images/expert/{filename}", response_class=FileResponse)
+def download_expert_image(session_id: SessionId, filename: str,
+                          request: Request, service: Service) -> FileResponse:
+    """Serve a sample keyframe from the backend, not from the AI filesystem."""
+    service.get_session(session_id)
+    path = get_expert_image(request.app.state.settings.keyframe_dir, session_id, filename)
+    return FileResponse(path, media_type="image/png", filename=path.name)
 
