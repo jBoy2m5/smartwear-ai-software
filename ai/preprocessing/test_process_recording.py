@@ -32,12 +32,40 @@ class RecordingPipelineTests(unittest.TestCase):
         self.assertEqual([r["timestamp_ms"] for r in rows], [303, 403, 703])
         self.assertEqual(len(rows), 3)
         self.assertTrue(second.with_name("sensors.meta.json").exists())
+        keyframes = json.loads(second.with_name("keyframes.json").read_text())
+        self.assertEqual(keyframes["status"], "skipped_no_video")
+        self.assertEqual(keyframes["extracted_count"], 0)
+        self.assertFalse(second.with_name("keyframes").exists())
+        segmentation = json.loads(second.with_name("action_segments.json").read_text())
+        self.assertEqual(segmentation["frame_count"], 3)
+        self.assertEqual(segmentation["segment_count"], 2)
+        self.assertEqual(segmentation["segment_counts_by_hand"], {"left": 1, "right": 1})
+        self.assertEqual(segmentation["segments"][0]["label"], "NO_HAND")
+        self.assertEqual(segmentation["segments"][0]["duration_ms"], 400)
         for row, frame in zip(rows, self.frames):
-            self.assertEqual(row["action_estimate"], frame["action_estimate"])
+            for side in ("left", "right"):
+                self.assertEqual(row["hand_actions"][side]["label"], "NO_HAND")
+                self.assertIsNone(row["hand_sensors"][side]["force_emg_raw"])
             self.assertEqual(row["provenance"]["sensors"], "simulated_from_camera_observations")
         self.assertEqual(self.raw.read_bytes(), original)
         for path, contents in before.items():
             self.assertEqual(path.read_bytes(), contents)
+
+    def test_new_camera_processes_inside_the_same_session(self):
+        session = self.outputs / "camera_data_example"
+        session.mkdir(parents=True)
+        raw = session / "camera.jsonl"
+        raw.write_bytes(self.raw.read_bytes())
+        original = raw.read_bytes()
+        combined = process_recording(raw, self.outputs, session_dir=session)
+        self.assertEqual(combined.parent, session)
+        self.assertEqual(raw.read_bytes(), original)
+        self.assertTrue((session / "action_segments.json").is_file())
+        self.assertTrue((session / "keyframes.json").is_file())
+        self.assertEqual([p.name for p in self.outputs.iterdir()], [session.name])
+        with self.assertRaises(RuntimeError):
+            process_recording(raw, self.outputs, session_dir=session)
+        self.assertEqual(raw.read_bytes(), original)
 
     def test_empty_and_missing_recordings_do_not_start_processing(self):
         self.raw.write_text("\n ", encoding="utf-8")
@@ -55,6 +83,8 @@ class RecordingPipelineTests(unittest.TestCase):
             process_recording(self.raw, self.outputs)
         self.assertFalse(list(self.outputs.rglob("sensors.jsonl")))
         self.assertFalse(list(self.outputs.rglob("multimodal.jsonl")))
+        self.assertFalse(list(self.outputs.rglob("action_segments.json")))
+        self.assertFalse(list(self.outputs.rglob("keyframes.json")))
         self.assertEqual(self.raw.read_bytes(), before)
 
 

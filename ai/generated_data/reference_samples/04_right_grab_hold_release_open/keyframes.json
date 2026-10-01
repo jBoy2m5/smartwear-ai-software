@@ -1,0 +1,86 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\handedness_staging_fgl1aglj\\04_right_grab_hold_release_open\\camera.jsonl",
+  "camera_sha256": "a4546d5c80100cd00e89443c549c70a9f753acff600133b4ebcd12d9ac2c9682",
+  "multimodal_sha256": "1257828ba4093aa7383ae05494f868b0e43a8b506dffaf697a402c184fdf758e",
+  "segments_sha256": "d2c3569e5ac9eb07eaabb1033b09d0401589b4fab4a41c2414413ad4fe96706e",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 4802,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "GRAB",
+      "start_ms": 0,
+      "end_ms": 812,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+      "frame_id": 8,
+      "timestamp_ms": 377,
+      "video_frame_index": 8
+    },
+    {
+      "segment_id": 2,
+      "hand": "right",
+      "label": "ASSEMBLY",
+      "start_ms": 812,
+      "end_ms": 1576,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+      "frame_id": 24,
+      "timestamp_ms": 1186,
+      "video_frame_index": 24
+    },
+    {
+      "segment_id": 3,
+      "hand": "right",
+      "label": "GRAB",
+      "start_ms": 1576,
+      "end_ms": 1623,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0003_right_GRAB_frame_000032.png",
+      "frame_id": 32,
+      "timestamp_ms": 1576,
+      "video_frame_index": 32
+    },
+    {
+      "segment_id": 4,
+      "hand": "right",
+      "label": "RELEASE",
+      "start_ms": 1623,
+      "end_ms": 2314,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0004_right_RELEASE_frame_000039.png",
+      "frame_id": 39,
+      "timestamp_ms": 1922,
+      "video_frame_index": 39
+    },
+    {
+      "segment_id": 5,
+      "hand": "right",
+      "label": "OPEN",
+      "start_ms": 2314,
+      "end_ms": 4802,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0005_right_OPEN_frame_000072.png",
+      "frame_id": 72,
+      "timestamp_ms": 3547,
+      "video_frame_index": 72
+    }
+  ],
+  "status": "completed",
+  "video_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\handedness_staging_fgl1aglj\\04_right_grab_hold_release_open\\camera.avi",
+  "video_sha256": "2b8aa5e08b51db2a35c64e20c6b258b42787ec401adee55e1a6120916e86679f",
+  "extracted_count": 5,
+  "skipped_count": 1
+}

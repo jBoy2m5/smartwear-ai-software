@@ -1,0 +1,399 @@
+import json
+import hashlib
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import camera_test
+from analysis.compare_sessions import align_track, compare_sessions, keyframe_paths, sha256_file
+from analysis.detect_muda import detect_muda_candidates
+from analysis.select_reference import select_reference, selection_cost
+from test_two_hands import frame_sequence, hand
+
+
+class SessionComparisonTests(unittest.TestCase):
+    def test_reference_selection_does_not_penalize_hand_absent_in_both_videos(self):
+        right = {"status": "compared", "expert_segments": 5,
+                 "worker_segments": 5, "normalized_dtw_cost": 0.25}
+        absent = {"status": "insufficient_visible_actions", "expert_segments": 0,
+                  "worker_segments": 0}
+        missing = {"status": "insufficient_visible_actions", "expert_segments": 4,
+                   "worker_segments": 0}
+        self.assertEqual(selection_cost({"hands": {"left": absent, "right": right}}), 0.25)
+        self.assertGreater(selection_cost({"hands": {"left": missing, "right": right}}),
+                           0.25)
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name) / "sessions"
+        self.root.mkdir()
+
+    def make_recording(self, name, count, closed_after, missing_left=False, parent=None):
+        session = (parent or self.root) / name
+        session.mkdir()
+        frames = frame_sequence([
+            ([] if missing_left else [hand("left", index >= closed_after)])
+            + [hand("right", False)] for index in range(count)])
+        raw = session / "camera.jsonl"
+        with raw.open("x", encoding="utf-8") as target:
+            for frame in frames:
+                target.write(json.dumps({
+                    "schema_version": "smartwear.camera_raw.v2",
+                    "timestamp": frame["timestamp_ms"], "camera": frame["camera"],
+                    "hands": frame["hands"], "hand_actions": frame["hand_actions"],
+                }) + "\n")
+        return raw
+
+    def test_record_expert_and_worker_then_compare_automatically(self):
+        expert = self.make_recording("expert", 12, 5)
+        worker = self.make_recording("worker", 16, 7)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        result_path = worker.parent / "analysis_result.json"
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(result["schema_version"], "smartwear.analysis_comparison.v2")
+        self.assertTrue(result["uses_simulated_sensors"])
+        self.assertEqual(result["sensor_comparison"]["status"], "simulated_demo_comparison")
+        self.assertEqual(result["muda_review"]["status"], "review_candidates_only")
+        self.assertTrue(result["sensor_comparison"]["hands"]["left"]["pairs"])
+        self.assertEqual(result["hands"]["left"]["status"], "compared")
+        self.assertEqual(result["hands"]["right"]["status"], "compared")
+        self.assertTrue(result["hands"]["left"]["alignment"])
+        self.assertEqual(json.loads((expert.parent / "session_role.json").read_text())["role"],
+                         "expert")
+        self.assertEqual(json.loads((worker.parent / "session_role.json").read_text())["role"],
+                         "worker")
+        self.assertEqual(result["expert_segments_sha256"],
+                         sha256_file(expert.parent / "action_segments.json"))
+        before = result_path.read_bytes()
+        with self.assertRaises(FileExistsError):
+            compare_sessions(expert.parent, worker.parent)
+        self.assertEqual(result_path.read_bytes(), before)
+
+    def test_dtw_exposes_longer_visible_action_and_label_change(self):
+        expert = [{"segment_id": 1, "label": "GRAB", "duration_ms": 400},
+                  {"segment_id": 2, "label": "RELEASE", "duration_ms": 300}]
+        worker = [{"segment_id": 3, "label": "GRAB", "duration_ms": 1400},
+                  {"segment_id": 4, "label": "OPEN", "duration_ms": 300}]
+        result = align_track(expert, worker)
+        reasons = {item["reason"] for item in result["review_candidates"]}
+        self.assertEqual(reasons, {"longer_visible_action", "different_visible_label"})
+        self.assertGreater(result["normalized_dtw_cost"], 0)
+        self.assertEqual(align_track(expert, expert)["normalized_dtw_cost"], 0)
+
+    def test_muda_review_requires_unambiguous_timing_or_surrounded_insertion(self):
+        def pair(eid, wid, elabel, wlabel, expert_ms, worker_ms):
+            return {"expert_segment_id": eid, "worker_segment_id": wid,
+                    "expert_label": elabel, "worker_label": wlabel,
+                    "same_label": elabel == wlabel,
+                    "expert_duration_ms": expert_ms, "worker_duration_ms": worker_ms,
+                    "worker_extra_ms": worker_ms - expert_ms,
+                    "worker_image_path": "keyframes/example.png"}
+
+        left_pairs = [pair(1, 10, "GRAB", "GRAB", 400, 1000),
+                      pair(2, 11, "OPEN", "OPEN", 400, 400),
+                      pair(2, 12, "OPEN", "GRAB", 400, 350),
+                      pair(2, 13, "OPEN", "OPEN", 400, 400),
+                      pair(3, 14, "REACH", "GRAB", 400, 700)]
+        right_pairs = [pair(4, 20, "GRAB", "GRAB", 400, 1000),
+                       pair(4, 21, "GRAB", "OPEN", 400, 350)]
+        tracks = {"left": {"status": "compared", "alignment": left_pairs},
+                  "right": {"status": "compared", "alignment": right_pairs}}
+        worker = {"left": [{"segment_id": wid, "start_ms": wid * 100,
+                            "end_ms": wid * 100 + duration,
+                            "duration_ms": duration}
+                           for wid, duration in ((10, 1000), (11, 400), (12, 350),
+                                                 (13, 400), (14, 700))],
+                  "right": [{"segment_id": 20, "start_ms": 0, "end_ms": 1000,
+                             "duration_ms": 1000},
+                            {"segment_id": 21, "start_ms": 1000, "end_ms": 1350,
+                             "duration_ms": 350}]}
+        result = detect_muda_candidates(tracks, worker)
+        self.assertEqual([item["reason"] for item in result["hands"]["left"]["candidates"]],
+                         ["longer_visible_action", "inserted_visible_action"])
+        self.assertEqual(result["hands"]["left"]["candidates"][0]["extra_ms"], 600)
+        self.assertEqual(result["hands"]["left"]["candidates"][1]["start_ms"], 1200)
+        self.assertIn("tay trái nắm", result["hands"]["left"]["candidates"][0]["comment_vi"])
+        self.assertIn("lâu hơn đoạn tương ứng trong mẫu 0,600 giây",
+                      result["hands"]["left"]["candidates"][0]["comment_vi"])
+        self.assertIn("từ giây 1,200 đến 1,550",
+                      result["hands"]["left"]["candidates"][1]["comment_vi"])
+        self.assertEqual(result["hands"]["right"]["candidates"], [])
+
+    def test_muda_review_reports_missing_extra_and_repeated_visible_steps(self):
+        from analysis.detect_muda import detect_muda_candidates
+
+        def segment(number, label, start, end):
+            return {"segment_id": number, "label": label, "start_ms": start,
+                    "end_ms": end, "duration_ms": end - start}
+
+        def check(expert, worker, uncertain=None):
+            tracks = {side: {"status": "compared", "alignment": []}
+                      for side in ("left", "right")}
+            result = detect_muda_candidates(
+                tracks, {"left": worker, "right": []},
+                {"left": expert, "right": []},
+                {item["segment_id"]: "keyframes/expert.png" for item in expert},
+                {item["segment_id"]: "keyframes/worker.png" for item in worker},
+                {"left": uncertain or [], "right": []})
+            return result["hands"]["left"]["candidates"]
+
+        expert = [segment(1, "REACH", 0, 400), segment(2, "GRAB", 400, 800),
+                  segment(3, "OPEN", 800, 1200)]
+        missing_worker = [segment(10, "REACH", 0, 400),
+                          segment(11, "OPEN", 400, 800)]
+        missing = check(expert, missing_worker)
+        self.assertEqual([item["reason"] for item in missing], ["missing_visible_action"])
+        self.assertEqual(missing[0]["expert_segment_id"], 2)
+        self.assertEqual(missing[0]["worker_time_hint_ms"], 400)
+        self.assertEqual(missing[0]["expert_image_path"], "keyframes/expert.png")
+        self.assertIsNone(missing[0]["start_ms"])
+        self.assertIn("tay trái nắm", missing[0]["comment_vi"])
+        self.assertIn("gần giây 0,400", missing[0]["comment_vi"])
+        self.assertNotIn("từ giây", missing[0]["comment_vi"])
+
+        extra_worker = [segment(10, "REACH", 0, 400),
+                        segment(11, "ASSEMBLY", 400, 800),
+                        segment(12, "GRAB", 800, 1200),
+                        segment(13, "OPEN", 1200, 1600)]
+        extra = check(expert, extra_worker)
+        self.assertEqual([item["reason"] for item in extra], ["extra_visible_action"])
+        self.assertEqual(extra[0]["worker_segment_id"], 11)
+        self.assertIn("Camera ghi nhận thêm đoạn tay trái", extra[0]["comment_vi"])
+
+        repeat_expert = expert[:2]
+        repeat_worker = [segment(10, "REACH", 0, 400),
+                         segment(11, "GRAB", 400, 800),
+                         segment(12, "REACH", 800, 1200),
+                         segment(13, "GRAB", 1200, 1600)]
+        repeated = check(repeat_expert, repeat_worker)
+        self.assertEqual([item["reason"] for item in repeated],
+                         ["repeated_visible_action", "repeated_visible_action"])
+        self.assertTrue(all("chuỗi động tác lặp" in item["comment_vi"]
+                            for item in repeated))
+        trailing_extra = repeat_worker[:2] + [segment(12, "OPEN", 800, 1200)]
+        self.assertEqual([item["reason"] for item in check(repeat_expert, trailing_extra)],
+                         ["extra_visible_action"])
+
+        repeated_at_start = [segment(20, "REACH", 0, 400),
+                             segment(21, "GRAB", 400, 800),
+                             segment(22, "REACH", 800, 1200),
+                             segment(23, "GRAB", 1200, 1600),
+                             segment(24, "OPEN", 1600, 2000)]
+        self.assertEqual([item["reason"] for item in check(expert, repeated_at_start)],
+                         ["repeated_visible_action", "repeated_visible_action"])
+
+        flicker_expert = [segment(1, "GRAB", 0, 800),
+                          segment(2, "ASSEMBLY", 800, 1600),
+                          segment(3, "GRAB", 1600, 1650),
+                          segment(4, "RELEASE", 1650, 2300),
+                          segment(5, "OPEN", 2300, 3100)]
+        clean_worker = [segment(10, "GRAB", 0, 800),
+                        segment(11, "ASSEMBLY", 800, 1600),
+                        segment(12, "RELEASE", 1600, 2250),
+                        segment(13, "OPEN", 2250, 3050)]
+        self.assertEqual(check(flicker_expert, clean_worker), [])
+
+        uncertain = [{"start_ms": 399, "end_ms": 401}]
+        self.assertEqual(check(expert, missing_worker, uncertain), [])
+
+    def test_missing_or_ambiguous_hand_is_not_scored(self):
+        expert = self.make_recording("expert", 5, 0, missing_left=True)
+        worker = self.make_recording("worker", 5, 0, missing_left=True)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        doc = json.loads((worker.parent / "analysis_result.json").read_text())
+        self.assertEqual(doc["hands"]["left"]["status"], "insufficient_visible_actions")
+        self.assertGreater(doc["hands"]["left"]["expert_omitted"]["no_hand"], 0)
+        self.assertGreater(doc["hands"]["left"]["expert_omitted"]["no_hand_duration_ms"], 0)
+        self.assertEqual(doc["hands"]["right"]["status"], "compared")
+        self.assertEqual(doc["sensor_comparison"]["hands"]["left"]["pairs"], [])
+        self.assertEqual(doc["sensor_comparison"]["hands"]["right"]["status"], "compared")
+        self.assertEqual(align_track([], [])["status"], "insufficient_visible_actions")
+
+    def test_rejects_wrong_role_and_changed_source(self):
+        expert = self.make_recording("expert", 5, 0)
+        worker = self.make_recording("worker", 5, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        with self.assertRaisesRegex(ValueError, "role"):
+            compare_sessions(worker.parent, expert.parent)
+        (expert.parent / "multimodal.jsonl").write_text("changed\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "segmentation"):
+            compare_sessions(expert.parent, worker.parent)
+
+    def test_only_existing_keyframes_from_matching_segments_are_linked(self):
+        session = self.root / "images"
+        (session / "keyframes").mkdir(parents=True)
+        (session / "keyframes" / "grab.png").write_bytes(b"example")
+        manifest = session / "keyframes.json"
+        manifest.write_text(json.dumps({"segments_sha256": "abc", "entries": [
+            {"segment_id": 4, "status": "extracted", "image_path": "keyframes/grab.png"},
+            {"segment_id": 5, "status": "skipped", "image_path": None},
+        ]}), encoding="utf-8")
+        self.assertEqual(keyframe_paths(session, "abc"), {4: "keyframes/grab.png"})
+        with self.assertRaisesRegex(ValueError, "different segmentation"):
+            keyframe_paths(session, "wrong")
+
+    def test_plain_camera_flow_selects_closest_bundled_reference(self):
+        samples = self.root / "reference_samples"
+        samples.mkdir()
+        worker = self.make_recording("worker", 8, 0)
+        for name, closed_after in (("open_sample", 100), ("grab_sample", 0)):
+            reference = self.make_recording(name, 8, closed_after, parent=samples)
+            with patch.object(camera_test, "SESSION_ROOT", samples):
+                camera_test.finish_recording(reference, "expert")
+            (reference.parent / "reference_sample.json").write_text(json.dumps({
+                "schema_version": "smartwear.demo_reference.v1", "title": name,
+                "practice_instruction": "test example", "demo_only": True,
+            }), encoding="utf-8")
+        with patch.object(camera_test, "SESSION_ROOT", self.root), \
+                patch.object(camera_test, "REFERENCE_ROOT", samples):
+            camera_test.finish_recording(worker)
+        result = json.loads((worker.parent / "analysis_result.json").read_text())
+        self.assertEqual(result["selected_reference"]["sample_id"], "grab_sample")
+        self.assertTrue(result["selected_reference"]["demo_only"])
+        self.assertEqual(json.loads((worker.parent / "session_role.json").read_text())["role"],
+                         "worker")
+        forced_path, forced = select_reference(
+            worker.parent, samples, worker.parent / "forced_result.json",
+            sample_id="open_sample")
+        self.assertEqual(forced["sample_id"], "open_sample")
+        self.assertEqual(json.loads(forced_path.read_text())["expert_session"],
+                         "open_sample")
+        forced_worker = self.make_recording("forced_worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root), \
+                patch.object(camera_test, "REFERENCE_ROOT", samples):
+            camera_test.finish_recording(forced_worker, practice_sample="open_sample")
+        forced_analysis = json.loads((forced_worker.parent / "analysis_result.json").read_text())
+        self.assertEqual(forced_analysis["selected_reference"]["sample_id"], "open_sample")
+
+    def add_aligned_real_fixture(self, session, force_offset=0):
+        """Exercise the future hardware input contract with synthetic test rows."""
+        rows = [json.loads(line) for line in (session / "sensors.jsonl").read_text().splitlines()]
+        for row in rows:
+            for side in ("left", "right"):
+                hand = row["hand_sensors"][side]
+                if hand["tracking_status"] == "detected":
+                    hand["force_emg_raw"] += force_offset
+        real = session / "real_sensors.jsonl"
+        real.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+        meta = json.loads((session / "sensors.meta.json").read_text())
+        meta.update(source="measured_hardware", calibration_id="test-calibration",
+                    units={"force": "N", "torque": "N*m", "angle": "degrees",
+                           "acceleration": "m/s^2",
+                           "angular_speed": "rad/s"},
+                    sensors_sha256=hashlib.sha256(real.read_bytes()).hexdigest())
+        (session / "real_sensors.meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    def test_real_sensor_precedence_and_force_difference(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        self.add_aligned_real_fixture(expert.parent)
+        self.add_aligned_real_fixture(worker.parent, force_offset=100)
+        result = compare_sessions(expert.parent, worker.parent,
+                                  worker.parent / "real_comparison.json")
+        sensor = json.loads(result.read_text())["sensor_comparison"]
+        self.assertEqual(sensor["status"], "measured_comparison")
+        self.assertEqual(sensor["expert_source"]["source"], "measured_hardware")
+        delta = sensor["hands"]["left"]["pairs"][0]["worker_minus_expert"]
+        self.assertAlmostEqual(delta["force_mean"], 100, places=3)
+        self.assertAlmostEqual(delta["force_peak"], 100, places=3)
+
+    def test_mixed_real_and_simulated_show_values_without_false_delta(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        self.add_aligned_real_fixture(worker.parent)
+        result = compare_sessions(expert.parent, worker.parent,
+                                  worker.parent / "mixed_comparison.json")
+        sensor = json.loads(result.read_text())["sensor_comparison"]
+        self.assertEqual(sensor["status"], "incompatible_sources_no_numeric_delta")
+        pair = sensor["hands"]["left"]["pairs"][0]
+        self.assertIsNone(pair["worker_minus_expert"])
+        self.assertIsNotNone(pair["expert"]["force_mean"])
+        self.assertIsNotNone(pair["worker"]["force_mean"])
+
+    def test_missing_sensor_file_regenerates_virtual_values_in_memory(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        (worker.parent / "sensors.jsonl").unlink()
+        (worker.parent / "sensors.meta.json").unlink()
+        result = compare_sessions(expert.parent, worker.parent,
+                                  worker.parent / "fallback_comparison.json")
+        sensor = json.loads(result.read_text())["sensor_comparison"]
+        self.assertEqual(sensor["worker_source"]["source"], "simulated_in_memory_from_camera")
+
+    def test_bad_real_sensor_metadata_is_rejected_instead_of_falling_back(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        self.add_aligned_real_fixture(worker.parent)
+        meta_path = worker.parent / "real_sensors.meta.json"
+        meta = json.loads(meta_path.read_text())
+        meta["camera_sha256"] = "wrong camera"
+        meta_path.write_text(json.dumps(meta))
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            compare_sessions(expert.parent, worker.parent,
+                             worker.parent / "should_not_exist.json")
+        self.assertFalse((worker.parent / "should_not_exist.json").exists())
+
+    def test_real_sensor_timestamp_must_match_camera_frame(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        self.add_aligned_real_fixture(worker.parent)
+        real = worker.parent / "real_sensors.jsonl"
+        rows = [json.loads(line) for line in real.read_text().splitlines()]
+        rows[2]["timestamp_ms"] += 1
+        real.write_text("".join(json.dumps(row) + "\n" for row in rows))
+        meta_path = worker.parent / "real_sensors.meta.json"
+        meta = json.loads(meta_path.read_text())
+        meta["sensors_sha256"] = hashlib.sha256(real.read_bytes()).hexdigest()
+        meta_path.write_text(json.dumps(meta))
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            compare_sessions(expert.parent, worker.parent,
+                             worker.parent / "bad_clock.json")
+
+    def test_different_actions_do_not_produce_force_delta(self):
+        expert = self.make_recording("expert", 8, 0)
+        worker = self.make_recording("worker", 8, 100)
+        with patch.object(camera_test, "SESSION_ROOT", self.root):
+            camera_test.finish_recording(expert, "expert")
+            camera_test.finish_recording(worker, "worker", expert.parent)
+        result = json.loads((worker.parent / "analysis_result.json").read_text())
+        candidates = result["hands"]["left"]["review_candidates"]
+        self.assertTrue(candidates)
+        self.assertEqual(candidates[0]["hand"], "left")
+        self.assertIsInstance(candidates[0]["start_ms"], int)
+        self.assertGreater(candidates[0]["end_ms"], candidates[0]["start_ms"])
+        self.assertEqual(candidates[0]["duration_ms"],
+                         candidates[0]["end_ms"] - candidates[0]["start_ms"])
+        self.assertIn("worker_image_path", candidates[0])
+        self.assertIn("expert_image_path", candidates[0])
+        pairs = result["sensor_comparison"]["hands"]["left"]["pairs"]
+        self.assertTrue(any(pair["comparison_status"] == "different_visible_action"
+                            and pair["worker_minus_expert"] is None for pair in pairs))
+
+
+if __name__ == "__main__":
+    unittest.main()

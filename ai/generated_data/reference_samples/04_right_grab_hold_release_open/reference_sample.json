@@ -1,0 +1,24 @@
+{
+  "schema_version": "smartwear.demo_reference.v1",
+  "title": "Tay phải nắm, giữ, thả và mở",
+  "practice_instruction": "Chỉ đưa tay phải vào hình: nắm, giữ tay nắm gần như đứng yên, di chuyển tay nắm nhẹ, thả rồi mở và giữ mở. Nhãn ASSEMBLY chỉ là camera suy đoán tư thế giữ, không phải lắp ráp thật.",
+  "demo_only": true,
+  "not_validated_expert": true,
+  "source_session": "camera_data_20260930_190711_887099_ri33pw82",
+  "source_camera_sha256": "fb16f370f2389952b82ec1a40ecf17fac934583c57e667659b0cbfea14257ae5",
+  "source_video_sha256": "ee2af6bfb942d8f7d6ae4cde9a4148f8d2f076f11360548a26a5215a18a04238",
+  "source_start_ms": 2078,
+  "source_end_ms": 6880,
+  "frame_count": 98,
+  "visible_labels_by_hand": {
+    "left": [],
+    "right": [
+      "GRAB",
+      "ASSEMBLY",
+      "GRAB",
+      "RELEASE",
+      "OPEN"
+    ]
+  },
+  "handedness_convention": "anatomical_from_mirrored_camera"
+}

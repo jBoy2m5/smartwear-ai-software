@@ -1,0 +1,33 @@
+{
+  "schema_version": "smartwear.demo_reference.v1",
+  "title": "Hai tay đưa tới và nắm",
+  "practice_instruction": "Đưa hai bàn tay vào khung hình; mở tay, đưa tới trước, rồi nắm cả hai tay. Sau đó mở tay phải.",
+  "demo_only": true,
+  "not_validated_expert": true,
+  "source_session": "camera_data_20260929_162510_226861_uev_uvqt",
+  "source_camera_sha256": "387b2ad2cff8a7ad0e9c2c2d9e9ca9e2aa563ec6236b09e524ddbcd75bce8d72",
+  "source_video_sha256": "a342783cc184183880e7558c1d8a218aa7320eca85c347f616ddeb342a45fe23",
+  "source_start_ms": 4312,
+  "source_end_ms": 6276,
+  "frame_count": 46,
+  "visible_labels_by_hand": {
+    "left": [
+      "OPEN",
+      "REACH",
+      "OPEN",
+      "GRAB"
+    ],
+    "right": [
+      "REACH",
+      "OPEN",
+      "REACH",
+      "GRAB",
+      "ASSEMBLY",
+      "GRAB",
+      "ASSEMBLY",
+      "GRAB",
+      "RELEASE"
+    ]
+  },
+  "handedness_convention": "anatomical_from_mirrored_camera"
+}

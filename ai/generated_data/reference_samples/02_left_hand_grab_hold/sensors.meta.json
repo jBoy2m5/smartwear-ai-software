@@ -1,0 +1,35 @@
+{
+  "source": "simulated_from_camera_observations",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\handedness_staging_fgl1aglj\\02_left_hand_grab_hold\\camera.normalized.jsonl",
+  "camera_sha256": "8c380a38bd4d354f21e69c1d62fe5c09d770256372e2f05e4816ce1916265379",
+  "sample_count": 41,
+  "first_timestamp_ms": 0,
+  "last_timestamp_ms": 1814,
+  "random_seed": 42,
+  "noise_level": 0.02,
+  "camera_action_counts": {
+    "left": {
+      "OTHER": 5,
+      "GRAB": 29,
+      "ASSEMBLY": 7
+    },
+    "right": {
+      "GRAB": 13,
+      "OTHER": 2,
+      "NO_HAND": 26
+    }
+  },
+  "simulated_fields": [
+    "imu_head",
+    "hand_sensors.left.imu_wrist",
+    "hand_sensors.left.force_emg_raw",
+    "hand_sensors.left.torque",
+    "hand_sensors.right.imu_wrist",
+    "hand_sensors.right.force_emg_raw",
+    "hand_sensors.right.torque"
+  ],
+  "time_note": "Timestamps copied from camera frames, not independently synchronized clocks",
+  "unit_note": "IMU m/s^2 and rad/s, torque N*m and degrees are simulator assumptions; force_emg_raw is unitless",
+  "sensors_sha256": "b226387579f7c9e9dd0fbfc2174da4f18e773c5e58b2602a2daff762727e3e67",
+  "schema_version": "smartwear.sensors_meta.v2"
+}

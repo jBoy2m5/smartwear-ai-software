@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "ai"))
-from hand_observation import HandActionDetector, observation  # noqa: E402
+from hand_observation import TwoHandActionDetector, validate_hand_actions  # noqa: E402
 
 
 def normalize_camera_data(input_path, output_path):
@@ -17,7 +17,7 @@ def normalize_camera_data(input_path, output_path):
     if input_path.resolve() == output_path.resolve():
         raise ValueError("Input and output must be different files")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    detector = HandActionDetector()
+    detector = TwoHandActionDetector()
     frame_id = 0
     previous_ms = -1
     # Exclusive creation protects both older normalized data and new recordings.
@@ -31,20 +31,29 @@ def normalize_camera_data(input_path, output_path):
             if type(timestamp_ms) is not int or timestamp_ms <= previous_ms:
                 raise ValueError("Camera timestamps must be increasing integers")
             hands = data["hands"]
-            primary = hands[0]["landmarks"] if hands else None
-            recomputed = observation(detector.update(timestamp_ms, primary), detector.pose)
-            action_estimate = data.get("action_estimate", recomputed)
-            if action_estimate.get("source") != "camera_landmarks":
-                raise ValueError("Unexpected action estimate source")
+            version = data.get("schema_version")
+            if version not in (None, "smartwear.camera_raw.v2"):
+                raise ValueError(f"Unsupported raw camera schema: {version}")
+            recomputed = detector.update(timestamp_ms, hands)
+            # Old aggregate labels cannot be attributed to either hand. Recompute
+            # from the original landmarks and handedness instead of duplicating.
+            actions = data["hand_actions"] if version == "smartwear.camera_raw.v2" else recomputed
+            validate_hand_actions(actions, hands)
             normalized = {
+                "schema_version": "smartwear.camera.v2",
                 "frame_id": frame_id,
                 "timestamp_ms": timestamp_ms,
                 "relative_time_s": round(timestamp_ms / 1000, 3),
                 "camera": data["camera"],
                 "hands": hands,
-                "action_estimate": action_estimate,
+                "hand_actions": actions,
+                "action_origin": "recorded_per_hand" if version else "recomputed_from_legacy_landmarks",
             }
-            target.write(json.dumps(normalized, ensure_ascii=False) + "\n")
+            if "video_frame_index" in data:
+                if type(data["video_frame_index"]) is not int or data["video_frame_index"] != frame_id:
+                    raise ValueError("Video frame indices must match the camera row sequence")
+                normalized["video_frame_index"] = data["video_frame_index"]
+            target.write(json.dumps(normalized, ensure_ascii=False, allow_nan=False) + "\n")
             previous_ms = timestamp_ms
             frame_id += 1
     if frame_id == 0:
@@ -57,7 +66,7 @@ def main():
     parser.add_argument("--input", type=Path, default=ROOT / "ai" / "camera_data.jsonl")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    output = args.output or ROOT / "data" / "processed" / f"{args.input.stem}.normalized.jsonl"
+    output = args.output or ROOT / "ai" / "generated_data" / "processed" / f"{args.input.stem}.normalized.jsonl"
     try:
         count = normalize_camera_data(args.input, output)
     except (OSError, ValueError, KeyError, TypeError) as exc:

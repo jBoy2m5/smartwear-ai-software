@@ -1,0 +1,2 @@
+# Reference metadata uses byte-exact SHA-256 links between camera, sensors, and segments.
+ai/generated_data/reference_samples/** -text
