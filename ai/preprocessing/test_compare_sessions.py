@@ -10,10 +10,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import camera_test
 from analysis.compare_sessions import align_track, compare_sessions, keyframe_paths, sha256_file
 from analysis.detect_muda import detect_muda_candidates
+from analysis.select_reference import select_reference, selection_cost
 from test_two_hands import frame_sequence, hand
 
 
 class SessionComparisonTests(unittest.TestCase):
+    def test_reference_selection_does_not_penalize_hand_absent_in_both_videos(self):
+        right = {"status": "compared", "expert_segments": 5,
+                 "worker_segments": 5, "normalized_dtw_cost": 0.25}
+        absent = {"status": "insufficient_visible_actions", "expert_segments": 0,
+                  "worker_segments": 0}
+        missing = {"status": "insufficient_visible_actions", "expert_segments": 4,
+                   "worker_segments": 0}
+        self.assertEqual(selection_cost({"hands": {"left": absent, "right": right}}), 0.25)
+        self.assertGreater(selection_cost({"hands": {"left": missing, "right": right}}),
+                           0.25)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -106,6 +118,11 @@ class SessionComparisonTests(unittest.TestCase):
                          ["longer_visible_action", "inserted_visible_action"])
         self.assertEqual(result["hands"]["left"]["candidates"][0]["extra_ms"], 600)
         self.assertEqual(result["hands"]["left"]["candidates"][1]["start_ms"], 1200)
+        self.assertIn("tay trái nắm", result["hands"]["left"]["candidates"][0]["comment_vi"])
+        self.assertIn("lâu hơn đoạn tương ứng trong mẫu 0,600 giây",
+                      result["hands"]["left"]["candidates"][0]["comment_vi"])
+        self.assertIn("từ giây 1,200 đến 1,550",
+                      result["hands"]["left"]["candidates"][1]["comment_vi"])
         self.assertEqual(result["hands"]["right"]["candidates"], [])
 
     def test_muda_review_reports_missing_extra_and_repeated_visible_steps(self):
@@ -136,6 +153,9 @@ class SessionComparisonTests(unittest.TestCase):
         self.assertEqual(missing[0]["worker_time_hint_ms"], 400)
         self.assertEqual(missing[0]["expert_image_path"], "keyframes/expert.png")
         self.assertIsNone(missing[0]["start_ms"])
+        self.assertIn("tay trái nắm", missing[0]["comment_vi"])
+        self.assertIn("gần giây 0,400", missing[0]["comment_vi"])
+        self.assertNotIn("từ giây", missing[0]["comment_vi"])
 
         extra_worker = [segment(10, "REACH", 0, 400),
                         segment(11, "ASSEMBLY", 400, 800),
@@ -144,6 +164,7 @@ class SessionComparisonTests(unittest.TestCase):
         extra = check(expert, extra_worker)
         self.assertEqual([item["reason"] for item in extra], ["extra_visible_action"])
         self.assertEqual(extra[0]["worker_segment_id"], 11)
+        self.assertIn("Camera ghi nhận thêm đoạn tay trái", extra[0]["comment_vi"])
 
         repeat_expert = expert[:2]
         repeat_worker = [segment(10, "REACH", 0, 400),
@@ -153,6 +174,30 @@ class SessionComparisonTests(unittest.TestCase):
         repeated = check(repeat_expert, repeat_worker)
         self.assertEqual([item["reason"] for item in repeated],
                          ["repeated_visible_action", "repeated_visible_action"])
+        self.assertTrue(all("chuỗi động tác lặp" in item["comment_vi"]
+                            for item in repeated))
+        trailing_extra = repeat_worker[:2] + [segment(12, "OPEN", 800, 1200)]
+        self.assertEqual([item["reason"] for item in check(repeat_expert, trailing_extra)],
+                         ["extra_visible_action"])
+
+        repeated_at_start = [segment(20, "REACH", 0, 400),
+                             segment(21, "GRAB", 400, 800),
+                             segment(22, "REACH", 800, 1200),
+                             segment(23, "GRAB", 1200, 1600),
+                             segment(24, "OPEN", 1600, 2000)]
+        self.assertEqual([item["reason"] for item in check(expert, repeated_at_start)],
+                         ["repeated_visible_action", "repeated_visible_action"])
+
+        flicker_expert = [segment(1, "GRAB", 0, 800),
+                          segment(2, "ASSEMBLY", 800, 1600),
+                          segment(3, "GRAB", 1600, 1650),
+                          segment(4, "RELEASE", 1650, 2300),
+                          segment(5, "OPEN", 2300, 3100)]
+        clean_worker = [segment(10, "GRAB", 0, 800),
+                        segment(11, "ASSEMBLY", 800, 1600),
+                        segment(12, "RELEASE", 1600, 2250),
+                        segment(13, "OPEN", 2250, 3050)]
+        self.assertEqual(check(flicker_expert, clean_worker), [])
 
         uncertain = [{"start_ms": 399, "end_ms": 401}]
         self.assertEqual(check(expert, missing_worker, uncertain), [])
@@ -217,6 +262,18 @@ class SessionComparisonTests(unittest.TestCase):
         self.assertTrue(result["selected_reference"]["demo_only"])
         self.assertEqual(json.loads((worker.parent / "session_role.json").read_text())["role"],
                          "worker")
+        forced_path, forced = select_reference(
+            worker.parent, samples, worker.parent / "forced_result.json",
+            sample_id="open_sample")
+        self.assertEqual(forced["sample_id"], "open_sample")
+        self.assertEqual(json.loads(forced_path.read_text())["expert_session"],
+                         "open_sample")
+        forced_worker = self.make_recording("forced_worker", 8, 0)
+        with patch.object(camera_test, "SESSION_ROOT", self.root), \
+                patch.object(camera_test, "REFERENCE_ROOT", samples):
+            camera_test.finish_recording(forced_worker, practice_sample="open_sample")
+        forced_analysis = json.loads((forced_worker.parent / "analysis_result.json").read_text())
+        self.assertEqual(forced_analysis["selected_reference"]["sample_id"], "open_sample")
 
     def add_aligned_real_fixture(self, session, force_offset=0):
         """Exercise the future hardware input contract with synthetic test rows."""
@@ -324,6 +381,15 @@ class SessionComparisonTests(unittest.TestCase):
             camera_test.finish_recording(expert, "expert")
             camera_test.finish_recording(worker, "worker", expert.parent)
         result = json.loads((worker.parent / "analysis_result.json").read_text())
+        candidates = result["hands"]["left"]["review_candidates"]
+        self.assertTrue(candidates)
+        self.assertEqual(candidates[0]["hand"], "left")
+        self.assertIsInstance(candidates[0]["start_ms"], int)
+        self.assertGreater(candidates[0]["end_ms"], candidates[0]["start_ms"])
+        self.assertEqual(candidates[0]["duration_ms"],
+                         candidates[0]["end_ms"] - candidates[0]["start_ms"])
+        self.assertIn("worker_image_path", candidates[0])
+        self.assertIn("expert_image_path", candidates[0])
         pairs = result["sensor_comparison"]["hands"]["left"]["pairs"]
         self.assertTrue(any(pair["comparison_status"] == "different_visible_action"
                             and pair["worker_minus_expert"] is None for pair in pairs))

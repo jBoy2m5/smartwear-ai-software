@@ -7,6 +7,42 @@ MIN_INSERTED_MS = 300
 MIN_DURATION_RATIO = 1.5
 
 
+def _comment_vi(candidate):
+    """Describe only the visible evidence behind one review candidate."""
+    hand = "tay trái" if candidate["hand"] == "left" else "tay phải"
+    actions = {
+        "OPEN": "mở", "GRAB": "nắm", "REACH": "đưa tới",
+        "RELEASE": "thả", "ASSEMBLY": "ở trạng thái ASSEMBLY",
+    }
+    label = candidate["expert_label"] if candidate["reason"] == "missing_visible_action" else candidate["worker_label"]
+    action = actions.get(label, f"ở trạng thái {label}")
+
+    def seconds(ms):
+        return f"{ms / 1000:.3f}".replace(".", ",")
+
+    if candidate["reason"] == "missing_visible_action":
+        return (f"Mẫu có đoạn {hand} {action}, nhưng camera không ghi nhận đoạn tương ứng "
+                f"gần giây {seconds(candidate['worker_time_hint_ms'])} trong video của bạn. "
+                "Hãy xem ảnh mẫu và video quanh mốc này.")
+
+    start = seconds(candidate["start_ms"])
+    end = seconds(candidate["end_ms"])
+    if candidate["reason"] == "longer_visible_action":
+        return (f"Camera ghi nhận {hand} {action} từ giây {start} đến {end}, "
+                f"lâu hơn đoạn tương ứng trong mẫu {seconds(candidate['extra_ms'])} giây. "
+                "Hãy xem lại video đoạn này.")
+    if candidate["reason"] == "repeated_visible_action":
+        return (f"Camera ghi nhận đoạn {hand} {action} trong một chuỗi động tác lặp "
+                f"từ giây {start} đến {end}. Hãy xem lại video đoạn này.")
+    if candidate["reason"] == "extra_visible_action":
+        return (f"Camera ghi nhận thêm đoạn {hand} {action} từ giây {start} đến {end} "
+                "so với chuỗi trong mẫu. Hãy xem lại video đoạn này.")
+    if candidate["reason"] == "inserted_visible_action":
+        return (f"Camera ghi nhận đoạn {hand} {action} từ giây {start} đến {end} "
+                "chen giữa các đoạn khớp mẫu. Hãy xem lại video đoạn này.")
+    raise ValueError(f"Unknown Muda review reason: {candidate['reason']}")
+
+
 def _uncertain_between(uncertain, start_ms, end_ms):
     """An unobserved hand or camera gap cannot establish an omitted action."""
     if end_ms - start_ms > 500:
@@ -18,6 +54,11 @@ def _uncertain_between(uncertain, start_ms, end_ms):
 def _sequence_candidates(side, expert, worker, expert_images, worker_images,
                          uncertain, existing_ids):
     """Find visible insertions/deletions bounded by matching action labels."""
+    # One-frame label flicker is not a reliable factory step.
+    expert = [item for item in expert if item["duration_ms"] >= MIN_INSERTED_MS]
+    worker = [item for item in worker if item["duration_ms"] >= MIN_INSERTED_MS]
+    if not expert or not worker:
+        return []
     labels_e = [item["label"] for item in expert]
     labels_w = [item["label"] for item in worker]
     opcodes = SequenceMatcher(None, labels_e, labels_w, autojunk=False).get_opcodes()
@@ -34,7 +75,17 @@ def _sequence_candidates(side, expert, worker, expert_images, worker_images,
                          and before[0] == "equal" and w1 - w0 >= 2
                          and w0 >= w1 - w0
                          and labels_w[w0:w1] == labels_w[w0 - (w1 - w0):w0])
-        if not bounded and not repeated_tail:
+        repeated_head = (operation == "insert" and before is None and after is not None
+                         and after[0] == "equal" and w1 - w0 >= 2
+                         and w1 + (w1 - w0) <= len(worker)
+                         and labels_w[w0:w1] == labels_w[w1:w1 + (w1 - w0)])
+        complete_reference_at_edge = (
+            operation == "insert" and len(opcodes) == 2
+            and ((before is None and after is not None and after[0] == "equal"
+                  and after[2] - after[1] == len(expert))
+                 or (after is None and before is not None and before[0] == "equal"
+                     and before[2] - before[1] == len(expert))))
+        if not bounded and not repeated_tail and not repeated_head and not complete_reference_at_edge:
             continue
         if operation == "insert":
             left_time = worker[w0 - 1]["end_ms"] if w0 else worker[w0]["start_ms"]
@@ -44,7 +95,10 @@ def _sequence_candidates(side, expert, worker, expert_images, worker_images,
                 continue
             inserted_labels = labels_w[w0:w1]
             previous_labels = labels_w[max(0, w0 - len(inserted_labels)):w0]
-            repeated = len(inserted_labels) >= 2 and inserted_labels == previous_labels
+            following_labels = labels_w[w1:w1 + len(inserted_labels)]
+            repeated = (len(inserted_labels) >= 2 and
+                        (inserted_labels == previous_labels
+                         or inserted_labels == following_labels))
             for segment in worker[w0:w1]:
                 if segment["duration_ms"] < MIN_INSERTED_MS or segment["segment_id"] in existing_ids:
                     continue
@@ -151,6 +205,8 @@ def detect_muda_candidates(tracks, worker_tracks, expert_tracks=None,
         candidates.sort(key=lambda item: (
             item["start_ms"] if item["start_ms"] is not None
             else item["worker_time_hint_ms"], item["reason"]))
+        for candidate in candidates:
+            candidate["comment_vi"] = _comment_vi(candidate)
         hands[side] = {"status": track["status"], "candidates": candidates,
                        "candidate_count": len(candidates)}
 

@@ -13,7 +13,9 @@ def selection_cost(document):
     for side in SIDES:
         track = document["hands"][side]
         if track["status"] != "compared":
-            total += 1.5
+            # No hand in either video is a match, not a missing action.
+            if track["expert_segments"] or track["worker_segments"]:
+                total += 1.5
             continue
         n, m = track["expert_segments"], track["worker_segments"]
         side_weight = min(n, m)
@@ -23,7 +25,7 @@ def selection_cost(document):
     return round(total / max(1, weight), 4)
 
 
-def select_reference(worker_session, reference_root, output=None):
+def select_reference(worker_session, reference_root, output=None, sample_id=None):
     worker_session = Path(worker_session).resolve()
     reference_root = Path(reference_root).resolve()
     output = Path(output).resolve() if output else worker_session / "analysis_result.json"
@@ -33,6 +35,8 @@ def select_reference(worker_session, reference_root, output=None):
         raise FileExistsError(f"Analysis result already exists: {output}")
     choices = []
     for candidate in sorted(reference_root.iterdir()) if reference_root.is_dir() else []:
+        if sample_id is not None and candidate.name != sample_id:
+            continue
         info_path = candidate / "reference_sample.json"
         if not candidate.is_dir() or not info_path.is_file():
             continue
@@ -47,7 +51,8 @@ def select_reference(worker_session, reference_root, output=None):
             raise
         choices.append((selection_cost(document), candidate.name, info, document))
     if not choices:
-        raise ValueError("No usable demo reference for visible actions in this recording")
+        raise ValueError("No usable demo reference for visible actions in this recording"
+                         + (f": {sample_id}" if sample_id else ""))
     score, name, info, document = min(choices, key=lambda item: (item[0], item[1]))
     document["selected_reference"] = {
         "sample_id": name, "title": info["title"],

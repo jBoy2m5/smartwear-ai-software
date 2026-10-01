@@ -1,7 +1,7 @@
 {
   "schema_version": "smartwear.demo_reference.v1",
   "title": "Hai tay đưa tới và nắm",
-  "practice_instruction": "Đưa hai bàn tay vào khung hình; mở tay, đưa tới trước, rồi nắm cả hai tay. Sau đó mở tay trái.",
+  "practice_instruction": "Đưa hai bàn tay vào khung hình; mở tay, đưa tới trước, rồi nắm cả hai tay. Sau đó mở tay phải.",
   "demo_only": true,
   "not_validated_expert": true,
   "source_session": "camera_data_20260929_162510_226861_uev_uvqt",
@@ -12,6 +12,12 @@
   "frame_count": 46,
   "visible_labels_by_hand": {
     "left": [
+      "OPEN",
+      "REACH",
+      "OPEN",
+      "GRAB"
+    ],
+    "right": [
       "REACH",
       "OPEN",
       "REACH",
@@ -21,12 +27,7 @@
       "ASSEMBLY",
       "GRAB",
       "RELEASE"
-    ],
-    "right": [
-      "OPEN",
-      "REACH",
-      "OPEN",
-      "GRAB"
     ]
-  }
+  },
+  "handedness_convention": "anatomical_from_mirrored_camera"
 }

@@ -161,10 +161,23 @@ def build_comparison(expert_session, worker_session):
     tracks = {}
     for side in SIDES:
         result = align_track(expert[side], worker[side])
+        expert_by_id = {segment["segment_id"]: segment for segment in expert[side]}
+        worker_by_id = {segment["segment_id"]: segment for segment in worker[side]}
         for pair in result["alignment"]:
             pair["expert_image_path"] = expert_images.get(pair["expert_segment_id"])
             pair["worker_image_path"] = worker_images.get(pair["worker_segment_id"])
         for candidate in result["review_candidates"]:
+            worker_segment = worker_by_id[candidate["worker_segment_id"]]
+            expert_segment = expert_by_id[candidate["expert_segment_id"]]
+            candidate.update({
+                "hand": side,
+                "start_ms": worker_segment["start_ms"],
+                "end_ms": worker_segment["end_ms"],
+                "duration_ms": worker_segment["duration_ms"],
+                "worker_label": worker_segment["label"],
+                "expert_label": expert_segment["label"],
+                "expert_image_path": expert_images.get(candidate["expert_segment_id"]),
+            })
             candidate["worker_image_path"] = worker_images.get(candidate["worker_segment_id"])
         result["expert_omitted"] = expert_omitted[side]
         result["worker_omitted"] = worker_omitted[side]

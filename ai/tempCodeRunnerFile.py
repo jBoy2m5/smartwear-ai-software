@@ -1,2 +1,1 @@
-resolve().parent
-SESSION_ROOT = DEFAULT_OUTPUT_R
+ingVideo

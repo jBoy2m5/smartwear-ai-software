@@ -134,7 +134,7 @@ def segment_file(input_path, output_path, max_gap_ms=500):
     if frames[0]["schema_version"] == "smartwear.multimodal.v2":
         document.update(schema_version="smartwear.action_segments.v2",
                         method="consecutive_camera_labels_per_hand",
-                        hand_identity="mediapipe_handedness",
+                        hand_identity="camera_recorded_handedness",
                         segment_counts_by_hand={side: sum(s["hand"] == side for s in segments)
                                                 for side in SIDES},
                         duration_scope="Per hand; simultaneous left/right durations must not be added")

@@ -1,4 +1,4 @@
-"""Cut three clearly labeled demo references from the existing camera recording.
+"""Cut the retained demo references from the existing camera recording.
 
 The clips are practice examples from one previous recording, not validated
 factory expert demonstrations. Run from the repository root with Python/OpenCV.
@@ -11,6 +11,7 @@ from pathlib import Path
 AI_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(AI_DIR))
 from analysis.compare_sessions import sha256_file
+from analysis.correct_reference_handedness import correct_legacy_row
 from process_recording import process_recording
 from video_recording import RecordingVideo
 
@@ -21,13 +22,10 @@ OUTPUT_ROOT = AI_DIR / "generated_data" / "reference_samples"
 SAMPLES = (
     ("01_two_hands_reach_grab", 4312, 6323,
      "Hai tay đưa tới và nắm",
-     "Đưa hai bàn tay vào khung hình; mở tay, đưa tới trước, rồi nắm cả hai tay. Sau đó mở tay trái."),
-    ("02_right_hand_grab_hold", 6556, 8416,
-     "Tay phải giữ lâu, tay trái rời khung",
-     "Bắt đầu với hai tay nắm. Đưa tay trái khỏi khung hình, còn tay phải tiếp tục nắm và giữ một lúc."),
-    ("03_left_hand_grab_release", 8586, 10873,
-     "Tay trái nắm rồi mở",
-     "Đưa tay trái vào khung hình, nắm lại, sau đó mở bàn tay và giữ mở một lúc."),
+     "Đưa hai bàn tay vào khung hình; mở tay, đưa tới trước, rồi nắm cả hai tay. Sau đó mở tay phải."),
+    ("02_left_hand_grab_hold", 6556, 8416,
+     "Tay trái giữ lâu, tay phải rời khung",
+     "Bắt đầu với hai tay nắm. Đưa tay phải khỏi khung hình, còn tay trái tiếp tục nắm và giữ một lúc."),
 )
 
 
@@ -74,7 +72,7 @@ def build_samples(source=SOURCE, output_root=OUTPUT_ROOT):
                         raise ValueError("Source video ended before camera JSONL")
                     if index not in indices:
                         continue
-                    copied = dict(row)
+                    copied = correct_legacy_row(dict(row))
                     copied["timestamp"] = row["timestamp"] - rows[indices[0]]["timestamp"]
                     copied["video_frame_index"] = recorder.write(frame)
                     target.write(json.dumps(copied, ensure_ascii=False, allow_nan=False) + "\n")
@@ -99,6 +97,7 @@ def build_samples(source=SOURCE, output_root=OUTPUT_ROOT):
             json.dump({"schema_version": "smartwear.demo_reference.v1",
                        "title": title, "practice_instruction": instruction,
                        "demo_only": True, "not_validated_expert": True,
+                       "handedness_convention": "anatomical_from_mirrored_camera",
                        "source_session": source.name,
                        "source_camera_sha256": metadata["camera_sha256"],
                        "source_video_sha256": metadata["video_sha256"],

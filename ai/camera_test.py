@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.request import urlretrieve
 
-from hand_observation import SIDES, TwoHandActionDetector
+from hand_observation import SIDES, TwoHandActionDetector, anatomical_handedness
 from analysis.compare_sessions import compare_sessions, load_session, sha256_file
 from analysis.select_reference import select_reference
 from process_recording import DEFAULT_OUTPUT_ROOT, process_recording
@@ -35,9 +35,12 @@ def make_frame_data(result, timestamp_ms, width, height, detector):
     for index, landmarks in enumerate(result.hand_landmarks):
         categories = result.handedness[index] if index < len(result.handedness) else []
         world = result.hand_world_landmarks[index] if index < len(result.hand_world_landmarks) else []
+        model_side = categories[0].category_name if categories else "unknown"
         hands.append({
             "hand_index": index,
-            "handedness": categories[0].category_name if categories else "unknown",
+            "handedness": anatomical_handedness(model_side),
+            "model_handedness": model_side,
+            "handedness_convention": "anatomical_from_mirrored_camera",
             "handedness_score": round(categories[0].score, 4) if categories else None,
             "landmarks": point_records(landmarks),
             "world_landmarks": point_records(world),
@@ -133,7 +136,7 @@ def record_camera():
     return output
 
 
-def finish_recording(output, role=None, expert_session=None):
+def finish_recording(output, role=None, expert_session=None, practice_sample=None):
     """Process one recording, then optionally identify and compare its role."""
     output = Path(output)
     if role == "worker" and expert_session is None:
@@ -142,6 +145,8 @@ def finish_recording(output, role=None, expert_session=None):
         raise ValueError("--expert-session is only used with --role worker")
     if expert_session is not None:
         load_session(expert_session, "expert")
+    if practice_sample is not None and role is not None:
+        raise ValueError("--practice-sample cannot be combined with --role")
     auto_reference = role is None and REFERENCE_ROOT.is_dir()
     if auto_reference:
         role = "worker"
@@ -155,7 +160,8 @@ def finish_recording(output, role=None, expert_session=None):
             stream.write("\n")
         print(f"Vai tro phien: {role}")
     if auto_reference:
-        result, selected = select_reference(output.parent, REFERENCE_ROOT)
+        result, selected = select_reference(output.parent, REFERENCE_ROOT,
+                                            sample_id=practice_sample)
         print(f"Mau demo gan nhat: {selected['title']}")
         print(f"Ket qua so sanh: {result}")
     elif role == "worker":
@@ -181,6 +187,8 @@ def main(argv=None):
                         help="Mark this new session as a reference or a worker recording")
     parser.add_argument("--expert-session", type=Path,
                         help="Existing expert session to compare automatically after recording")
+    parser.add_argument("--practice-sample", type=str,
+                        help="Compare to one named bundled practice sample after recording")
     args = parser.parse_args(argv)
     if args.role == "worker" and args.expert_session is None:
         parser.error("--role worker requires --expert-session")
@@ -191,12 +199,20 @@ def main(argv=None):
             load_session(args.expert_session, "expert")
         except (OSError, ValueError, KeyError, TypeError) as exc:
             parser.error(f"Invalid expert session: {exc}")
+    if args.practice_sample is not None:
+        if args.role is not None or args.expert_session is not None:
+            parser.error("--practice-sample cannot be combined with --role or --expert-session")
+        if (Path(args.practice_sample).name != args.practice_sample
+                or "/" in args.practice_sample or "\\" in args.practice_sample):
+            parser.error("--practice-sample must be a sample name, not a path")
+        if not (REFERENCE_ROOT / args.practice_sample / "reference_sample.json").is_file():
+            parser.error(f"Unknown practice sample: {args.practice_sample}")
     try:
         output = record_camera()
     except (OSError, RuntimeError, ValueError, ImportError) as exc:
         raise SystemExit(f"Loi camera: {exc}") from exc
     try:
-        finish_recording(output, args.role, args.expert_session)
+        finish_recording(output, args.role, args.expert_session, args.practice_sample)
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"Khong hoan tat xu ly tu dong: {exc}")
         if (output.parent / "multimodal.jsonl").is_file():

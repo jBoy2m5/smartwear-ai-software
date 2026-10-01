@@ -35,19 +35,33 @@ C:\Task\smartwear-ai\ai\generated_data\sessions\camera_data_<ngày giờ>_<mã r
     analysis_result.json    ← so sánh với mẫu demo gần nhất
 ```
 
-## Thử so sánh bằng ba video mẫu có sẵn
+## Thử so sánh bằng các video mẫu có sẵn
 
 Chỉ cần chạy `python -B .\ai\camera_test.py`, quay thao tác của bạn và nhấn Q.
 Chương trình tự xử lý phiên của bạn như một phiên worker, chọn đoạn mẫu demo gần
 nhất trong `ai/generated_data/reference_samples`, rồi tạo `analysis_result.json`
 trong thư mục phiên của bạn. Không cần gõ vai trò hay chép đường dẫn mẫu.
 
-Ba đoạn mẫu được **cắt từ một video camera đã ghi trước đó**, mỗi đoạn khoảng
-2 giây. Chúng là bài tập để thử chức năng, chưa được chuyên gia nhà máy xác nhận:
+Các đoạn mẫu được **cắt từ video camera đã ghi trước đó**. Chúng là bài tập để
+thử chức năng, chưa được chuyên gia nhà máy xác nhận:
 
-- `01_two_hands_reach_grab`: hai tay mở/đưa tới rồi nắm; cuối đoạn tay trái mở.
-- `02_right_hand_grab_hold`: hai tay nắm; tay trái rời khung, tay phải tiếp tục giữ.
-- `03_left_hand_grab_release`: tay trái nắm, thả rồi mở; tay phải không thấy rõ.
+- `01_two_hands_reach_grab`: hai tay mở/đưa tới rồi nắm; cuối đoạn tay phải mở.
+- `02_left_hand_grab_hold`: hai tay nắm; tay phải rời khung, tay trái tiếp tục giữ.
+- `04_right_grab_hold_release_open`: tay phải nắm, giữ gần như đứng yên, thả và
+  mở. Video dài khoảng 4,8 giây, có bốn bước ổn định và một nhãn dao động 47 ms.
+  Xem `PRACTICE.md` trong thư mục mẫu để thử làm thêm, lặp, bỏ sót và kéo dài.
+
+Để **khóa đúng mẫu 04** cho một lần quay mà không cần nhập đường dẫn mẫu:
+
+```powershell
+python -B .\ai\camera_test.py --practice-sample 04_right_grab_hold_release_open
+```
+
+Không có tùy chọn này thì chương trình tiếp tục tự chọn mẫu gần nhất.
+Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản gốc mang nhãn đảo được
+giữ tại `ai/generated_data/legacy_handedness_references/` và không được chọn
+để so sánh. Các file kết quả của phiên cũ không bị ghi đè; muốn có nhãn tay
+đúng trong một phiên mới, hãy quay lại bằng phiên bản camera đã sửa.
 
 Mỗi mẫu có `camera.avi` để xem, `reference_sample.json` ghi mô tả và nguồn gốc,
 cùng các file xử lý như một phiên thường. `session_role.json` ghi đây là mẫu demo.
@@ -56,7 +70,9 @@ một thao tác chuẩn mới.
 
 File kết quả so sánh hai tay riêng biệt bằng DTW trên các đoạn hành động nhìn thấy từ camera;
 `alignment` nêu hai đoạn được ghép, chênh lệch thời gian và đường dẫn ảnh tiêu biểu
-nếu video có ảnh. `review_candidates` chỉ là các đoạn cần xem lại video, chưa phải
+nếu video có ảnh. Mỗi mục `review_candidates` ghi tay, `start_ms`/`end_ms`
+tính từ đầu video worker, nhãn của hai phiên và `worker_image_path` (kèm
+`expert_image_path` nếu có) để tìm đúng đoạn cần xem lại. Đây chưa phải
 kết luận thao tác sai hoặc Muda. Chỉ số `normalized_dtw_cost` càng thấp thì chuỗi
 hành động nhìn thấy càng giống; đây không phải điểm chất lượng đã hiệu chuẩn.
 
@@ -70,10 +86,12 @@ một đoạn cùng nhãn được ghép một-một với mẫu, dài hơn ít 
 video trước khi đưa ra nhận định.
 
 Phần mở rộng tìm `extra_visible_action` khi có một đoạn hành động nhìn thấy
-chen giữa hai nhãn khớp mẫu; `repeated_visible_action` khi chuỗi từ hai hành
+chen giữa hai nhãn khớp mẫu hoặc ở đầu/cuối sau khi toàn bộ mẫu đã khớp;
+`repeated_visible_action` khi chuỗi từ hai hành
 động trở lên được thực hiện lại; và `missing_visible_action` khi một bước mẫu
 ở giữa hai bước khớp không xuất hiện trong chuỗi camera của worker. Mỗi đoạn
-thêm phải dài ít nhất 300 ms. Trường hợp bỏ sót không có một khung worker thật
+thêm phải dài ít nhất 300 ms; nhãn thoáng qua dưới 300 ms không được xem là
+một bước để tìm thêm/bỏ sót/lặp. Trường hợp bỏ sót không có một khung worker thật
 cho hành động vắng mặt: `worker_time_hint_ms` là mốc gần vị trí đó,
 `expert_image_path` là ảnh bước mẫu, còn `start_ms`/`end_ms` là null. Nếu camera
 mất tay/không chắc ở mốc này, chương trình không kết luận bỏ sót. Các nhãn bị
@@ -164,7 +182,11 @@ quyền riêng tư trước khi chia sẻ file.
 
 ## Cách xác định tay
 
-Dùng nhãn Left/Right của MediaPipe, không dùng vị trí trong danh sách hoặc
+Camera lật gương để người dùng xem như soi gương. Nhãn Left/Right MediaPipe
+trả về trong cấu hình này bị ngược so với tay thật; `camera_test.py` đổi nhãn
+ngay lúc đọc kết quả mô hình. Trường `model_handedness` giữ nhãn gốc, còn
+`handedness` là tay thật; `hand_actions.left/right` và toàn bộ dữ liệu cảm biến,
+đoạn, ảnh, so sánh đều dựa vào tay thật. Không dùng vị trí trong danh sách hoặc
 bên trái/bên phải màn hình. Thứ tự phát hiện đảo vẫn giữ lịch sử theo tay.
 Chương trình dành cho **hai tay của một người**, không nhận dạng danh tính nhiều người.
 
@@ -179,7 +201,7 @@ ambiguous để không chọn bừa. Điểm gốc vẫn được lưu. Tay mấ
 đặt lại lịch sử; tay còn lại không bị ảnh hưởng khi vẫn xác định được.
 Khoảng cách khung >500 ms cũng đặt lại lịch sử nhận diện.
 
-Trái/phải phụ thuộc MediaPipe. Che khuất, giao nhau hoặc góc khó vẫn có thể làm
+Trái/phải vẫn phụ thuộc nhãn MediaPipe sau khi đổi chiều. Che khuất, giao nhau hoặc góc khó vẫn có thể làm
 mô hình gán sai bên; chương trình chưa bảo đảm theo dõi danh tính khi nhãn bị
 đảo sai. Các nhãn hành động là quy tắc hình bàn tay, không chứng minh công nhân
 đã cầm vật hay lắp ráp thật.

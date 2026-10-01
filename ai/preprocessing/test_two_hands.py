@@ -16,6 +16,7 @@ from sensors.simulate_sensors import simulate_from_camera, validate_record
 from build_multimodal import build_multimodal
 from segment_actions import segment_frames
 from test_camera_observation import fake_hand
+from analysis.correct_reference_handedness import correct_legacy_row
 import camera_test
 
 
@@ -44,12 +45,25 @@ def frame_sequence(hand_lists):
 
 
 class TwoHandTests(unittest.TestCase):
+    def test_legacy_raw_frame_swaps_hands_and_action_channels_once(self):
+        frame = frame_sequence([[hand("left", True), hand("right", False)] for _ in range(3)])[-1]
+        frame["schema_version"] = "smartwear.camera_raw.v2"
+        corrected = correct_legacy_row(frame)
+        self.assertEqual(corrected["hands"][0]["handedness"], "Right")
+        self.assertEqual(corrected["hands"][0]["model_handedness"], "Left")
+        self.assertEqual(corrected["hand_actions"]["right"]["label"], "GRAB")
+        self.assertEqual(corrected["hand_actions"]["left"]["label"], "OPEN")
+        with self.assertRaisesRegex(ValueError, "already"):
+            correct_legacy_row(corrected)
+
     def test_camera_q_closes_device_and_saves_two_hands_without_real_webcam(self):
         hands = [hand("left", True), hand("right", False)]
         result = SimpleNamespace(
             hand_landmarks=[[SimpleNamespace(**{k: p[k] for k in ("x", "y", "z")})
                              for p in h["landmarks"]] for h in hands],
-            handedness=[[SimpleNamespace(category_name=h["handedness"], score=0.99)] for h in hands],
+            handedness=[[SimpleNamespace(
+                category_name="Right" if h["handedness"] == "Left" else "Left",
+                score=0.99)] for h in hands],
             hand_world_landmarks=[[], []])
         events = []
         frame = SimpleNamespace(shape=(480, 640, 3))
@@ -108,6 +122,8 @@ class TwoHandTests(unittest.TestCase):
             self.assertEqual(len(rows), 3)
             self.assertEqual(rows[-1]["hand_actions"]["left"]["label"], "GRAB")
             self.assertEqual(rows[-1]["hand_actions"]["right"]["label"], "OPEN")
+            self.assertEqual(rows[-1]["hands"][0]["handedness"], "Left")
+            self.assertEqual(rows[-1]["hands"][0]["model_handedness"], "Right")
             self.assertEqual([r["video_frame_index"] for r in rows], [0, 1, 2])
             manifest = json.loads(output.with_suffix(".video.json").read_text())
             self.assertEqual(manifest["frame_count"], 3)
@@ -219,7 +235,9 @@ class TwoHandTests(unittest.TestCase):
             result = SimpleNamespace(
                 hand_landmarks=[[SimpleNamespace(**{k: p[k] for k in ("x", "y", "z")})
                                  for p in h["landmarks"]] for h in hands],
-                handedness=[[SimpleNamespace(category_name=h["handedness"], score=0.99)] for h in hands],
+                handedness=[[SimpleNamespace(
+                    category_name="Right" if h["handedness"] == "Left" else "Left",
+                    score=0.99)] for h in hands],
                 hand_world_landmarks=[[] for _ in hands])
             raw_frames.append(make_frame_data(result, 303 + index * 100, 640, 480, detector))
         # Exercise the actual overlay routine without accessing a webcam.

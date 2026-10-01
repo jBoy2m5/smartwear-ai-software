@@ -10,6 +10,11 @@ LABELS = {"OPEN", "REACH", "GRAB", "ASSEMBLY", "RELEASE", "OTHER", "NO_HAND"}
 STATES = {"OPEN", "CLOSED", "OTHER", "NONE"}
 
 
+def anatomical_handedness(model_label):
+    """Correct the reported MediaPipe side for this mirrored camera input."""
+    return {"Left": "Right", "Right": "Left"}.get(model_label, "unknown")
+
+
 def finger_angle(a, b, c):
     first = (a["x"] - b["x"], a["y"] - b["y"])
     second = (c["x"] - b["x"], c["y"] - b["y"])
@@ -107,7 +112,7 @@ def valid_landmarks(points):
 
 
 def select_hands(hands):
-    """Resolve anatomical sides by MediaPipe handedness, never list order.
+    """Resolve anatomical sides by corrected camera handedness, never list order.
 
     This is for one operator. Duplicate/unknown handedness cannot be safely
     resolved to left/right: report ambiguity rather than guessing identities.
