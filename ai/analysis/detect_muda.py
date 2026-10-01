@@ -31,6 +31,10 @@ def _comment_vi(candidate):
         return (f"Camera ghi nhận {hand} {action} từ giây {start} đến {end}, "
                 f"lâu hơn đoạn tương ứng trong mẫu {seconds(candidate['extra_ms'])} giây. "
                 "Hãy xem lại video đoạn này.")
+    if candidate["reason"] == "shorter_visible_action":
+        return (f"Camera ghi nhận {hand} {action} từ giây {start} đến {end}, "
+                f"ngắn hơn đoạn cùng hành động trong mẫu {seconds(-candidate['extra_ms'])} giây. "
+                "Hãy xem lại video đoạn này; chưa kết luận thao tác sai.")
     if candidate["reason"] == "repeated_visible_action":
         return (f"Camera ghi nhận đoạn {hand} {action} trong một chuỗi động tác lặp "
                 f"từ giây {start} đến {end}. Hãy xem lại video đoạn này.")
@@ -141,9 +145,9 @@ def detect_muda_candidates(tracks, worker_tracks, expert_tracks=None,
                            worker_uncertain=None):
     """Report conservative, per-hand timing and inserted-action candidates.
 
-    DTW can map one segment several times. Only a unique one-to-one match can
-    support a timing comparison. An inserted action needs the same expert step
-    and matching worker action on both sides; a lone label mismatch is ignored.
+    DTW can map one segment several times. Timing comparisons need an unambiguous
+    same-label pair; a very short mismatched tail does not mask a shortened step.
+    An inserted action needs matching worker actions on both sides.
     """
     expert_images = expert_images or {}
     worker_images = worker_images or {}
@@ -157,11 +161,13 @@ def detect_muda_candidates(tracks, worker_tracks, expert_tracks=None,
         candidates = []
         expert_counts = {}
         worker_counts = {}
+        expert_pairs = {}
         for pair in pairs:
             expert_counts[pair["expert_segment_id"]] = (
                 expert_counts.get(pair["expert_segment_id"], 0) + 1)
             worker_counts[pair["worker_segment_id"]] = (
                 worker_counts.get(pair["worker_segment_id"], 0) + 1)
+            expert_pairs.setdefault(pair["expert_segment_id"], []).append(pair)
 
         for index, pair in enumerate(pairs):
             segment_id = pair["worker_segment_id"]
@@ -176,6 +182,18 @@ def detect_muda_candidates(tracks, worker_tracks, expert_tracks=None,
                     and expert_counts[pair["expert_segment_id"]] == 1
                     and worker_counts[segment_id] == 1):
                 reason = "longer_visible_action"
+            elif (pair["same_label"] and -extra >= MIN_EXTRA_MS
+                  and pair["expert_duration_ms"] >= MIN_DURATION_RATIO *
+                  max(1, pair["worker_duration_ms"])
+                  and pair["worker_duration_ms"] >= MIN_INSERTED_MS
+                  and worker_counts[segment_id] == 1
+                  and all(other is pair or
+                          (not other["same_label"] and
+                           other["worker_duration_ms"] < MIN_INSERTED_MS)
+                          for other in expert_pairs[pair["expert_segment_id"]])):
+                # A very short mismatched tail can reuse the expert segment in DTW;
+                # it is not evidence that the matching worker action lasted longer.
+                reason = "shorter_visible_action"
             elif (not pair["same_label"] and worker["duration_ms"] >= MIN_INSERTED_MS
                   and worker_counts[segment_id] == 1 and 0 < index < len(pairs) - 1):
                 before, after = pairs[index - 1], pairs[index + 1]
@@ -194,7 +212,8 @@ def detect_muda_candidates(tracks, worker_tracks, expert_tracks=None,
                     "expert_label": pair["expert_label"],
                     "start_ms": worker["start_ms"], "end_ms": worker["end_ms"],
                     "duration_ms": worker["duration_ms"],
-                    "extra_ms": extra if reason == "longer_visible_action" else None,
+                    "extra_ms": extra if reason in (
+                        "longer_visible_action", "shorter_visible_action") else None,
                     "worker_image_path": pair.get("worker_image_path"),
                 })
         if expert_tracks is not None and track["status"] == "compared":

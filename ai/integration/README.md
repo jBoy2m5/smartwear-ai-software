@@ -63,8 +63,9 @@ display number in a field named N, **not physical Newton**. The similarity displ
 score is `100 / (1 + weighted mean per-hand normalized DTW cost)`; no comparable
 worker actions gives 0, and an expert session gets demo baseline 100. This score
 is not a calibrated work-quality percentage. `muda_detected_seconds` sums distinct
-review-candidate durations; missing actions add 0 because no worker duration was
-observed. These are **unconfirmed suspicions**, not verified wasted seconds.
+candidate durations or positive extra time. Missing actions add 0 because no worker
+duration was observed; `shorter_visible_action` also adds 0 because it did not
+increase elapsed time. These are **unconfirmed suspicions**, not verified wasted seconds.
 Trajectory points sample visible wrist screen coordinates at intervals of at least
 100 ms and map them onto a small flat demo plane. They are **not calibrated robot
 coordinates** and must not control a robot. The detailed rules and input hashes

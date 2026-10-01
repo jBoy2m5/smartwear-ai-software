@@ -57,11 +57,13 @@ class CaptureManager:
             directory = self.root / job_id
             directory.mkdir()
             backend_url = os.getenv("SMARTWEAR_CAPTURE_BACKEND_URL", "http://127.0.0.1:8000")
+            environment = os.environ.copy()
+            environment["PYTHONIOENCODING"] = "utf-8"
             with (directory / "run.log").open("wb") as log:
                 process = subprocess.Popen(
                     [python, "-B", str(CAPTURE_SCRIPT), "--job-dir", str(directory),
                      "--backend-url", backend_url],
-                    cwd=PROJECT_ROOT, env=os.environ.copy(), stdout=log,
+                    cwd=PROJECT_ROOT, env=environment, stdout=log,
                     stderr=subprocess.STDOUT,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )

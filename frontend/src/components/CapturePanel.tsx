@@ -41,7 +41,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
 
   useEffect(() => {
     if (stage !== 'recording') return;
-    const timer = window.setInterval(() => setFrameTick(value => value + 1), 220);
+    const timer = window.setInterval(() => setFrameTick(value => value + 1), 100);
     return () => window.clearInterval(timer);
   }, [jobId, stage]);
 

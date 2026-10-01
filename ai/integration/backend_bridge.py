@@ -182,7 +182,7 @@ def metrics_for(role, analysis):
             seen.add(identity)
             reason = item.get("reason")
             duration = item.get("extra_ms") if reason == "longer_visible_action" else item.get("duration_ms")
-            if reason == "missing_visible_action":
+            if reason in ("missing_visible_action", "shorter_visible_action"):
                 duration = 0
             if isinstance(duration, (int, float)) and math.isfinite(duration):
                 total_ms += max(0, duration)

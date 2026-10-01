@@ -4,16 +4,28 @@ import { candidateList, focusFromPair, HANDS, handName, number, seconds } from '
 import type { Focus } from '../presentation';
 import type { SessionDetail } from '../sessionTypes';
 
+const reasonName: Record<string, string> = {
+  longer_visible_action: 'Kéo dài hơn mẫu',
+  shorter_visible_action: 'Ngắn hơn mẫu',
+  inserted_visible_action: 'Hành động chen vào',
+  extra_visible_action: 'Hành động làm thêm',
+  repeated_visible_action: 'Hành động lặp lại',
+  missing_visible_action: 'Thiếu hành động trong mẫu',
+  different_visible_label: 'Khác hành động trong mẫu',
+};
+
 export function MudaPanel({ detail, setFocus }: {
   detail: SessionDetail; setFocus: (focus: Focus) => void;
 }) {
   const items = candidateList(detail);
-  return <section className={`rounded-xl border p-5 shadow-lg ${items.length ? 'border-alertRed/50 bg-red-950/20' : 'border-slate-700/60 bg-panelBg'}`}>
+  const dtwReviews = HANDS.reduce((total, hand) =>
+    total + (detail.analysis_result?.hands?.[hand]?.review_candidates?.length ?? 0), 0);
+  return <section className={`rounded-xl border p-5 shadow-lg ${items.length ? 'border-alertRed/50 bg-red-950/20' : dtwReviews ? 'border-amber-500/40 bg-panelBg' : 'border-slate-700/60 bg-panelBg'}`}>
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3">{items.length ? <AlertTriangle className="text-alertRed" size={28} /> : <CheckCircle2 className="text-cyberGreen" size={28} />}
-        <div><h2 className="font-heading text-lg font-bold">Đoạn cần xem lại · MUDA</h2>
-          <p className="text-sm text-gray-400">{items.length ? `${items.length} nghi vấn từ AI; cần xem ảnh/video trước khi kết luận` : 'Không có đoạn nghi vấn được ghi trong phiên này'}</p></div></div>
-      <span className="rounded-lg bg-slate-900 px-3 py-2 font-mono text-sm text-gray-300">Tổng DEMO: {number(detail.dtw_metrics.muda_detected_seconds, 3)} s</span>
+      <div className="flex items-center gap-3">{items.length ? <AlertTriangle className="text-alertRed" size={28} /> : dtwReviews ? <AlertTriangle className="text-amber-300" size={28} /> : <CheckCircle2 className="text-cyberGreen" size={28} />}
+        <div><h2 className="font-heading text-lg font-bold">Nghi vấn MUDA</h2>
+          <p className="text-sm text-gray-400">{items.length ? `${items.length} nghi vấn MUDA; cần xem ảnh/video trước khi kết luận` : dtwReviews ? `Chưa có nghi vấn MUDA theo quy tắc hiện tại; có ${dtwReviews} đoạn DTW cần xem riêng ở bảng phía dưới.` : 'Chưa có nghi vấn MUDA hoặc đoạn DTW cần xem riêng trong phiên này.'}</p></div></div>
+      <span className="rounded-lg bg-slate-900 px-3 py-2 font-mono text-sm text-gray-300">Thời gian tăng thêm DEMO: {number(detail.dtw_metrics.muda_detected_seconds, 3)} s</span>
     </div>
     {items.length > 0 && <div className="mt-4 grid gap-3 md:grid-cols-2">
       {items.map((item, index) => <button key={`${item.hand}-${item.reason}-${item.worker_segment_id ?? index}-${index}`}
@@ -21,13 +33,13 @@ export function MudaPanel({ detail, setFocus }: {
           title: `${handName(item.hand)} · ${item.worker_label ?? item.expert_label ?? item.reason}`,
           expertPath: item.expert_image_path, workerPath: item.worker_image_path })}
         className="rounded-lg border border-alertRed/25 bg-slate-900/75 p-3 text-left transition hover:border-alertRed/70">
-        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-bold text-red-200">{handName(item.hand)} · {item.reason}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-bold text-red-200">{handName(item.hand)} · {reasonName[item.reason] ?? item.reason}</span>
           <span className="font-mono text-xs text-gray-400">{item.start_ms == null ? `gần ${seconds(item.worker_time_hint_ms)}` : `${seconds(item.start_ms)} → ${seconds(item.end_ms)}`}</span></div>
         <p className="mt-2 text-sm leading-5 text-gray-200">{item.comment_vi ?? 'Mở ảnh để xem lại đoạn này.'}</p>
-        {item.extra_ms != null && <p className="mt-2 text-xs text-gray-400">Chênh lệch: {seconds(item.extra_ms)}</p>}
+        {item.extra_ms != null && <p className="mt-2 text-xs text-gray-400">{item.reason === 'shorter_visible_action' ? 'Ngắn hơn mẫu' : 'Dài hơn mẫu'}: {seconds(Math.abs(item.extra_ms))}</p>}
       </button>)}
     </div>}
-    <p className="mt-3 text-xs text-gray-500">Các thời lượng hai tay có thể chồng nhau. Tổng DEMO không phải số giây lãng phí đã xác nhận.</p>
+    <p className="mt-3 text-xs text-gray-500">Đoạn ngắn hơn mẫu vẫn cần xem lại nhưng không cộng vào thời gian tăng thêm. Các thời lượng hai tay có thể chồng nhau; đây không phải số giây lãng phí đã xác nhận.</p>
   </section>;
 }
 
@@ -70,7 +82,8 @@ export function DtwPanel({ detail, setFocus }: {
               <td className="p-3 font-mono text-xs text-gray-400">#{pair.expert_segment_id} ↔ #{pair.worker_segment_id}</td>
               <td className="p-3"><span className="font-semibold">{pair.expert_label}</span><br /><span className="text-xs text-gray-400">{seconds(pair.expert_duration_ms)}</span></td>
               <td className="p-3"><span className={pair.same_label ? 'font-semibold text-cyberGreen' : 'font-semibold text-amber-300'}>{pair.worker_label}</span><br /><span className="text-xs text-gray-400">{seconds(pair.worker_duration_ms)}</span></td>
-              <td className="p-3 font-mono text-xs">{pair.worker_extra_ms > 0 ? '+' : ''}{pair.worker_extra_ms} ms</td>
+              <td className="p-3 font-mono text-xs">{pair.worker_extra_ms > 0 ? '+' : ''}{pair.worker_extra_ms} ms
+                {!pair.same_label && <span className="mt-1 block font-sans text-amber-200">Khác nhãn: chỉ là hiệu hai độ dài</span>}</td>
               <td className="p-3"><button type="button" onClick={() => setFocus(focusFromPair(detail.session_id, hand, pair))}
                 className="rounded border border-cyberGreen/40 px-2 py-1 text-xs text-cyberGreen hover:bg-cyberGreen/10">Xem ảnh</button></td>
           </tr>)}</tbody></table></div> : <p className="rounded-lg bg-slate-800/70 p-3 text-sm text-gray-400">Không đủ hành động nhìn thấy rõ để ghép tay này.</p>}
@@ -79,12 +92,13 @@ export function DtwPanel({ detail, setFocus }: {
             <p className="mt-2 text-xs text-gray-400">Đây là gợi ý từ bước so cặp; không đồng nghĩa đã được bước MUDA đánh dấu.</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">{track!.review_candidates!.map((item, index) => <button
               key={`${item.reason}-${item.worker_segment_id ?? index}-${index}`} type="button"
-              onClick={() => setFocus({ sessionId: detail.session_id, title: `${handName(hand)} · ${item.reason}`,
+              onClick={() => setFocus({ sessionId: detail.session_id, title: `${handName(hand)} · ${reasonName[item.reason] ?? item.reason}`,
                 expertPath: item.expert_image_path, workerPath: item.worker_image_path })}
               className="rounded border border-slate-700 bg-slate-900/70 p-3 text-left hover:border-amber-300/60">
-              <span className="font-semibold text-amber-200">{item.reason}</span>
+              <span className="font-semibold text-amber-200">{reasonName[item.reason] ?? item.reason}</span>
               <span className="ml-2 text-xs text-gray-400">#{item.expert_segment_id ?? '—'} ↔ #{item.worker_segment_id ?? '—'}</span>
               <span className="mt-1 block text-xs text-gray-300">{item.expert_label ?? '—'} → {item.worker_label ?? '—'} · chênh {item.worker_extra_ms ?? item.extra_ms ?? '—'} ms</span>
+              {item.reason === 'different_visible_label' && <span className="mt-1 block text-xs text-amber-200">Khác nhãn; số chênh không nói bạn làm cùng động tác nhanh hay chậm hơn.</span>}
               {item.start_ms != null && <span className="mt-1 block text-xs text-gray-400">{seconds(item.start_ms)} → {seconds(item.end_ms)}</span>}
             </button>)}</div>
           </details>}

@@ -79,6 +79,11 @@ hành động nhìn thấy càng giống; đây không phải điểm chất lư
 `analysis_result.json` cũng có `muda_review`: các **đoạn nghi vấn để con người
 xem lại**, không phải kết luận Muda. `longer_visible_action` chỉ xuất hiện khi
 một đoạn cùng nhãn được ghép một-một với mẫu, dài hơn ít nhất 500 ms và 1,5 lần.
+`shorter_visible_action` đánh dấu đoạn cùng nhãn ngắn hơn mẫu ít nhất 500 ms và
+1,5 lần, khi đoạn worker dài ít nhất 300 ms và phép ghép cùng nhãn đủ rõ. Một
+nhãn khác thoáng qua dưới 300 ms ở cuối có thể cùng ghép vào đoạn mẫu nhưng
+không bị coi là hành động thêm. Nhận xét này nêu chênh lệch thời lượng để xem
+lại, không kết luận công nhân đã làm sai hoặc tiết kiệm được thời gian.
 `inserted_visible_action` là đoạn khác nhãn, dài ít nhất 300 ms và nằm giữa hai
 đoạn của worker cùng khớp một bước mẫu. Mỗi mục có tay, thời điểm, nhãn và ảnh
 để mở lại video. Đoạn khác nhãn đơn lẻ, mất tay hoặc ghép DTW nhiều-một không
