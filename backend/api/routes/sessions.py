@@ -23,8 +23,12 @@ from backend.services.analysis_detail import (
     get_expert_image,
     image_urls,
     load_analysis,
+    recording_path,
+    source_archive_path,
     save_analysis,
     save_expert_image,
+    save_recording,
+    save_source_archive,
 )
 
 
@@ -194,4 +198,65 @@ def download_expert_image(session_id: SessionId, filename: str,
     service.get_session(session_id)
     path = get_expert_image(request.app.state.settings.keyframe_dir, session_id, filename)
     return FileResponse(path, media_type="image/png", filename=path.name)
+
+
+@router.put("/{session_id}/recording")
+async def upload_recording(session_id: SessionId, request: Request, service: Service) -> dict:
+    """Store the original camera AVI alongside its backend session."""
+    service.get_session(session_id)
+    if request.headers.get("content-type", "").split(";", 1)[0] != "video/x-msvideo":
+        raise HTTPException(status_code=415, detail="Recording must be video/x-msvideo")
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 250 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Recording is too large")
+    try:
+        path = save_recording(request.app.state.settings.keyframe_dir, session_id,
+                              await request.body(), request.headers.get("x-content-sha256", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"session_id": session_id, "recording_url":
+            f"{request.app.state.settings.api_prefix}/sessions/{session_id}/recording",
+            "filename": path.name}
+
+
+@router.get("/{session_id}/recording", response_class=FileResponse)
+def download_recording(session_id: SessionId, request: Request,
+                       service: Service) -> FileResponse:
+    """Download the original AVI; browsers may require an external player."""
+    service.get_session(session_id)
+    path = recording_path(request.app.state.settings.keyframe_dir, session_id)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Recording has not been uploaded")
+    return FileResponse(path, media_type="video/x-msvideo", filename=f"{session_id}.avi")
+
+
+@router.put("/{session_id}/source-data")
+async def upload_source_data(session_id: SessionId, request: Request,
+                             service: Service) -> dict:
+    """Attach an archive of the original AI JSON/JSONL and keyframe files."""
+    service.get_session(session_id)
+    if request.headers.get("content-type", "").split(";", 1)[0] != "application/zip":
+        raise HTTPException(status_code=415, detail="AI source data must be application/zip")
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 100 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="AI source archive is too large")
+    try:
+        path = save_source_archive(request.app.state.settings.keyframe_dir, session_id,
+                                   await request.body(), request.headers.get("x-content-sha256", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"session_id": session_id,
+            "source_data_url": f"{request.app.state.settings.api_prefix}/sessions/{session_id}/source-data",
+            "filename": path.name}
+
+
+@router.get("/{session_id}/source-data", response_class=FileResponse)
+def download_source_data(session_id: SessionId, request: Request,
+                         service: Service) -> FileResponse:
+    """Download all uploaded AI source data for this session as a ZIP."""
+    service.get_session(session_id)
+    path = source_archive_path(request.app.state.settings.keyframe_dir, session_id)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="AI source data has not been uploaded")
+    return FileResponse(path, media_type="application/zip", filename=f"{session_id}_ai_data.zip")
 

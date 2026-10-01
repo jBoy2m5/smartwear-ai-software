@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 import tempfile
 import time
 from datetime import datetime
@@ -50,7 +51,7 @@ def make_frame_data(result, timestamp_ms, width, height, detector):
             "hand_actions": detector.update(timestamp_ms, hands)}
 
 
-def draw_frame(cv2, frame, data):
+def draw_frame(cv2, frame, data, instruction="Q: stop and process"):
     for hand in data["hands"]:
         side = hand["handedness"].lower()
         color = COLORS.get(side, (150, 150, 150))
@@ -62,11 +63,39 @@ def draw_frame(cv2, frame, data):
         label = "UNCERTAIN" if action["tracking_status"] == "ambiguous" else action["label"]
         cv2.putText(frame, f"{side.upper()}: {label}", (20, 40 + index * 35),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS[side], 2)
-    cv2.putText(frame, "Q: stop and process", (20, 110),
+    cv2.putText(frame, instruction, (20, 110),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 
-def record_camera():
+def open_camera_with_first_frame(cv2, index=0, timeout_s=2.0):
+    """Wait for the first usable image; Windows may open a camera before it is ready."""
+    backends = [cv2.CAP_ANY]
+    if sys.platform == "win32":
+        backends.append(cv2.CAP_DSHOW)
+    opened_any = False
+    for backend in backends:
+        camera = cv2.VideoCapture(index, backend)
+        if not camera.isOpened():
+            camera.release()
+            continue
+        opened_any = True
+        deadline = time.monotonic() + timeout_s
+        while True:
+            success, frame = camera.read()
+            if success and frame is not None and frame.size:
+                return camera, frame
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.1)
+        camera.release()
+    if opened_any:
+        raise RuntimeError("Camera đã mở nhưng không gửi được hình. Hãy đóng ứng dụng khác "
+                           "đang dùng camera, kiểm tra kết nối rồi quay lại.")
+    raise RuntimeError("Không mở được camera trên máy chạy AI. Hãy kiểm tra kết nối "
+                       "camera và quyền truy cập camera của Windows.")
+
+
+def record_camera(stop_requested=None, on_frame=None, show_window=True):
     # Offline pipeline and tests do not require OpenCV/MediaPipe installed.
     import cv2
     import mediapipe as mp
@@ -79,12 +108,11 @@ def record_camera():
         running_mode=mp.tasks.vision.RunningMode.VIDEO, num_hands=2,
         min_hand_detection_confidence=0.5, min_hand_presence_confidence=0.5,
         min_tracking_confidence=0.5)
-    camera = cv2.VideoCapture(0)
+    camera = None
     output = None
     video = None
     try:
-        if not camera.isOpened():
-            raise RuntimeError("Khong mo duoc camera.")
+        camera, first_frame = open_camera_with_first_frame(cv2)
         SESSION_ROOT.mkdir(parents=True, exist_ok=True)
         session = Path(tempfile.mkdtemp(
             prefix=f"camera_data_{datetime.now():%Y%m%d_%H%M%S_%f}_",
@@ -100,7 +128,13 @@ def record_camera():
             previous_ms = -1
             previous_actions = None
             while True:
-                success, frame = camera.read()
+                if stop_requested is not None and stop_requested():
+                    break
+                if first_frame is not None:
+                    success, frame = True, first_frame
+                    first_frame = None
+                else:
+                    success, frame = camera.read()
                 if not success:
                     print("Khong doc duoc frame; xu ly phan da ghi.")
                     break
@@ -120,15 +154,21 @@ def record_camera():
                 if current != previous_actions:
                     print(f"{timestamp / 1000:.2f}s  LEFT: {current[0][0]}  RIGHT: {current[1][0]}")
                     previous_actions = current
-                draw_frame(cv2, frame, data)
-                cv2.imshow(WINDOW, frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    break
+                draw_frame(cv2, frame, data,
+                           "Q: stop and process" if show_window else "Stop in SmartWear dashboard")
+                if on_frame is not None:
+                    on_frame(cv2, frame, data)
+                if show_window:
+                    cv2.imshow(WINDOW, frame)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        break
     finally:
         if video is not None:
             video.close()
-        camera.release()
-        cv2.destroyAllWindows()
+        if camera is not None:
+            camera.release()
+        if show_window:
+            cv2.destroyAllWindows()
     manifest = video.save_manifest()
     print(f"Da luu du lieu camera: {output}")
     if manifest:

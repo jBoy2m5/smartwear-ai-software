@@ -18,6 +18,15 @@ worker and expert images. The same detail is at
 expert images were sent. Publishing an older completed session again fills in this
 new detail without re-recording or rewriting its original AI files.
 
+If the AI session has `camera.avi` and a matching `camera.video.json`, the bridge
+also uploads that original video and writes `backend_recording_demo.receipt.json`.
+The backend detail exposes `recording_url` for the dashboard's AVI download. Older
+sessions can be republished to attach their video without another camera recording.
+It also packages the session's original camera, sensor, multimodal, action, keyframe,
+comparison, and DEMO payload files in a separate ZIP (the AVI stays a separate
+download). The backend exposes `source_data_url` and the bridge writes
+`backend_source_data_demo.receipt.json` after the upload.
+
 From the repository root, start backend in a separate terminal using its installed
 environment (`python -m uvicorn backend.main:app --reload`), then run **one camera
 command** in the AI terminal:

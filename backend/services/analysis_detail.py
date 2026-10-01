@@ -7,6 +7,8 @@ import hashlib
 import os
 import re
 import tempfile
+import io
+import zipfile
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
@@ -15,6 +17,8 @@ from PIL import Image, UnidentifiedImageError
 from backend.core.exceptions import ArtifactNotFoundError, InvalidKeyFrameError
 
 MAX_ANALYSIS_BYTES = 5 * 1024 * 1024
+MAX_RECORDING_BYTES = 250 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_BYTES = 100 * 1024 * 1024
 
 
 def _demo_id(name: str) -> str:
@@ -31,6 +35,85 @@ def analysis_directory(keyframe_dir: Path, session_id: str) -> Path:
 
 def analysis_path(keyframe_dir: Path, session_id: str) -> Path:
     return analysis_directory(keyframe_dir, session_id) / "analysis_result.json"
+
+
+def recording_path(keyframe_dir: Path, session_id: str) -> Path:
+    return analysis_directory(keyframe_dir, session_id) / "camera.avi"
+
+
+def source_archive_path(keyframe_dir: Path, session_id: str) -> Path:
+    return analysis_directory(keyframe_dir, session_id) / "ai_source_data.zip"
+
+
+def save_source_archive(keyframe_dir: Path, session_id: str, content: bytes,
+                        expected_sha256: str) -> Path:
+    """Store a bounded, immutable archive of this session's original AI data."""
+    if not content or len(content) > MAX_SOURCE_ARCHIVE_BYTES:
+        raise ValueError("AI source archive is empty or too large")
+    actual = hashlib.sha256(content).hexdigest()
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256) or actual != expected_sha256:
+        raise ValueError("AI source archive SHA-256 does not match")
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            entries = archive.infolist()
+            if not entries or len(entries) > 1000 or sum(item.file_size for item in entries) > 250 * 1024 * 1024:
+                raise ValueError("AI source archive has too many or oversized entries")
+            for item in entries:
+                path = PurePosixPath(item.filename)
+                if (item.is_dir() or path.is_absolute() or ".." in path.parts
+                        or "\\" in item.filename or item.flag_bits & 1):
+                    raise ValueError("AI source archive contains an unsafe entry")
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise ValueError("AI source archive must be a valid ZIP") from exc
+    destination = source_archive_path(keyframe_dir, session_id)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if hashlib.sha256(destination.read_bytes()).hexdigest() != actual:
+            raise ValueError("A different AI source archive is already stored for this session")
+        return destination
+    handle = tempfile.NamedTemporaryFile(dir=destination.parent, suffix=".upload", delete=False)
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            handle.write(content)
+        try:
+            os.link(temporary, destination)
+        except FileExistsError:
+            if hashlib.sha256(destination.read_bytes()).hexdigest() != actual:
+                raise ValueError("A different AI source archive is already stored for this session")
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
+
+
+def save_recording(keyframe_dir: Path, session_id: str, content: bytes,
+                   expected_sha256: str) -> Path:
+    """Attach the original AVI to an ingested session without replacing it."""
+    if (not content or len(content) > MAX_RECORDING_BYTES
+            or content[:4] != b"RIFF" or content[8:12] != b"AVI "):
+        raise ValueError("Recording must be an AVI file within the size limit")
+    actual = hashlib.sha256(content).hexdigest()
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256) or actual != expected_sha256:
+        raise ValueError("Recording SHA-256 does not match the uploaded video")
+    destination = recording_path(keyframe_dir, session_id)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if hashlib.sha256(destination.read_bytes()).hexdigest() != actual:
+            raise ValueError("A different recording is already stored for this session")
+        return destination
+    handle = tempfile.NamedTemporaryFile(dir=destination.parent, suffix=".upload", delete=False)
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            handle.write(content)
+        try:
+            os.link(temporary, destination)
+        except FileExistsError:
+            if hashlib.sha256(destination.read_bytes()).hexdigest() != actual:
+                raise ValueError("A different recording is already stored for this session")
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
 
 
 def _paths(value: object):

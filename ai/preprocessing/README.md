@@ -58,10 +58,10 @@ python -B .\ai\camera_test.py --practice-sample 04_right_grab_hold_release_open
 ```
 
 Không có tùy chọn này thì chương trình tiếp tục tự chọn mẫu gần nhất.
-Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản gốc mang nhãn đảo được
-giữ tại `ai/generated_data/legacy_handedness_references/` và không được chọn
-để so sánh. Các file kết quả của phiên cũ không bị ghi đè; muốn có nhãn tay
-đúng trong một phiên mới, hãy quay lại bằng phiên bản camera đã sửa.
+Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản sao cũ mang nhãn đảo
+đã được xóa và không được chọn để so sánh. Các file kết quả của phiên cũ không
+bị ghi đè; muốn có nhãn tay đúng trong một phiên mới, hãy quay lại bằng phiên
+bản camera đã sửa.
 
 Mỗi mẫu có `camera.avi` để xem, `reference_sample.json` ghi mô tả và nguồn gốc,
 cùng các file xử lý như một phiên thường. `session_role.json` ghi đây là mẫu demo.
@@ -303,14 +303,4 @@ $result = Get-Content "$session\action_segments.json" -Raw | ConvertFrom-Json
 $result.segments | Format-Table hand,label,tracking_status,start_ms,end_ms,duration_ms
 ```
 
-## Kiểm thử
-
-```powershell
-.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\preprocessing -p "test_*.py" -v
-.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\sensors -p "test_*.py" -v
-```
-
-Kiểm thử dùng điểm bàn tay mẫu, cả hai động tác đối lập, đảo thứ tự, đổi vị trí,
-mất/xuất hiện lại tay, nhãn mơ hồ, chuyển đổi dữ liệu cũ và pipeline thật qua các
-file. Chưa thay thế kiểm tra độ chính xác ngoài đời với webcam.
 Các bước xử lý dùng thư viện chuẩn Python; chỉ camera cần OpenCV/MediaPipe.

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { TelemetryData } from '../MockDataEngine';
 import { Battery, BatteryCharging, Wifi, WifiOff } from 'lucide-react';
 import clsx from 'clsx';

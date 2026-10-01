@@ -1,0 +1,7 @@
+{
+  "schema_version": "smartwear.backend_source_data_demo.v1",
+  "session_id": "DEMO_camera_data_20261001_204925_366587_mf6kiyps",
+  "backend_url": "http://127.0.0.1:8000",
+  "archive_sha256": "c8e9b5041e2400639dc095e74b7f7aa1a803fce779cdc0b3ddd2f995cbadd1b4",
+  "source_data_url": "/api/v1/sessions/DEMO_camera_data_20261001_204925_366587_mf6kiyps/source-data"
+}

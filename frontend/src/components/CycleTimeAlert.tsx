@@ -1,4 +1,3 @@
-import React from 'react';
 import type { TelemetryData } from '../MockDataEngine';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import clsx from 'clsx';
@@ -7,7 +6,6 @@ export default function CycleTimeAlert({ step }: { step: TelemetryData['step_ana
   const { elapsed_time_sec, baseline_target_sec, muda_detected, muda_type } = step;
   
   const progressPercent = Math.min(100, (elapsed_time_sec / baseline_target_sec) * 100);
-  const overagePercent = Math.max(0, ((elapsed_time_sec - baseline_target_sec) / baseline_target_sec) * 100);
   
   return (
     <div className={clsx(

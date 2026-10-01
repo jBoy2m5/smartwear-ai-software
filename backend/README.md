@@ -103,6 +103,23 @@ reference selection, sensor comparison, and all Muda review candidates. URLs
 resolve worker images through the existing keyframe route and expert images through
 the new expert-image route. This detailed comparison is stored alongside backend
 data and does not change the existing score, SOP, or robot export contract.
+An optional original camera AVI may be attached through `PUT /sessions/{session_id}/recording`
+with `Content-Type: video/x-msvideo` and `X-Content-SHA256`. The backend rejects a
+different replacement for the same session. `GET /sessions/{session_id}/recording`
+downloads it, and session detail exposes `recording_url` when present.
+`PUT /sessions/{session_id}/source-data` accepts the bounded ZIP of original AI
+files with `Content-Type: application/zip` and `X-Content-SHA256`.
+`GET /sessions/{session_id}/source-data` downloads it; `source_data_url` is set
+in session detail when available. Neither upload changes the existing ingest data.
+
+The built dashboard is served at `/` when `frontend/dist/index.html` exists. Its
+camera panel calls `POST /api/v1/capture/` to start the existing Python camera
+pipeline on the backend/AI workstation, `GET /api/v1/capture/{job_id}` for
+progress, `GET /api/v1/capture/{job_id}/frame` for annotated live JPEGs, and
+`POST /api/v1/capture/{job_id}/stop` to finish. The worker uses only the web page;
+an administrator starts the backend service once. Set `SMARTWEAR_AI_PYTHON` if
+OpenCV and MediaPipe live in a different Python installation. Capture remains
+local to the AI/backend workstation, with one active camera session at a time.
 
 The request body follows the immutable interface contract:
 

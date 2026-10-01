@@ -1,0 +1,42 @@
+{
+  "source": "simulated_from_camera_observations",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261001_204925_366587_mf6kiyps\\camera.normalized.jsonl",
+  "camera_sha256": "6a5b4427d3f86ef0cfcb24592bc11a0db0e37a03e87a3ee26eb4a92ae21f9515",
+  "sample_count": 191,
+  "first_timestamp_ms": 468,
+  "last_timestamp_ms": 8591,
+  "random_seed": 42,
+  "noise_level": 0.02,
+  "camera_action_counts": {
+    "left": {
+      "NO_HAND": 123,
+      "OTHER": 10,
+      "GRAB": 30,
+      "RELEASE": 14,
+      "OPEN": 9,
+      "REACH": 5
+    },
+    "right": {
+      "NO_HAND": 121,
+      "OTHER": 6,
+      "GRAB": 18,
+      "ASSEMBLY": 8,
+      "RELEASE": 14,
+      "OPEN": 22,
+      "REACH": 2
+    }
+  },
+  "simulated_fields": [
+    "imu_head",
+    "hand_sensors.left.imu_wrist",
+    "hand_sensors.left.force_emg_raw",
+    "hand_sensors.left.torque",
+    "hand_sensors.right.imu_wrist",
+    "hand_sensors.right.force_emg_raw",
+    "hand_sensors.right.torque"
+  ],
+  "time_note": "Timestamps copied from camera frames, not independently synchronized clocks",
+  "unit_note": "IMU m/s^2 and rad/s, torque N*m and degrees are simulator assumptions; force_emg_raw is unitless",
+  "sensors_sha256": "f94fb401bacab6cc12a6273211a9858443a644cc6895c1f13e3cabbba9a56fbf",
+  "schema_version": "smartwear.sensors_meta.v2"
+}

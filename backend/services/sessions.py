@@ -31,7 +31,7 @@ from backend.schemas import (
     SessionInput,
     SessionSummary,
 )
-from backend.services.analysis_detail import image_urls, load_analysis
+from backend.services.analysis_detail import image_urls, load_analysis, recording_path, source_archive_path
 
 
 class SopGeneratorPort(Protocol):
@@ -328,5 +328,11 @@ class SessionService:
             analysis_result=analysis,
             analysis_image_urls=(image_urls(analysis, entity.session_id, self.settings.api_prefix)
                                  if analysis is not None else None),
+            recording_url=(f"{self.settings.api_prefix}/sessions/{entity.session_id}/recording"
+                           if recording_path(self.settings.keyframe_dir, entity.session_id).is_file()
+                           else None),
+            source_data_url=(f"{self.settings.api_prefix}/sessions/{entity.session_id}/source-data"
+                             if source_archive_path(self.settings.keyframe_dir, entity.session_id).is_file()
+                             else None),
         )
 

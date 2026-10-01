@@ -2,12 +2,14 @@
 
 import argparse
 import hashlib
+import io
 import json
 import math
 import os
 import re
 import urllib.error
 import urllib.request
+import zipfile
 from pathlib import Path
 from urllib.parse import quote
 
@@ -354,19 +356,115 @@ def publish_analysis(session_dir, payload, worker_images, base_url, api_key):
     return receipt
 
 
-def request_json(url, method, data, api_key=None, content_type="application/json"):
+def request_json(url, method, data, api_key=None, content_type="application/json",
+                 extra_headers=None, timeout=30):
     headers = {"Content-Type": content_type}
+    if extra_headers:
+        headers.update(extra_headers)
     if api_key:
         headers["X-API-Key"] = api_key
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read(1000).decode("utf-8", errors="replace")
         raise RuntimeError(f"Backend HTTP {exc.code}: {detail}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Cannot reach backend at {url}: {exc.reason}") from exc
+
+
+def publish_recording(session_dir, payload, base_url, api_key):
+    """Publish a real camera recording when this AI session contains one."""
+    session = Path(session_dir)
+    video = session / "camera.avi"
+    manifest_file = session / "camera.video.json"
+    if not video.exists() and not manifest_file.exists():
+        return None
+    if not video.is_file() or not manifest_file.is_file():
+        raise ValueError("Camera video or its manifest is missing")
+    manifest = read_json(manifest_file)
+    video_hash = digest(video)
+    if (manifest.get("schema_version") != "smartwear.recording_video.v1"
+            or manifest.get("video_file") != video.name
+            or manifest.get("video_sha256") != video_hash
+            or manifest.get("camera_sha256") != digest(session / "camera.jsonl")):
+        raise ValueError("Camera video does not match its manifest and camera data")
+    receipt_file = session / "backend_recording_demo.receipt.json"
+    if receipt_file.exists():
+        receipt = read_json(receipt_file)
+        if (receipt.get("video_sha256") == video_hash
+                and receipt.get("backend_url") == base_url):
+            return receipt
+        raise ValueError("Existing recording receipt differs from current video/backend")
+    url = (base_url.rstrip("/") + "/api/v1/sessions/"
+           + quote(payload["session_id"]) + "/recording")
+    result = request_json(url, "PUT", video.read_bytes(), api_key, "video/x-msvideo",
+                          {"X-Content-SHA256": video_hash}, timeout=120)
+    if result.get("session_id") != payload["session_id"]:
+        raise RuntimeError("Backend returned a different recording session_id")
+    receipt = {"schema_version": "smartwear.backend_recording_demo.v1",
+               "session_id": payload["session_id"], "backend_url": base_url,
+               "video_sha256": video_hash, "recording_url": result["recording_url"]}
+    with receipt_file.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(receipt, stream, ensure_ascii=False, indent=2)
+        stream.write("\n")
+    return receipt
+
+
+def source_archive_bytes(session_dir):
+    """Package original AI observations and results without the separate AVI."""
+    session = Path(session_dir).resolve()
+    filenames = (
+        "camera.jsonl", "camera.normalized.jsonl", "camera.video.json",
+        "sensors.jsonl", "sensors.meta.json", "multimodal.jsonl",
+        "action_segments.json", "keyframes.json", "session_role.json",
+        "analysis_result.json", "backend_payload_demo.json",
+        "backend_payload_demo.meta.json",
+    )
+    paths = [session / name for name in filenames if (session / name).is_file()]
+    keyframes = session / "keyframes"
+    if keyframes.is_dir():
+        paths.extend(sorted(keyframes.glob("*.png")))
+    if not paths:
+        raise ValueError("AI session has no source data to archive")
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+        for path in paths:
+            resolved = path.resolve()
+            if not resolved.is_relative_to(session):
+                raise ValueError("AI source file escapes the session directory")
+            entry = zipfile.ZipInfo(path.relative_to(session).as_posix(),
+                                    date_time=(1980, 1, 1, 0, 0, 0))
+            entry.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(entry, resolved.read_bytes(), compress_type=zipfile.ZIP_DEFLATED)
+    return buffer.getvalue()
+
+
+def publish_source_data(session_dir, payload, base_url, api_key):
+    session = Path(session_dir)
+    content = source_archive_bytes(session)
+    archive_hash = hashlib.sha256(content).hexdigest()
+    receipt_file = session / "backend_source_data_demo.receipt.json"
+    if receipt_file.exists():
+        receipt = read_json(receipt_file)
+        if (receipt.get("archive_sha256") == archive_hash
+                and receipt.get("backend_url") == base_url):
+            return receipt
+        raise ValueError("Existing source-data receipt differs from current AI files/backend")
+    url = (base_url.rstrip("/") + "/api/v1/sessions/"
+           + quote(payload["session_id"]) + "/source-data")
+    result = request_json(url, "PUT", content, api_key, "application/zip",
+                          {"X-Content-SHA256": archive_hash}, timeout=120)
+    if result.get("session_id") != payload["session_id"]:
+        raise RuntimeError("Backend returned a different source-data session_id")
+    receipt = {"schema_version": "smartwear.backend_source_data_demo.v1",
+               "session_id": payload["session_id"], "backend_url": base_url,
+               "archive_sha256": archive_hash, "source_data_url": result["source_data_url"]}
+    with receipt_file.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(receipt, stream, ensure_ascii=False, indent=2)
+        stream.write("\n")
+    return receipt
 
 
 def publish(session_dir, base_url="http://127.0.0.1:8000", api_key=None):
@@ -395,6 +493,8 @@ def publish(session_dir, base_url="http://127.0.0.1:8000", api_key=None):
             json.dump(receipt, stream, ensure_ascii=False, indent=2)
             stream.write("\n")
     publish_analysis(session_dir, payload, images, base_url, api_key)
+    publish_recording(session_dir, payload, base_url, api_key)
+    publish_source_data(session_dir, payload, base_url, api_key)
     return receipt
 
 
