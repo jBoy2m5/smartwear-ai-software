@@ -31,6 +31,7 @@ from backend.schemas import (
     SessionInput,
     SessionSummary,
 )
+from backend.services.analysis_detail import image_urls, load_analysis
 
 
 class SopGeneratorPort(Protocol):
@@ -279,6 +280,7 @@ class SessionService:
 
     def _to_detail(self, entity: AnalysisSession) -> SessionDetail:
         artifact_ready = entity.export_status == ExportStatus.COMPLETED.value
+        analysis = load_analysis(self.settings.keyframe_dir, entity.session_id)
         return SessionDetail(
             session_id=entity.session_id,
             worker_type=entity.worker_type,
@@ -323,5 +325,8 @@ class SessionService:
                 if artifact_ready
                 else None
             ),
+            analysis_result=analysis,
+            analysis_image_urls=(image_urls(analysis, entity.session_id, self.settings.api_prefix)
+                                 if analysis is not None else None),
         )
 

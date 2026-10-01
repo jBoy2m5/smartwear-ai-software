@@ -136,6 +136,10 @@ class SessionSummary(StrictSchema):
 class SessionDetail(SessionInput):
     """Persisted session with backend metadata and artifact links."""
 
+    # Optional companion document preserves the original AI comparison contract.
+    # Older sessions and clients continue to use the existing summary fields.
+    analysis_result: dict | None = None
+    analysis_image_urls: dict[str, dict[str, str]] | None = None
     export_status: ExportStatus
     export_error: str | None = None
     created_at: datetime

@@ -75,6 +75,10 @@ the `api_key` query parameter.
 | `GET` | `/api/v1/sessions/` | List sessions with offset pagination |
 | `GET` | `/api/v1/sessions/dashboard/summary` | Aggregate operational metrics |
 | `GET` | `/api/v1/sessions/{session_id}` | Return a complete session |
+| `PUT` | `/api/v1/sessions/{session_id}/analysis-result` | Attach the complete AI comparison JSON to an existing DEMO session |
+| `GET` | `/api/v1/sessions/{session_id}/analysis-result` | Return all DTW/Muda/sensor details and image URLs |
+| `PUT` | `/api/v1/sessions/{session_id}/analysis-images/expert/{filename}` | Upload an expert image referenced by the comparison |
+| `GET` | `/api/v1/sessions/{session_id}/analysis-images/expert/{filename}` | View an uploaded expert image |
 | `GET` | `/api/v1/sessions/{session_id}/download-sop` | Download SOP as `pdf` or `html` |
 | `GET` | `/api/v1/sessions/{session_id}/export-rosbag` | Download `json`, `db3`, or `rosbag` |
 | `PUT` | `/api/v1/sessions/{session_id}/keyframes/{filename}` | Upload a declared image |
@@ -89,6 +93,16 @@ the `api_key` query parameter.
 
 Ingest is idempotent by `session_id`: the first successful request returns `201`,
 and later replacements return `200`.
+
+The existing ingest contract is unchanged. After ingest, the AI bridge attaches
+its complete `analysis_result.json` separately. `GET /sessions/{session_id}` adds
+optional `analysis_result` and `analysis_image_urls` fields; older sessions return
+`null` for them until the detail is uploaded. The original AI field names and
+per-hand alignments are preserved, including `worker_extra_ms`, image paths,
+reference selection, sensor comparison, and all Muda review candidates. URLs
+resolve worker images through the existing keyframe route and expert images through
+the new expert-image route. This detailed comparison is stored alongside backend
+data and does not change the existing score, SOP, or robot export contract.
 
 The request body follows the immutable interface contract:
 
