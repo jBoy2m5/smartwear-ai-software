@@ -33,8 +33,9 @@ def build_multimodal(camera_path, sensor_path, output_path, metadata_path=None):
     camera_hash = hashlib.sha256(camera_path.read_bytes()).hexdigest()
     sensor_hash = hashlib.sha256(sensor_path.read_bytes()).hexdigest()
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    if metadata.get("source") != "simulated_from_camera_observations":
-        raise ValueError("Expected camera-conditioned simulated sensor metadata")
+    sensor_source = metadata.get("source")
+    if sensor_source not in ("simulated_from_camera_observations", "measured_hardware"):
+        raise ValueError("Unknown sensor source metadata")
     if metadata.get("camera_sha256") != camera_hash:
         raise ValueError("Sensors belong to a different camera file (SHA-256 mismatch)")
     frames = list(read_camera_records(camera_path))
@@ -48,10 +49,14 @@ def build_multimodal(camera_path, sensor_path, output_path, metadata_path=None):
     if (any(f.get("schema_version") != camera_version for f in frames)
             or any(s.get("schema_version") != sensor_version for s in sensors)):
         raise ValueError("Camera and sensors must use matching schemas")
-    if set(metadata.get("simulated_fields", [])) != set(simulated_fields):
-        raise ValueError("Metadata must identify all simulated sensor fields")
+    if set(metadata.get("simulated_fields", [])) != (set() if sensor_source == "measured_hardware"
+                                                     else set(simulated_fields)):
+        raise ValueError("Metadata must identify simulated sensor fields accurately")
     if two_hands and metadata.get("schema_version") != "smartwear.sensors_meta.v2":
         raise ValueError("Expected two-hand sensor metadata")
+    if sensor_source == "measured_hardware" and (not two_hands or
+            any(s.get("sensor_source") != "measured_hardware" for s in sensors)):
+        raise ValueError("Measured metadata requires measured v2 sensor rows")
     if metadata.get("sensors_sha256", sensor_hash) != sensor_hash:
         raise ValueError("Sensor file SHA-256 mismatch")
     if (metadata.get("sample_count") != len(sensors)
@@ -92,8 +97,8 @@ def build_multimodal(camera_path, sensor_path, output_path, metadata_path=None):
             "provenance": {
                 "hands": "camera_landmarks",
                 "action_estimate": "camera_landmarks_heuristic",
-                "sensors": "simulated_from_camera_observations",
-                "simulated_fields": simulated_fields,
+                "sensors": sensor_source,
+                "simulated_fields": [] if sensor_source == "measured_hardware" else simulated_fields,
                 "time_alignment": "exact_camera_timestamp_copy",
                 "camera_sha256": camera_hash,
                 "sensors_sha256": sensor_hash,
@@ -103,6 +108,13 @@ def build_multimodal(camera_path, sensor_path, output_path, metadata_path=None):
             row["provenance"].pop("action_estimate")
             row["provenance"].update(hand_actions="camera_landmarks_heuristic",
                                       hand_identity="camera_recorded_handedness")
+        if sensor_source == "measured_hardware":
+            row["provenance"].update(units=metadata["units"],
+                                      calibration_id=metadata["calibration_id"],
+                                      alignment_window_ms=metadata["alignment_window_ms"])
+        for field in ("source_epoch_ms", "source_frame_seq", "received_epoch_ms"):
+            if field in frame:
+                row[field] = frame[field]
         if "video_frame_index" in frame:
             if type(frame["video_frame_index"]) is not int or frame["video_frame_index"] != index:
                 raise ValueError("Invalid camera/video frame mapping")

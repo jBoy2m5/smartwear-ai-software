@@ -71,9 +71,10 @@ export interface SensorPair {
   expert_label: string;
   worker_label: string;
   comparison_status: string;
-  expert?: Record<string, number>;
-  worker?: Record<string, number>;
-  worker_minus_expert?: Record<string, number> | null;
+  expert?: { force_mean?: number | null; force_adc_mean?: number[] | null; [key: string]: unknown };
+  worker?: { force_mean?: number | null; force_adc_mean?: number[] | null; [key: string]: unknown };
+  worker_minus_expert?: Record<string, number | null> | null;
+  worker_minus_expert_adc?: number[] | null;
 }
 
 export interface SensorHand {

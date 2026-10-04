@@ -111,6 +111,20 @@ class BackendIntegrationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/ready").json(), {"status": "ready"})
 
+    def test_measured_session_does_not_publish_robot_or_newton_demo(self) -> None:
+        payload = sample_payload("MEASURED_test_wrist")
+        payload["robot_trajectory_points"] = []
+        for phase in payload["action_phases"]:
+            phase["peak_force_N"] = None
+        response = self.client.post("/api/v1/sessions/ingest", json=payload)
+        self.assertEqual(response.status_code, 201, response.text)
+        self.assertIsNone(response.json()["robot_json_url"])
+        detail = self.client.get("/api/v1/sessions/MEASURED_test_wrist").json()
+        self.assertIsNone(detail["robot_export_url"])
+        self.assertEqual(detail["robot_trajectory_points"], [])
+        self.assertTrue(all(phase["peak_force_N"] is None
+                            for phase in detail["action_phases"]))
+
     def test_recording_upload_download_and_immutable_source(self) -> None:
         session_id = "DEMO_recording_example"
         self.ingest(session_id)

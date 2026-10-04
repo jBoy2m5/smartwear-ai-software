@@ -39,6 +39,8 @@ def publish_preview(job_dir, jpeg_bytes, data, keep=30):
                 "camera": data["camera"],
                 "right_action": data["hand_actions"]["right"],
                 "right_landmarks": right_hand["landmarks"] if right_hand else []}
+    if "wrist_status" in data:
+        document["wrist_status"] = data["wrist_status"]
     metadata_tmp = job_dir / f"{name}.json.tmp"
     metadata_tmp.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
     os.replace(metadata_tmp, job_dir / f"{name}.json")
@@ -97,12 +99,28 @@ def main(argv=None):
         last_preview = now
 
     try:
-        write_status(job_dir, "recording", "Camera đang ghi tay phải")
+        capture_mode = os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").strip().lower()
+        if capture_mode not in ("demo", "hardware"):
+            raise ValueError("SMARTWEAR_CAPTURE_MODE must be demo or hardware")
+        write_status(job_dir, "recording", ("Đang nhận ảnh ESP32; kiểm tra vòng tay ở hình xem trước"
+                                            if capture_mode == "hardware" else
+                                            "Camera đang ghi tay phải"))
         started = time.monotonic()
         with ThreadPoolExecutor(max_workers=1) as executor:
-            output = record_camera(stop_requested=lambda: (job_dir / "stop.flag").exists()
-                                   or time.monotonic() - started >= 180,
-                                   on_frame=preview, show_window=False)
+            stop_requested = lambda: (job_dir / "stop.flag").exists() or time.monotonic() - started >= 180
+            if capture_mode == "hardware":
+                from hardware.record_hardware import record_hardware
+                output = record_hardware(
+                    camera_url=os.getenv("SMARTWEAR_CAMERA_URL", "http://192.168.0.101:81/stream"),
+                    mqtt_host=os.getenv("SMARTWEAR_MQTT_HOST", "192.168.0.109"),
+                    topic=os.getenv("SMARTWEAR_MQTT_TOPIC", "wearable/user01/wrist/data"),
+                    force_channel=(int(os.environ["SMARTWEAR_FORCE_CHANNEL"])
+                                   if os.getenv("SMARTWEAR_FORCE_CHANNEL") else None),
+                    device_id=os.getenv("SMARTWEAR_WRIST_ID", "smartwrist-user01"),
+                    stop_requested=stop_requested, on_frame=preview, show_window=False)
+            else:
+                output = record_camera(stop_requested=stop_requested,
+                                       on_frame=preview, show_window=False)
         check_preview_error()
         write_status(job_dir, "processing", "Đang phân tích hành động và so với mẫu")
         finish_recording(output)

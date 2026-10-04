@@ -201,3 +201,14 @@ The container runs as a non-root user. Production startup fails fast when
 
 These runtime directories are ignored by Git and remain inside the backend boundary.
 
+# ESP32/SmartWrist measured sessions
+
+Set `SMARTWEAR_CAPTURE_MODE=hardware` before starting backend to make the
+dashboard's capture button use the optional collector described in
+`ai/hardware/README.md`. The default is still the webcam/DEMO pipeline. A
+measured capture uses a `MEASURED_` session ID; its backend summary retains
+camera phases and the AI analysis, but `peak_force_N` is null and robot
+trajectory/export URLs are absent until there is physical calibration. Raw ADC
+counts and their four-channel mapping are in `real_sensors.jsonl`, the AI
+analysis source information, and the source-data ZIP when within upload size
+limits. The original JPEG byte stream remains on the acquisition machine.

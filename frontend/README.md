@@ -6,6 +6,13 @@ Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. B�
 
 Nút camera điều khiển **camera gắn với máy chạy AI/backend**. Nếu mở trang từ máy khác, hình trên trang vẫn là camera của máy chủ đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
 
+Quản trị viên có thể chọn bộ ESP32-CAM/SmartWrist bằng
+`SMARTWEAR_CAPTURE_MODE=hardware` trước khi chạy backend. Công nhân vẫn dùng
+hai nút trên trang; dữ liệu ADC đo thật hiện dưới mã phiên `MEASURED_`, còn chế
+độ webcam/số mô phỏng giữ mã `DEMO_`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
+thiết bị và dữ liệu gốc tại `ai/hardware/README.md`. Camera ESP32 hiện chỉ
+phát QVGA 320×240 nên UI không thể tạo thêm chi tiết ảnh vượt nguồn gốc.
+
 Dashboard có danh sách phiên, ảnh mẫu/ảnh công nhân, hành động tay phải, cặp DTW và chênh lệch thời gian, nghi vấn MUDA với thời điểm/ảnh, số cảm biến, biểu đồ, SOP, video AVI, ZIP dữ liệu AI và toàn bộ JSON. Phiên cũ đã quay hai tay vẫn đọc được. Số lực, điểm so sánh và đường đi robot được ghi rõ là **DEMO**.
 
 ## Quản trị viên thiết lập một lần

@@ -29,6 +29,18 @@ def _demo_id(name: str) -> str:
     return candidate
 
 
+def _expected_analysis_id(document: dict) -> str:
+    name = document["worker_session"]
+    comparison = document.get("sensor_comparison")
+    comparison = comparison if isinstance(comparison, dict) else {}
+    source = comparison.get("worker_source")
+    source = source if isinstance(source, dict) else {}
+    worker_source = source.get("source")
+    if worker_source == "measured_hardware":
+        return "MEASURED_" + _demo_id(name)[5:]
+    return _demo_id(name)
+
+
 def analysis_directory(keyframe_dir: Path, session_id: str) -> Path:
     return keyframe_dir.parent.parent / "data" / "analysis" / session_id
 
@@ -152,10 +164,10 @@ def parse_analysis(content: bytes, session_id: str) -> dict:
     if (not isinstance(document, dict)
             or document.get("schema_version") != "smartwear.analysis_comparison.v2"
             or not isinstance(document.get("worker_session"), str)
-            or session_id != _demo_id(document["worker_session"])
+            or session_id != _expected_analysis_id(document)
             or not isinstance(document.get("hands"), dict)
             or not isinstance(document.get("muda_review"), dict)):
-        raise ValueError("Analysis result does not match the DEMO worker session")
+        raise ValueError("Analysis result does not match the worker session and sensor source")
     image_references(document)
     return document
 

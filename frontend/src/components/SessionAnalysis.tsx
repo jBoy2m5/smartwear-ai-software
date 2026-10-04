@@ -45,13 +45,14 @@ export function MudaPanel({ detail, setFocus }: {
 
 export function Phases({ detail }: { detail: SessionDetail }) {
   const hands = displayHands(detail);
+  const measured = detail.session_id.startsWith('MEASURED_');
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
     <div className="mb-3 flex items-center gap-2"><Clock3 size={19} className="text-cyberGreen" />
       <h2 className="font-heading text-lg font-bold">Chuỗi hành động đã ghi</h2></div>
     <p className="mb-3 text-xs text-gray-400">Chỉ hiển thị tay có hành động trong phiên; đoạn không nhìn rõ tay có thể không xuất hiện ở đây.</p>
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-700/70">
       <table className="w-full min-w-[670px] text-left text-sm"><thead className="sticky top-0 bg-slate-800 text-xs uppercase text-gray-400"><tr>
-        <th className="p-3">Thời gian</th>{hands.map(hand => <th key={hand} className="p-3">{handName(hand)}</th>)}<th className="p-3">Nhãn gốc</th><th className="p-3">Lực DEMO đỉnh</th>
+        <th className="p-3">Thời gian</th>{hands.map(hand => <th key={hand} className="p-3">{handName(hand)}</th>)}<th className="p-3">Nhãn gốc</th><th className="p-3">{measured ? 'Newton chưa hiệu chuẩn' : 'Lực DEMO đỉnh'}</th>
       </tr></thead><tbody>{detail.action_phases.map((phase, index) => <tr key={`${phase.start_time}-${index}`} className="border-t border-slate-700/50 hover:bg-slate-800/60">
         <td className="whitespace-nowrap p-3 font-mono text-xs text-gray-300">{number(phase.start_time, 3)}–{number(phase.end_time, 3)} s</td>
         {hands.map(hand => <td key={hand} className={`p-3 font-semibold ${hand === 'right' ? 'text-cyberGreen' : 'text-cyan-300'}`}>
@@ -114,19 +115,23 @@ export function DtwPanel({ detail, setFocus }: {
 
 export function SensorPanel({ detail }: { detail: SessionDetail }) {
   const sensors = detail.analysis_result?.sensor_comparison;
+  const measured = sensors?.worker_source?.source === 'measured_hardware';
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
     <h2 className="font-heading text-lg font-bold">So sánh cảm biến</h2>
-    <p className="mt-1 text-sm text-amber-200">Nguồn: {sensors?.status ?? 'chưa có'} · lực/EMG hiện là số mô phỏng, không phải Newton đo thật.</p>
+    <p className="mt-1 text-sm text-amber-200">Nguồn: {sensors?.status ?? 'chưa có'} · {measured
+      ? 'SmartWrist đo ADC/IMU tay phải; lực hiển thị là số đếm ADC, chưa có Newton, sEMG, torque hay IMU đầu.'
+      : 'Lực/EMG hiện là số mô phỏng, không phải Newton đo thật.'}</p>
     {sensors?.difference_note && <p className="mt-2 text-xs text-gray-400">{sensors.difference_note}</p>}
     <div className="mt-4 grid gap-4 xl:grid-cols-2">
       {displayHands(detail).map(hand => { const result = sensors?.hands?.[hand]; return <div key={hand} className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
         <div className="mb-2 font-semibold text-cyan-300">{handName(hand)} · {result?.status ?? 'chưa có dữ liệu'}</div>
         <div className="max-h-72 overflow-auto">{result?.pairs?.length ? <table className="w-full min-w-[400px] text-left text-xs">
-          <thead className="text-gray-400"><tr><th className="py-2">Đoạn</th><th>Trạng thái</th><th>Lực TB mẫu</th><th>Lực TB bạn</th><th>Chênh lệch</th><th>Đủ số</th></tr></thead>
+          <thead className="text-gray-400"><tr><th className="py-2">Đoạn</th><th>Trạng thái</th><th>Lực TB mẫu</th><th>{measured ? 'ADC TB bạn' : 'Lực TB bạn'}</th><th>Chênh lệch</th><th>Đủ số</th></tr></thead>
           <tbody>{result.pairs.map((pair, index) => <tr key={`${pair.expert_segment_id}-${pair.worker_segment_id}-${index}`} className="border-t border-slate-700/50">
             <td className="py-2">{pair.expert_label} ↔ {pair.worker_label}</td><td>{pair.comparison_status}</td>
-            <td>{number(pair.expert?.force_mean)}</td><td>{number(pair.worker?.force_mean)}</td>
-            <td>{number(pair.worker_minus_expert?.force_mean)}</td>
+            <td>{number(pair.expert?.force_mean)}</td><td>{pair.worker?.force_adc_mean && pair.worker?.force_mean == null
+              ? pair.worker.force_adc_mean.join(' / ') : number(pair.worker?.force_mean)}</td>
+            <td>{pair.worker_minus_expert_adc?.join(' / ') ?? number(pair.worker_minus_expert?.force_mean)}</td>
             <td><details className="min-w-24"><summary className="cursor-pointer text-cyberGreen">Xem</summary>
               <pre className="max-h-48 w-72 overflow-auto rounded bg-slate-950 p-2 text-[10px] text-gray-300">{JSON.stringify(pair, null, 2)}</pre>
             </details></td>
@@ -148,6 +153,7 @@ function ExportLink({ href, children, Icon }: { href: string | null | undefined;
 
 export function Exports({ detail }: { detail: SessionDetail }) {
   const analysis = detail.analysis_result;
+  const measured = detail.session_id.startsWith('MEASURED_');
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-heading text-lg font-bold">Báo cáo & dữ liệu đầy đủ</h2>
       <span className="text-xs text-gray-400">Backend: {detail.export_status}{detail.export_error ? ` · ${detail.export_error}` : ''}</span></div>
@@ -160,7 +166,9 @@ export function Exports({ detail }: { detail: SessionDetail }) {
       <ExportLink href={detail.source_data_url} Icon={Download}>Dữ liệu AI gốc ZIP</ExportLink>
       {detail.analysis_result && <ExportLink href={`/api/v1/sessions/${encodeURIComponent(detail.session_id)}/analysis-result`} Icon={FileJson2}>AI analysis JSON</ExportLink>}
     </div>
-    <p className="mt-3 text-xs text-gray-500">Đường đi robot là tọa độ DEMO từ ảnh camera, không thể dùng để điều khiển robot thật. Video AVI có thể cần mở bằng trình phát video trên máy.</p>
+    <p className="mt-3 text-xs text-gray-500">{measured
+      ? 'Phiên phần cứng không xuất đường đi robot hoặc Newton khi chưa hiệu chuẩn. Ảnh camera và ADC/IMU gốc nằm trong dữ liệu nguồn.'
+      : 'Đường đi robot là tọa độ DEMO từ ảnh camera, không thể dùng để điều khiển robot thật.'} Video AVI có thể cần mở bằng trình phát video trên máy.</p>
     {!detail.recording_url && <p className="mt-2 text-xs text-amber-200">Video gốc của phiên này chưa được gửi lên backend; ảnh và phân tích vẫn xem được.</p>}
     {!detail.source_data_url && <p className="mt-2 text-xs text-amber-200">Bộ file AI gốc của phiên này chưa được gửi lên backend.</p>}
     {analysis && <details className="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-sm">

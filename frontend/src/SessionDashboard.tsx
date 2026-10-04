@@ -119,7 +119,7 @@ export default function SessionDashboard() {
           {selected && <>
             <section className="rounded-xl border border-cyberGreen/25 bg-densoNavy/55 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
+                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('MEASURED_') ? 'CẢM BIẾN THẬT · ADC' : selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
                   <span className="text-xs text-gray-400">{selected.worker_type} · {dateTime(selected.created_at)}</span></div>
                 <h2 className="mt-2 break-all font-heading text-lg font-bold">{selected.session_id}</h2>
                 <p className="mt-1 text-sm text-gray-300">Mẫu so sánh: <strong>{selected.analysis_result?.selected_reference?.title ?? selected.analysis_result?.expert_session ?? 'Chưa có'}</strong></p>
@@ -144,7 +144,7 @@ export default function SessionDashboard() {
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-2 px-1 pb-3 text-xs text-gray-500">
         <span>SmartWear AI · Giao diện đọc kết quả phiên đã lưu</span>
-        <span className="inline-flex items-center gap-1"><Images size={13} /> Ảnh & cảm biến DEMO được ghi rõ nguồn</span>
+        <span className="inline-flex items-center gap-1"><Images size={13} /> Nguồn DEMO hoặc ADC đo thật được ghi rõ theo phiên</span>
       </footer>
     </div>
   </div>;

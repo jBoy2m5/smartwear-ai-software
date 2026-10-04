@@ -8,6 +8,14 @@ uploads succeed it writes `backend_publish_demo.receipt.json`. It never overwrit
 the original AI outputs. If the backend is unavailable, the camera session remains
 on disk; retry publication with the bridge command below.
 
+For an optional ESP32-CAM + SmartWrist session, see `ai/hardware/README.md`.
+The same bridge detects `hardware_capture.json` and validated
+`real_sensors.meta.json`, writes `backend_payload_measured.json`, and uses a
+`MEASURED_` session ID. It sends no Newton peak force or robot trajectory
+because the ADC and screen coordinates are uncalibrated. The detailed AI
+comparison still marks worker sensor units and any missing samples. Its receipt
+files use `_measured` instead of `_demo`. The existing DEMO route stays intact.
+
 For worker sessions, the bridge also uploads the **complete** `analysis_result.json`
 and the expert sample images referenced by it. The backend session URL now includes
 `analysis_result` (all per-hand DTW pairs, `worker_extra_ms`, Muda review, sensor

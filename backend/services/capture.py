@@ -34,7 +34,9 @@ class CaptureManager:
         for candidate in dict.fromkeys(item for item in candidates if item):
             try:
                 result = subprocess.run(
-                    [candidate, "-B", "-c", "import cv2, mediapipe"],
+                    [candidate, "-B", "-c", ("import cv2, mediapipe, paho.mqtt.client"
+                                            if os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").lower()
+                                            == "hardware" else "import cv2, mediapipe")],
                     cwd=PROJECT_ROOT, capture_output=True, timeout=20,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )
@@ -43,7 +45,9 @@ class CaptureManager:
                     return candidate
             except (OSError, subprocess.TimeoutExpired):
                 continue
-        raise RuntimeError("Máy chạy backend chưa có Python với OpenCV và MediaPipe. "
+        raise RuntimeError("Máy chạy backend chưa có Python với OpenCV, MediaPipe"
+                           + (" và Paho MQTT" if os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").lower()
+                              == "hardware" else "") + ". "
                            "Quản trị viên cần cấu hình SMARTWEAR_AI_PYTHON.")
 
     def start(self) -> dict:

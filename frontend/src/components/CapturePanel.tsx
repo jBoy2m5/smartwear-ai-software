@@ -122,7 +122,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
         <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>
-          <p className="text-xs text-gray-400">Camera trên máy chạy AI · chỉ theo dõi tay phải · tự lưu sau khi kết thúc</p></div></div>
+          <p className="text-xs text-gray-400">Nguồn camera do máy AI cấu hình · chỉ theo dõi tay phải · tự lưu sau khi kết thúc</p></div></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => void begin()} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
@@ -146,6 +146,9 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
             <div className="text-xs font-semibold uppercase tracking-wider text-gray-300">Tay phải</div>
             <div className="text-xl font-extrabold text-cyberGreen">{actionLabel}</div>
             {wrist && <div className="mt-1 font-mono text-xs text-gray-200">X {wrist.x.toFixed(3)} · Y {wrist.y.toFixed(3)}</div>}
+            {displayFrame.wrist_status && <div className={`mt-1 text-xs font-semibold ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
+              SmartWrist: {displayFrame.wrist_status === 'receiving' ? 'đang nhận dữ liệu' : 'chưa có dữ liệu'}
+            </div>}
           </div>
         </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Bấm “Bắt đầu quay” để xem camera và nhãn hành động.'}</div>}
         {recording && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
@@ -160,7 +163,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}
-        <p className="mt-4 text-xs text-gray-500">Quay tối đa 3 phút. Số lực và đường đi trong kết quả vẫn là dữ liệu DEMO.</p>
+        <p className="mt-4 text-xs text-gray-500">Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.</p>
       </div>
     </div>
   </section>;

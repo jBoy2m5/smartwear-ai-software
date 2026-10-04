@@ -63,6 +63,7 @@ export interface CapturePreview {
   camera: { frame_width: number; frame_height: number };
   right_action: { label: string; tracking_status: string };
   right_landmarks: Array<{ id: number; x: number; y: number; z: number }>;
+  wrist_status?: 'receiving' | 'missing';
 }
 
 export function startCapture(): Promise<CaptureStatus> {

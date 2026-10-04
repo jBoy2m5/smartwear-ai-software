@@ -29,15 +29,28 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT, session_dir=
         if not session.is_dir() or session != camera_file.parent or session.parent != output_root:
             raise ValueError("Session must be the camera file's directory inside output_root")
     normalized = session / "camera.normalized.jsonl"
-    sensors = session / "sensors.jsonl"
+    hardware_marker = session / "hardware_capture.json"
+    measured = hardware_marker.is_file()
+    hardware = json.loads(hardware_marker.read_text(encoding="utf-8")) if measured else None
+    if measured and (hardware.get("schema_version") != "smartwear.hardware_capture.v1"
+                     or hardware.get("status") != "complete"
+                     or not (session / "wrist_raw.jsonl").is_file()):
+        raise ValueError("Hardware capture marker or raw wrist stream is incomplete; no DEMO fallback")
+    sensors = session / ("real_sensors.jsonl" if measured else "sensors.jsonl")
     combined = session / "multimodal.jsonl"
     segments = session / "action_segments.json"
     keyframes = session / "keyframes.json"
     steps = [
         ("Chuan hoa camera", AI_DIR / "preprocessing" / "normalize_camera.py",
          ["--input", camera_file, "--output", normalized]),
-        ("Tao cam bien mo phong", AI_DIR / "sensors" / "simulate_sensors.py",
-         ["--camera-file", normalized, "--output", sensors]),
+        (("Ghep cam bien do that" if measured else "Tao cam bien mo phong"),
+         (AI_DIR / "hardware" / "align.py" if measured else
+          AI_DIR / "sensors" / "simulate_sensors.py"),
+         (["--session", session, "--window-ms", hardware["alignment_window_ms"],
+           "--device-id", hardware["device_id"],
+           *(["--force-channel", hardware["force_channel"]]
+             if hardware.get("force_channel") is not None else [])] if measured else
+          ["--camera-file", normalized, "--output", sensors])),
         ("Ghep du lieu multimodal", AI_DIR / "preprocessing" / "build_multimodal.py",
          ["--camera-file", normalized, "--sensor-file", sensors, "--output", combined]),
         ("Chia doan hanh dong", AI_DIR / "preprocessing" / "segment_actions.py",
@@ -65,7 +78,8 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT, session_dir=
     else:
         print(f"Anh tieu bieu: {keyframes.with_suffix('')} ({keyframe_result['extracted_count']} anh)", flush=True)
     print(f"Danh sach anh: {keyframes}", flush=True)
-    print("IMU, luc/EMG va torque la so mo phong.", flush=True)
+    print(("SmartWrist ADC/IMU are measured inputs; head IMU and torque are unavailable."
+           if measured else "IMU, luc/EMG va torque la so mo phong."), flush=True)
     return combined
 
 
