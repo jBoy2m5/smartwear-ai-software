@@ -197,30 +197,19 @@ def trajectory_for(frames):
         ms = frame["timestamp_ms"]
         if ms - last_ms < 100:
             continue
-        positions = []
-        forces = []
-        for hand in frame.get("hands", []):
-            side = str(hand.get("handedness", "")).lower()
-            landmarks = hand.get("landmarks") or []
-            if side not in SIDES or not landmarks:
-                continue
-            wrist = next((p for p in landmarks if p.get("id") == 0), None)
-            if not wrist:
-                continue
-            x, y = float(wrist["x"]), float(wrist["y"])
-            if not math.isfinite(x) or not math.isfinite(y):
-                raise ValueError("Non-finite camera landmark")
-            positions.append((x, y))
-            force = demo_force(frame.get("hand_sensors", {}).get(side, {}).get("force_emg_raw"))
-            if force is not None:
-                forces.append(force)
-        if not positions:
+        hand = next((item for item in frame.get("hands", [])
+                     if str(item.get("handedness", "")).lower() == "right"), None)
+        wrist = next((point for point in (hand.get("landmarks") or [])
+                      if point.get("id") == 0), None) if hand else None
+        if wrist is None:
             continue
-        x = sum(p[0] for p in positions) / len(positions)
-        y = sum(p[1] for p in positions) / len(positions)
+        x, y = float(wrist["x"]), float(wrist["y"])
+        if not math.isfinite(x) or not math.isfinite(y):
+            raise ValueError("Non-finite camera landmark")
+        force = demo_force(frame.get("hand_sensors", {}).get("right", {}).get("force_emg_raw"))
         result.append({"t": ms / 1000, "pos": [round(x * 0.4, 4),
                                                  round((1 - y) * 0.3, 4), 0.1],
-                       "force": max(forces) if forces else 0.0})
+                       "force": force if force is not None else 0.0})
         last_ms = ms
     return result
 
@@ -241,7 +230,7 @@ def build_payload(session_dir):
         "phase_rule": "Visible left/right labels share one nonoverlapping phase, e.g. LEFT_GRAB.RIGHT_OPEN",
         "similarity_rule": "DEMO: 100/(1+weighted mean per-hand normalized DTW cost); no comparison=0, expert baseline=100",
         "muda_rule": "DEMO sum of deduplicated unconfirmed review-candidate durations; missing action contributes 0; not confirmed waste",
-        "trajectory_rule": "DEMO 100ms-spaced visible wrist screen coordinates mapped to a 0.4x0.3 plane at z=0.1; not a calibrated robot path",
+        "trajectory_rule": "DEMO 100ms-spaced right wrist screen coordinates mapped to a 0.4x0.3 plane at z=0.1; not a calibrated robot path",
     }
     return payload, meta, images
 

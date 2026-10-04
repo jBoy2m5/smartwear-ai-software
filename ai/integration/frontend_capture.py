@@ -1,4 +1,4 @@
-"""Run the existing two-hand camera pipeline for a dashboard-controlled session."""
+"""Run right-hand camera capture for a dashboard-controlled session."""
 
 import argparse
 import json
@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -25,18 +26,36 @@ def write_status(job_dir, stage, message, session_id=None):
     os.replace(temporary, job_dir / "status.json")
 
 
-def publish_preview(job_dir, jpeg_bytes, frame_index, keep=20):
-    """Publish a complete, uniquely named frame without replacing a served JPEG."""
+def publish_preview(job_dir, jpeg_bytes, data, keep=30):
+    """Publish image and matching observation without replacing a served JPEG."""
+    frame_index = data["video_frame_index"]
     name = f"preview_{frame_index:08d}"
     temporary = job_dir / f"{name}.tmp"
     temporary.write_bytes(jpeg_bytes)
     os.replace(temporary, job_dir / f"{name}.jpg")
-    for old in sorted(job_dir.glob("preview_*.jpg"))[:-keep]:
+    right_hand = next((hand for hand in data["hands"]
+                       if hand["handedness"].lower() == "right"), None)
+    document = {"frame_index": frame_index, "timestamp_ms": data["timestamp"],
+                "camera": data["camera"],
+                "right_action": data["hand_actions"]["right"],
+                "right_landmarks": right_hand["landmarks"] if right_hand else []}
+    metadata_tmp = job_dir / f"{name}.json.tmp"
+    metadata_tmp.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    os.replace(metadata_tmp, job_dir / f"{name}.json")
+    for old in sorted(job_dir.glob("preview_*.json"))[:-keep]:
         try:
             old.unlink()
+            old.with_suffix(".jpg").unlink(missing_ok=True)
         except PermissionError:
             # A browser response may still be reading this older frame on Windows.
             pass
+
+
+def encode_and_publish_preview(cv2, frame, data, job_dir):
+    success, encoded = cv2.imencode(".jpg", frame,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 88])
+    if success:
+        publish_preview(job_dir, encoded.tobytes(), data)
 
 
 def main(argv=None):
@@ -49,30 +68,42 @@ def main(argv=None):
         parser.error("Capture job directory does not exist")
     last_preview = 0.0
     preview_error_logged = False
+    preview_future = None
+
+    def check_preview_error():
+        nonlocal preview_error_logged
+        if preview_future is None or not preview_future.done():
+            return
+        try:
+            preview_future.result()
+        except Exception as exc:
+            # A failed live preview must not abort the saved camera session.
+            if not preview_error_logged:
+                print(f"Camera preview unavailable: {exc}", file=sys.stderr)
+                preview_error_logged = True
 
     def preview(cv2, frame, data):
-        nonlocal last_preview, preview_error_logged
+        nonlocal last_preview, preview_future
         now = time.monotonic()
-        if now - last_preview < 0.15:
+        if preview_future is not None and not preview_future.done():
             return
-        success, encoded = cv2.imencode(".jpg", frame,
-                                        [cv2.IMWRITE_JPEG_QUALITY, 78])
-        if success:
-            try:
-                publish_preview(job_dir, encoded.tobytes(), data["video_frame_index"])
-            except OSError as exc:
-                # Losing the live preview must not abort a recording or its analysis.
-                if not preview_error_logged:
-                    print(f"Camera preview unavailable: {exc}", file=sys.stderr)
-                    preview_error_logged = True
-            last_preview = now
+        check_preview_error()
+        if now - last_preview < 0.06:
+            return
+        # Only copy on the capture thread; JPEG compression and file writes run
+        # separately so the next camera frame need not wait for the web preview.
+        preview_future = executor.submit(encode_and_publish_preview, cv2,
+                                         frame.copy(), data, job_dir)
+        last_preview = now
 
     try:
-        write_status(job_dir, "recording", "Camera đang ghi hai tay")
+        write_status(job_dir, "recording", "Camera đang ghi tay phải")
         started = time.monotonic()
-        output = record_camera(stop_requested=lambda: (job_dir / "stop.flag").exists()
-                               or time.monotonic() - started >= 180,
-                               on_frame=preview, show_window=False)
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            output = record_camera(stop_requested=lambda: (job_dir / "stop.flag").exists()
+                                   or time.monotonic() - started >= 180,
+                                   on_frame=preview, show_window=False)
+        check_preview_error()
         write_status(job_dir, "processing", "Đang phân tích hành động và so với mẫu")
         finish_recording(output)
         write_status(job_dir, "publishing", "Đang lưu kết quả lên backend")

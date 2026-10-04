@@ -1,0 +1,897 @@
+{
+  "schema_version": "smartwear.analysis_comparison.v2",
+  "expert_session": "04_right_grab_hold_release_open",
+  "worker_session": "camera_data_20261004_173243_408982_lm1k3czs",
+  "expert_segments_sha256": "d2c3569e5ac9eb07eaabb1033b09d0401589b4fab4a41c2414413ad4fe96706e",
+  "worker_segments_sha256": "d9ffcce52d842e59eac81a63bd244e331153d6e8e76232afe4e9727778a4e157",
+  "method": "segment_label_duration_dtw_per_hand_with_sensor_summary",
+  "score_note": "DTW cost ranks visible camera actions only; sensor values are reported separately.",
+  "review_note": "Candidates need video review; they are not confirmed waste or mistakes.",
+  "hands": {
+    "left": {
+      "status": "insufficient_visible_actions",
+      "expert_segments": 0,
+      "worker_segments": 0,
+      "alignment": [],
+      "review_candidates": [],
+      "expert_omitted": {
+        "no_hand": 1,
+        "no_hand_duration_ms": 4802,
+        "unknown_or_ambiguous": 0,
+        "unknown_or_ambiguous_duration_ms": 0
+      },
+      "worker_omitted": {
+        "no_hand": 1,
+        "no_hand_duration_ms": 18554,
+        "unknown_or_ambiguous": 0,
+        "unknown_or_ambiguous_duration_ms": 0
+      }
+    },
+    "right": {
+      "status": "compared",
+      "expert_segments": 5,
+      "worker_segments": 13,
+      "normalized_dtw_cost": 1.6108,
+      "alignment": [
+        {
+          "expert_segment_id": 1,
+          "worker_segment_id": 3,
+          "expert_label": "GRAB",
+          "worker_label": "GRAB",
+          "same_label": true,
+          "expert_duration_ms": 812,
+          "worker_duration_ms": 559,
+          "worker_extra_ms": -253,
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0003_right_GRAB_frame_000105.png"
+        },
+        {
+          "expert_segment_id": 1,
+          "worker_segment_id": 4,
+          "expert_label": "GRAB",
+          "worker_label": "RELEASE",
+          "same_label": false,
+          "expert_duration_ms": 812,
+          "worker_duration_ms": 704,
+          "worker_extra_ms": -108,
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0004_right_RELEASE_frame_000113.png"
+        },
+        {
+          "expert_segment_id": 1,
+          "worker_segment_id": 5,
+          "expert_label": "GRAB",
+          "worker_label": "OPEN",
+          "same_label": false,
+          "expert_duration_ms": 812,
+          "worker_duration_ms": 1024,
+          "worker_extra_ms": 212,
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0005_right_OPEN_frame_000122.png"
+        },
+        {
+          "expert_segment_id": 1,
+          "worker_segment_id": 6,
+          "expert_label": "GRAB",
+          "worker_label": "GRAB",
+          "same_label": true,
+          "expert_duration_ms": 812,
+          "worker_duration_ms": 809,
+          "worker_extra_ms": -3,
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0006_right_GRAB_frame_000132.png"
+        },
+        {
+          "expert_segment_id": 2,
+          "worker_segment_id": 7,
+          "expert_label": "ASSEMBLY",
+          "worker_label": "ASSEMBLY",
+          "same_label": true,
+          "expert_duration_ms": 764,
+          "worker_duration_ms": 1258,
+          "worker_extra_ms": 494,
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0007_right_ASSEMBLY_frame_000143.png"
+        },
+        {
+          "expert_segment_id": 2,
+          "worker_segment_id": 8,
+          "expert_label": "ASSEMBLY",
+          "worker_label": "RELEASE",
+          "same_label": false,
+          "expert_duration_ms": 764,
+          "worker_duration_ms": 656,
+          "worker_extra_ms": -108,
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0008_right_RELEASE_frame_000154.png"
+        },
+        {
+          "expert_segment_id": 2,
+          "worker_segment_id": 9,
+          "expert_label": "ASSEMBLY",
+          "worker_label": "OPEN",
+          "same_label": false,
+          "expert_duration_ms": 764,
+          "worker_duration_ms": 1575,
+          "worker_extra_ms": 811,
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0009_right_OPEN_frame_000166.png"
+        },
+        {
+          "expert_segment_id": 2,
+          "worker_segment_id": 10,
+          "expert_label": "ASSEMBLY",
+          "worker_label": "REACH",
+          "same_label": false,
+          "expert_duration_ms": 764,
+          "worker_duration_ms": 357,
+          "worker_extra_ms": -407,
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0010_right_REACH_frame_000176.png"
+        },
+        {
+          "expert_segment_id": 2,
+          "worker_segment_id": 11,
+          "expert_label": "ASSEMBLY",
+          "worker_label": "OPEN",
+          "same_label": false,
+          "expert_duration_ms": 764,
+          "worker_duration_ms": 714,
+          "worker_extra_ms": -50,
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0011_right_OPEN_frame_000183.png"
+        },
+        {
+          "expert_segment_id": 3,
+          "worker_segment_id": 12,
+          "expert_label": "GRAB",
+          "worker_label": "GRAB",
+          "same_label": true,
+          "expert_duration_ms": 47,
+          "worker_duration_ms": 828,
+          "worker_extra_ms": 781,
+          "expert_image_path": "keyframes/segment_0003_right_GRAB_frame_000032.png",
+          "worker_image_path": "keyframes/segment_0012_right_GRAB_frame_000191.png"
+        },
+        {
+          "expert_segment_id": 3,
+          "worker_segment_id": 13,
+          "expert_label": "GRAB",
+          "worker_label": "ASSEMBLY",
+          "same_label": false,
+          "expert_duration_ms": 47,
+          "worker_duration_ms": 561,
+          "worker_extra_ms": 514,
+          "expert_image_path": "keyframes/segment_0003_right_GRAB_frame_000032.png",
+          "worker_image_path": "keyframes/segment_0013_right_ASSEMBLY_frame_000198.png"
+        },
+        {
+          "expert_segment_id": 4,
+          "worker_segment_id": 14,
+          "expert_label": "RELEASE",
+          "worker_label": "RELEASE",
+          "same_label": true,
+          "expert_duration_ms": 691,
+          "worker_duration_ms": 657,
+          "worker_extra_ms": -34,
+          "expert_image_path": "keyframes/segment_0004_right_RELEASE_frame_000039.png",
+          "worker_image_path": "keyframes/segment_0014_right_RELEASE_frame_000205.png"
+        },
+        {
+          "expert_segment_id": 5,
+          "worker_segment_id": 15,
+          "expert_label": "OPEN",
+          "worker_label": "OPEN",
+          "same_label": true,
+          "expert_duration_ms": 2488,
+          "worker_duration_ms": 1078,
+          "worker_extra_ms": -1410,
+          "expert_image_path": "keyframes/segment_0005_right_OPEN_frame_000072.png",
+          "worker_image_path": "keyframes/segment_0015_right_OPEN_frame_000215.png"
+        }
+      ],
+      "review_candidates": [
+        {
+          "worker_segment_id": 4,
+          "expert_segment_id": 1,
+          "reason": "different_visible_label",
+          "worker_extra_ms": -108,
+          "hand": "right",
+          "start_ms": 8335,
+          "end_ms": 9039,
+          "duration_ms": 704,
+          "worker_label": "RELEASE",
+          "expert_label": "GRAB",
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0004_right_RELEASE_frame_000113.png"
+        },
+        {
+          "worker_segment_id": 5,
+          "expert_segment_id": 1,
+          "reason": "different_visible_label",
+          "worker_extra_ms": 212,
+          "hand": "right",
+          "start_ms": 9039,
+          "end_ms": 10063,
+          "duration_ms": 1024,
+          "worker_label": "OPEN",
+          "expert_label": "GRAB",
+          "expert_image_path": "keyframes/segment_0001_right_GRAB_frame_000008.png",
+          "worker_image_path": "keyframes/segment_0005_right_OPEN_frame_000122.png"
+        },
+        {
+          "worker_segment_id": 8,
+          "expert_segment_id": 2,
+          "reason": "different_visible_label",
+          "worker_extra_ms": -108,
+          "hand": "right",
+          "start_ms": 12130,
+          "end_ms": 12786,
+          "duration_ms": 656,
+          "worker_label": "RELEASE",
+          "expert_label": "ASSEMBLY",
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0008_right_RELEASE_frame_000154.png"
+        },
+        {
+          "worker_segment_id": 9,
+          "expert_segment_id": 2,
+          "reason": "different_visible_label",
+          "worker_extra_ms": 811,
+          "hand": "right",
+          "start_ms": 12786,
+          "end_ms": 14361,
+          "duration_ms": 1575,
+          "worker_label": "OPEN",
+          "expert_label": "ASSEMBLY",
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0009_right_OPEN_frame_000166.png"
+        },
+        {
+          "worker_segment_id": 10,
+          "expert_segment_id": 2,
+          "reason": "different_visible_label",
+          "worker_extra_ms": -407,
+          "hand": "right",
+          "start_ms": 14361,
+          "end_ms": 14718,
+          "duration_ms": 357,
+          "worker_label": "REACH",
+          "expert_label": "ASSEMBLY",
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0010_right_REACH_frame_000176.png"
+        },
+        {
+          "worker_segment_id": 11,
+          "expert_segment_id": 2,
+          "reason": "different_visible_label",
+          "worker_extra_ms": -50,
+          "hand": "right",
+          "start_ms": 14718,
+          "end_ms": 15432,
+          "duration_ms": 714,
+          "worker_label": "OPEN",
+          "expert_label": "ASSEMBLY",
+          "expert_image_path": "keyframes/segment_0002_right_ASSEMBLY_frame_000024.png",
+          "worker_image_path": "keyframes/segment_0011_right_OPEN_frame_000183.png"
+        },
+        {
+          "worker_segment_id": 12,
+          "expert_segment_id": 3,
+          "reason": "longer_visible_action",
+          "worker_extra_ms": 781,
+          "hand": "right",
+          "start_ms": 15432,
+          "end_ms": 16260,
+          "duration_ms": 828,
+          "worker_label": "GRAB",
+          "expert_label": "GRAB",
+          "expert_image_path": "keyframes/segment_0003_right_GRAB_frame_000032.png",
+          "worker_image_path": "keyframes/segment_0012_right_GRAB_frame_000191.png"
+        },
+        {
+          "worker_segment_id": 13,
+          "expert_segment_id": 3,
+          "reason": "different_visible_label",
+          "worker_extra_ms": 514,
+          "hand": "right",
+          "start_ms": 16260,
+          "end_ms": 16821,
+          "duration_ms": 561,
+          "worker_label": "ASSEMBLY",
+          "expert_label": "GRAB",
+          "expert_image_path": "keyframes/segment_0003_right_GRAB_frame_000032.png",
+          "worker_image_path": "keyframes/segment_0013_right_ASSEMBLY_frame_000198.png"
+        }
+      ],
+      "expert_omitted": {
+        "no_hand": 0,
+        "no_hand_duration_ms": 0,
+        "unknown_or_ambiguous": 0,
+        "unknown_or_ambiguous_duration_ms": 0
+      },
+      "worker_omitted": {
+        "no_hand": 1,
+        "no_hand_duration_ms": 7571,
+        "unknown_or_ambiguous": 1,
+        "unknown_or_ambiguous_duration_ms": 203
+      }
+    }
+  },
+  "sensor_comparison": {
+    "status": "simulated_demo_comparison",
+    "expert_source": {
+      "source": "simulated_from_camera_observations",
+      "sensor_file": "sensors.jsonl",
+      "sensor_sha256": "814f5293425a948d3d7df8ea2e4ce08cff47c5fb6d2afb1f28ca4a905c9b2cfb",
+      "calibration_id": null,
+      "units": {
+        "force": "arbitrary_simulator_units",
+        "torque": "assumed_N_m",
+        "angle": "assumed_degrees",
+        "acceleration": "assumed_m_s2",
+        "angular_speed": "assumed_rad_s"
+      },
+      "time_alignment": "exact_camera_timestamps_required"
+    },
+    "worker_source": {
+      "source": "simulated_from_camera_observations",
+      "sensor_file": "sensors.jsonl",
+      "sensor_sha256": "e9ed8fc4eb935f4425d263fe119c53265c435bdae6dc852c6fd4c89c49127813",
+      "calibration_id": null,
+      "units": {
+        "force": "arbitrary_simulator_units",
+        "torque": "assumed_N_m",
+        "angle": "assumed_degrees",
+        "acceleration": "assumed_m_s2",
+        "angular_speed": "assumed_rad_s"
+      },
+      "time_alignment": "exact_camera_timestamps_required"
+    },
+    "difference_note": "Numeric differences are illustrative only for simulated signals. Real measurements require matching units, calibration and camera timestamps.",
+    "force_note": "force_emg_raw is an uncalibrated raw value for demo signals; it is not Newton or physiological sEMG.",
+    "hands": {
+      "left": {
+        "status": "insufficient_visible_actions",
+        "pairs": []
+      },
+      "right": {
+        "status": "compared",
+        "pairs": [
+          {
+            "expert_segment_id": 1,
+            "worker_segment_id": 3,
+            "expert_label": "GRAB",
+            "worker_label": "GRAB",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 17,
+              "force_mean": 499.5513,
+              "force_peak": 702.7042,
+              "torque_mean": 0.0201,
+              "torque_peak": 0.0572,
+              "torque_angle_change": -0.004,
+              "head_acceleration_mean": 9.8156,
+              "wrist_acceleration_mean": 9.8295,
+              "wrist_angular_speed_mean": 0.095,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker": {
+              "sample_count": 6,
+              "force_mean": 518.3689,
+              "force_peak": 671.3027,
+              "torque_mean": 0.0175,
+              "torque_peak": 0.0583,
+              "torque_angle_change": 0,
+              "head_acceleration_mean": 9.812,
+              "wrist_acceleration_mean": 9.7981,
+              "wrist_angular_speed_mean": 0.145,
+              "head_angular_speed_mean": 0.0333
+            },
+            "worker_minus_expert": {
+              "force_mean": 18.8176,
+              "force_peak": -31.4015,
+              "torque_mean": -0.0026,
+              "torque_peak": 0.0011,
+              "torque_angle_change": 0.004,
+              "head_acceleration_mean": -0.0036,
+              "wrist_acceleration_mean": -0.0314,
+              "wrist_angular_speed_mean": 0.05,
+              "head_angular_speed_mean": -0.0013
+            }
+          },
+          {
+            "expert_segment_id": 1,
+            "worker_segment_id": 4,
+            "expert_label": "GRAB",
+            "worker_label": "RELEASE",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 17,
+              "force_mean": 499.5513,
+              "force_peak": 702.7042,
+              "torque_mean": 0.0201,
+              "torque_peak": 0.0572,
+              "torque_angle_change": -0.004,
+              "head_acceleration_mean": 9.8156,
+              "wrist_acceleration_mean": 9.8295,
+              "wrist_angular_speed_mean": 0.095,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker": {
+              "sample_count": 8,
+              "force_mean": 312.2514,
+              "force_peak": 551.8889,
+              "torque_mean": 0.0188,
+              "torque_peak": 0.0593,
+              "torque_angle_change": 0.5193,
+              "head_acceleration_mean": 9.8063,
+              "wrist_acceleration_mean": 9.7997,
+              "wrist_angular_speed_mean": 0.0986,
+              "head_angular_speed_mean": 0.0328
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 1,
+            "worker_segment_id": 5,
+            "expert_label": "GRAB",
+            "worker_label": "OPEN",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 17,
+              "force_mean": 499.5513,
+              "force_peak": 702.7042,
+              "torque_mean": 0.0201,
+              "torque_peak": 0.0572,
+              "torque_angle_change": -0.004,
+              "head_acceleration_mean": 9.8156,
+              "wrist_acceleration_mean": 9.8295,
+              "wrist_angular_speed_mean": 0.095,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker": {
+              "sample_count": 11,
+              "force_mean": 121.9697,
+              "force_peak": 157.8867,
+              "torque_mean": 0.0238,
+              "torque_peak": 0.0495,
+              "torque_angle_change": 0,
+              "head_acceleration_mean": 9.8054,
+              "wrist_acceleration_mean": 9.8046,
+              "wrist_angular_speed_mean": 0.0768,
+              "head_angular_speed_mean": 0.0348
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 1,
+            "worker_segment_id": 6,
+            "expert_label": "GRAB",
+            "worker_label": "GRAB",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 17,
+              "force_mean": 499.5513,
+              "force_peak": 702.7042,
+              "torque_mean": 0.0201,
+              "torque_peak": 0.0572,
+              "torque_angle_change": -0.004,
+              "head_acceleration_mean": 9.8156,
+              "wrist_acceleration_mean": 9.8295,
+              "wrist_angular_speed_mean": 0.095,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker": {
+              "sample_count": 9,
+              "force_mean": 567.233,
+              "force_peak": 731.0915,
+              "torque_mean": 0.0088,
+              "torque_peak": 0.0452,
+              "torque_angle_change": 0,
+              "head_acceleration_mean": 9.817,
+              "wrist_acceleration_mean": 9.8235,
+              "wrist_angular_speed_mean": 0.0781,
+              "head_angular_speed_mean": 0.0336
+            },
+            "worker_minus_expert": {
+              "force_mean": 67.6817,
+              "force_peak": 28.3873,
+              "torque_mean": -0.0113,
+              "torque_peak": -0.012,
+              "torque_angle_change": 0.004,
+              "head_acceleration_mean": 0.0014,
+              "wrist_acceleration_mean": -0.006,
+              "wrist_angular_speed_mean": -0.0169,
+              "head_angular_speed_mean": -0.001
+            }
+          },
+          {
+            "expert_segment_id": 2,
+            "worker_segment_id": 7,
+            "expert_label": "ASSEMBLY",
+            "worker_label": "ASSEMBLY",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 15,
+              "force_mean": 768.36,
+              "force_peak": 803.0102,
+              "torque_mean": 2.9949,
+              "torque_peak": 3.0476,
+              "torque_angle_change": 10.5244,
+              "head_acceleration_mean": 9.8076,
+              "wrist_acceleration_mean": 9.8049,
+              "wrist_angular_speed_mean": 0.0945,
+              "head_angular_speed_mean": 0.0345
+            },
+            "worker": {
+              "sample_count": 14,
+              "force_mean": 780.3458,
+              "force_peak": 811.8729,
+              "torque_mean": 3.0016,
+              "torque_peak": 3.0478,
+              "torque_angle_change": 18.1668,
+              "head_acceleration_mean": 9.8089,
+              "wrist_acceleration_mean": 9.8073,
+              "wrist_angular_speed_mean": 0.0912,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker_minus_expert": {
+              "force_mean": 11.9858,
+              "force_peak": 8.8627,
+              "torque_mean": 0.0067,
+              "torque_peak": 0.0002,
+              "torque_angle_change": 7.6424,
+              "head_acceleration_mean": 0.0013,
+              "wrist_acceleration_mean": 0.0024,
+              "wrist_angular_speed_mean": -0.0033,
+              "head_angular_speed_mean": 0.0001
+            }
+          },
+          {
+            "expert_segment_id": 2,
+            "worker_segment_id": 8,
+            "expert_label": "ASSEMBLY",
+            "worker_label": "RELEASE",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 15,
+              "force_mean": 768.36,
+              "force_peak": 803.0102,
+              "torque_mean": 2.9949,
+              "torque_peak": 3.0476,
+              "torque_angle_change": 10.5244,
+              "head_acceleration_mean": 9.8076,
+              "wrist_acceleration_mean": 9.8049,
+              "wrist_angular_speed_mean": 0.0945,
+              "head_angular_speed_mean": 0.0345
+            },
+            "worker": {
+              "sample_count": 7,
+              "force_mean": 383.4849,
+              "force_peak": 632.2828,
+              "torque_mean": 0.0018,
+              "torque_peak": 0.0123,
+              "torque_angle_change": -15.6633,
+              "head_acceleration_mean": 9.8168,
+              "wrist_acceleration_mean": 9.8168,
+              "wrist_angular_speed_mean": 0.064,
+              "head_angular_speed_mean": 0.0346
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 2,
+            "worker_segment_id": 9,
+            "expert_label": "ASSEMBLY",
+            "worker_label": "OPEN",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 15,
+              "force_mean": 768.36,
+              "force_peak": 803.0102,
+              "torque_mean": 2.9949,
+              "torque_peak": 3.0476,
+              "torque_angle_change": 10.5244,
+              "head_acceleration_mean": 9.8076,
+              "wrist_acceleration_mean": 9.8049,
+              "wrist_angular_speed_mean": 0.0945,
+              "head_angular_speed_mean": 0.0345
+            },
+            "worker": {
+              "sample_count": 17,
+              "force_mean": 119.6463,
+              "force_peak": 171.6196,
+              "torque_mean": 0.0154,
+              "torque_peak": 0.0558,
+              "torque_angle_change": -0.1258,
+              "head_acceleration_mean": 9.8086,
+              "wrist_acceleration_mean": 9.8202,
+              "wrist_angular_speed_mean": 0.1092,
+              "head_angular_speed_mean": 0.0337
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 2,
+            "worker_segment_id": 10,
+            "expert_label": "ASSEMBLY",
+            "worker_label": "REACH",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 15,
+              "force_mean": 768.36,
+              "force_peak": 803.0102,
+              "torque_mean": 2.9949,
+              "torque_peak": 3.0476,
+              "torque_angle_change": 10.5244,
+              "head_acceleration_mean": 9.8076,
+              "wrist_acceleration_mean": 9.8049,
+              "wrist_angular_speed_mean": 0.0945,
+              "head_angular_speed_mean": 0.0345
+            },
+            "worker": {
+              "sample_count": 4,
+              "force_mean": 104.5163,
+              "force_peak": 111.4838,
+              "torque_mean": 0.0112,
+              "torque_peak": 0.044,
+              "torque_angle_change": -0.4351,
+              "head_acceleration_mean": 9.8189,
+              "wrist_acceleration_mean": 9.8123,
+              "wrist_angular_speed_mean": 0.3364,
+              "head_angular_speed_mean": 0.0347
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 2,
+            "worker_segment_id": 11,
+            "expert_label": "ASSEMBLY",
+            "worker_label": "OPEN",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 15,
+              "force_mean": 768.36,
+              "force_peak": 803.0102,
+              "torque_mean": 2.9949,
+              "torque_peak": 3.0476,
+              "torque_angle_change": 10.5244,
+              "head_acceleration_mean": 9.8076,
+              "wrist_acceleration_mean": 9.8049,
+              "wrist_angular_speed_mean": 0.0945,
+              "head_angular_speed_mean": 0.0345
+            },
+            "worker": {
+              "sample_count": 8,
+              "force_mean": 94.6941,
+              "force_peak": 116.7106,
+              "torque_mean": 0.011,
+              "torque_peak": 0.0491,
+              "torque_angle_change": 0,
+              "head_acceleration_mean": 9.805,
+              "wrist_acceleration_mean": 9.8093,
+              "wrist_angular_speed_mean": 0.0875,
+              "head_angular_speed_mean": 0.0343
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 3,
+            "worker_segment_id": 12,
+            "expert_label": "GRAB",
+            "worker_label": "GRAB",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 1,
+              "force_mean": 807.9327,
+              "force_peak": 807.9327,
+              "torque_mean": 0.0589,
+              "torque_peak": 0.0589,
+              "torque_angle_change": 0.0,
+              "head_acceleration_mean": 9.8176,
+              "wrist_acceleration_mean": 10.0199,
+              "wrist_angular_speed_mean": 0.4184,
+              "head_angular_speed_mean": 0.0331
+            },
+            "worker": {
+              "sample_count": 9,
+              "force_mean": 558.9367,
+              "force_peak": 727.6833,
+              "torque_mean": 0.0059,
+              "torque_peak": 0.0449,
+              "torque_angle_change": -0.3746,
+              "head_acceleration_mean": 9.808,
+              "wrist_acceleration_mean": 9.8261,
+              "wrist_angular_speed_mean": 0.1366,
+              "head_angular_speed_mean": 0.0354
+            },
+            "worker_minus_expert": {
+              "force_mean": -248.996,
+              "force_peak": -80.2494,
+              "torque_mean": -0.053,
+              "torque_peak": -0.014,
+              "torque_angle_change": -0.3746,
+              "head_acceleration_mean": -0.0096,
+              "wrist_acceleration_mean": -0.1938,
+              "wrist_angular_speed_mean": -0.2818,
+              "head_angular_speed_mean": 0.0023
+            }
+          },
+          {
+            "expert_segment_id": 3,
+            "worker_segment_id": 13,
+            "expert_label": "GRAB",
+            "worker_label": "ASSEMBLY",
+            "comparison_status": "different_visible_action",
+            "expert": {
+              "sample_count": 1,
+              "force_mean": 807.9327,
+              "force_peak": 807.9327,
+              "torque_mean": 0.0589,
+              "torque_peak": 0.0589,
+              "torque_angle_change": 0.0,
+              "head_acceleration_mean": 9.8176,
+              "wrist_acceleration_mean": 10.0199,
+              "wrist_angular_speed_mean": 0.4184,
+              "head_angular_speed_mean": 0.0331
+            },
+            "worker": {
+              "sample_count": 6,
+              "force_mean": 766.8026,
+              "force_peak": 778.1732,
+              "torque_mean": 2.9882,
+              "torque_peak": 3.0258,
+              "torque_angle_change": 6.5823,
+              "head_acceleration_mean": 9.8053,
+              "wrist_acceleration_mean": 9.8209,
+              "wrist_angular_speed_mean": 0.1237,
+              "head_angular_speed_mean": 0.0356
+            },
+            "worker_minus_expert": null
+          },
+          {
+            "expert_segment_id": 4,
+            "worker_segment_id": 14,
+            "expert_label": "RELEASE",
+            "worker_label": "RELEASE",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 14,
+              "force_mean": 392.7459,
+              "force_peak": 698.4571,
+              "torque_mean": 0.0077,
+              "torque_peak": 0.0418,
+              "torque_angle_change": -10.2803,
+              "head_acceleration_mean": 9.815,
+              "wrist_acceleration_mean": 9.8286,
+              "wrist_angular_speed_mean": 0.1158,
+              "head_angular_speed_mean": 0.0335
+            },
+            "worker": {
+              "sample_count": 7,
+              "force_mean": 367.0215,
+              "force_peak": 633.6935,
+              "torque_mean": 0.0109,
+              "torque_peak": 0.0348,
+              "torque_angle_change": -4.7204,
+              "head_acceleration_mean": 9.8064,
+              "wrist_acceleration_mean": 9.804,
+              "wrist_angular_speed_mean": 0.0576,
+              "head_angular_speed_mean": 0.0344
+            },
+            "worker_minus_expert": {
+              "force_mean": -25.7244,
+              "force_peak": -64.7636,
+              "torque_mean": 0.0032,
+              "torque_peak": -0.007,
+              "torque_angle_change": 5.5599,
+              "head_acceleration_mean": -0.0086,
+              "wrist_acceleration_mean": -0.0246,
+              "wrist_angular_speed_mean": -0.0582,
+              "head_angular_speed_mean": 0.0009
+            }
+          },
+          {
+            "expert_segment_id": 5,
+            "worker_segment_id": 15,
+            "expert_label": "OPEN",
+            "worker_label": "OPEN",
+            "comparison_status": "comparable",
+            "expert": {
+              "sample_count": 51,
+              "force_mean": 115.0039,
+              "force_peak": 187.4882,
+              "torque_mean": 0.0177,
+              "torque_peak": 0.0581,
+              "torque_angle_change": 0,
+              "head_acceleration_mean": 9.8109,
+              "wrist_acceleration_mean": 9.814,
+              "wrist_angular_speed_mean": 0.0724,
+              "head_angular_speed_mean": 0.034
+            },
+            "worker": {
+              "sample_count": 13,
+              "force_mean": 130.2286,
+              "force_peak": 186.081,
+              "torque_mean": 0.0105,
+              "torque_peak": 0.0503,
+              "torque_angle_change": -0.2753,
+              "head_acceleration_mean": 9.8084,
+              "wrist_acceleration_mean": 9.8079,
+              "wrist_angular_speed_mean": 0.0596,
+              "head_angular_speed_mean": 0.0327
+            },
+            "worker_minus_expert": {
+              "force_mean": 15.2247,
+              "force_peak": -1.4072,
+              "torque_mean": -0.0072,
+              "torque_peak": -0.0078,
+              "torque_angle_change": -0.2753,
+              "head_acceleration_mean": -0.0025,
+              "wrist_acceleration_mean": -0.0061,
+              "wrist_angular_speed_mean": -0.0128,
+              "head_angular_speed_mean": -0.0013
+            }
+          }
+        ]
+      }
+    }
+  },
+  "muda_review": {
+    "status": "review_candidates_only",
+    "method": "camera_visible_action_timing_and_sequence_v2",
+    "note": "Candidates are not confirmed Muda. Review the video; demo references are not certified work standards.",
+    "uses_sensor_values": false,
+    "hands": {
+      "left": {
+        "status": "insufficient_visible_actions",
+        "candidates": [],
+        "candidate_count": 0
+      },
+      "right": {
+        "status": "compared",
+        "candidates": [
+          {
+            "hand": "right",
+            "reason": "shorter_visible_action",
+            "worker_segment_id": 15,
+            "expert_segment_id": 5,
+            "worker_label": "OPEN",
+            "expert_label": "OPEN",
+            "start_ms": 17478,
+            "end_ms": 18556,
+            "duration_ms": 1078,
+            "extra_ms": -1410,
+            "worker_image_path": "keyframes/segment_0015_right_OPEN_frame_000215.png",
+            "comment_vi": "Camera ghi nhận tay phải mở từ giây 17,478 đến 18,556, ngắn hơn đoạn cùng hành động trong mẫu 1,410 giây. Hãy xem lại video đoạn này; chưa kết luận thao tác sai."
+          }
+        ],
+        "candidate_count": 1
+      }
+    }
+  },
+  "uses_simulated_sensors": true,
+  "selected_reference": {
+    "sample_id": "04_right_grab_hold_release_open",
+    "title": "Tay phải nắm, giữ, thả và mở",
+    "practice_instruction": "Chỉ đưa tay phải vào hình: nắm, giữ tay nắm gần như đứng yên, di chuyển tay nắm nhẹ, thả rồi mở và giữ mở. Nhãn ASSEMBLY chỉ là camera suy đoán tư thế giữ, không phải lắp ráp thật.",
+    "demo_only": true,
+    "selection_cost": 1.7803
+  },
+  "reference_selection_note": "Closest available demo clip by visible action DTW; not an expert-certified standard.",
+  "available_references": [
+    {
+      "sample_id": "01_two_hands_reach_grab",
+      "selection_cost": 1.9402
+    },
+    {
+      "sample_id": "02_left_hand_grab_hold",
+      "selection_cost": 4.1355
+    },
+    {
+      "sample_id": "04_right_grab_hold_release_open",
+      "selection_cost": 1.7803
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # AI → backend DEMO bridge
 
-The original camera, analysis, and backend code stays unchanged. This new bridge reads
+This bridge reads
 a **completed** AI session, writes `backend_payload_demo.json` plus
 `backend_payload_demo.meta.json` beside the session, sends the payload to backend
 `POST /api/v1/sessions/ingest`, then uploads each declared PNG keyframe. After all
@@ -48,9 +48,13 @@ Without `--publish`, the bridge only constructs the two local DEMO JSON files.
 Use `--backend-url` if backend runs elsewhere; configure the optional
 `SMARTWEAR_API_KEY` environment variable if backend requires `X-API-Key`.
 
-The backend contract has a single nonoverlapping `action_phases` list. The bridge
-splits visible actions at all left/right boundaries and combines concurrent labels,
-such as `LEFT_GRAB.RIGHT_OPEN`. It never changes the original two-hand analysis.
+New camera captures track only the anatomical right hand. The raw camera frames
+contain no left-hand landmarks or left-hand action; a `left: NO_HAND` placeholder
+remains in the internal two-hand schema for compatibility. The dashboard preview
+serves a clean JPEG and matching right-hand observation for the frontend to draw.
+The backend contract has a single nonoverlapping `action_phases` list. New sessions
+therefore contain `RIGHT_...` phases. The bridge can still read older two-hand
+sessions and combine their concurrent labels, such as `LEFT_GRAB.RIGHT_OPEN`.
 `key_frames` contains existing PNG basenames and those PNGs are uploaded after
 ingest. Sessions and output files remain in `ai/generated_data/sessions/<name>/`;
 backend persists its own database, SOP, robot export, and images under `backend/`.
@@ -66,7 +70,7 @@ is not a calibrated work-quality percentage. `muda_detected_seconds` sums distin
 candidate durations or positive extra time. Missing actions add 0 because no worker
 duration was observed; `shorter_visible_action` also adds 0 because it did not
 increase elapsed time. These are **unconfirmed suspicions**, not verified wasted seconds.
-Trajectory points sample visible wrist screen coordinates at intervals of at least
+Trajectory points sample the visible **right wrist** screen coordinates at intervals of at least
 100 ms and map them onto a small flat demo plane. They are **not calibrated robot
 coordinates** and must not control a robot. The detailed rules and input hashes
 are recorded in `backend_payload_demo.meta.json`.

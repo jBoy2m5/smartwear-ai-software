@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Clock3, FileJson2, FileText, Download } from 'lucide-react';
 import { backendUrl } from '../backendApi';
-import { candidateList, focusFromPair, HANDS, handName, number, seconds } from '../presentation';
+import { candidateList, displayHands, focusFromPair, HANDS, handName, number, seconds } from '../presentation';
 import type { Focus } from '../presentation';
 import type { SessionDetail } from '../sessionTypes';
 
@@ -44,17 +44,18 @@ export function MudaPanel({ detail, setFocus }: {
 }
 
 export function Phases({ detail }: { detail: SessionDetail }) {
+  const hands = displayHands(detail);
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
     <div className="mb-3 flex items-center gap-2"><Clock3 size={19} className="text-cyberGreen" />
       <h2 className="font-heading text-lg font-bold">Chuỗi hành động đã ghi</h2></div>
-    <p className="mb-3 text-xs text-gray-400">Hai tay cùng có nhãn sẽ nằm trong cùng một dòng; đoạn không nhìn rõ tay có thể không xuất hiện ở đây.</p>
+    <p className="mb-3 text-xs text-gray-400">Chỉ hiển thị tay có hành động trong phiên; đoạn không nhìn rõ tay có thể không xuất hiện ở đây.</p>
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-700/70">
       <table className="w-full min-w-[670px] text-left text-sm"><thead className="sticky top-0 bg-slate-800 text-xs uppercase text-gray-400"><tr>
-        <th className="p-3">Thời gian</th><th className="p-3">Tay trái</th><th className="p-3">Tay phải</th><th className="p-3">Nhãn gốc</th><th className="p-3">Lực DEMO đỉnh</th>
+        <th className="p-3">Thời gian</th>{hands.map(hand => <th key={hand} className="p-3">{handName(hand)}</th>)}<th className="p-3">Nhãn gốc</th><th className="p-3">Lực DEMO đỉnh</th>
       </tr></thead><tbody>{detail.action_phases.map((phase, index) => <tr key={`${phase.start_time}-${index}`} className="border-t border-slate-700/50 hover:bg-slate-800/60">
         <td className="whitespace-nowrap p-3 font-mono text-xs text-gray-300">{number(phase.start_time, 3)}–{number(phase.end_time, 3)} s</td>
-        <td className="p-3 font-semibold text-cyan-300">{phase.phase.split('.').find(label => label.startsWith('LEFT_'))?.replace('LEFT_', '') ?? '—'}</td>
-        <td className="p-3 font-semibold text-cyberGreen">{phase.phase.split('.').find(label => label.startsWith('RIGHT_'))?.replace('RIGHT_', '') ?? '—'}</td>
+        {hands.map(hand => <td key={hand} className={`p-3 font-semibold ${hand === 'right' ? 'text-cyberGreen' : 'text-cyan-300'}`}>
+          {phase.phase.split('.').find(label => label.startsWith(`${hand.toUpperCase()}_`))?.replace(`${hand.toUpperCase()}_`, '') ?? '—'}</td>)}
         <td className="p-3 font-mono text-xs text-gray-400">{phase.phase}</td>
         <td className="p-3 font-mono text-gray-300">{number(phase.peak_force_N, 2)}</td>
       </tr>)}</tbody></table>
@@ -71,7 +72,7 @@ export function DtwPanel({ detail, setFocus }: {
     <div className="mb-4"><h2 className="font-heading text-lg font-bold">So sánh DTW từng tay</h2>
       <p className="text-xs text-gray-400">Mỗi dòng ghép một đoạn mẫu với đoạn camera ghi được. Số âm nghĩa là đoạn bạn quay ngắn hơn; khi khác nhãn, không hiểu là làm hành động đó nhanh hơn.</p></div>
     {!analysis ? <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">Phiên này chưa có bản phân tích chi tiết từ AI.</p> :
-      HANDS.map(hand => { const track = analysis.hands?.[hand]; const pairs = track?.alignment ?? [];
+      displayHands(detail).map(hand => { const track = analysis.hands?.[hand]; const pairs = track?.alignment ?? [];
         return <div key={hand} className="mb-5 last:mb-0">
           <div className="mb-2 flex flex-wrap items-center gap-3"><h3 className="font-bold text-cyan-300">{handName(hand)}</h3>
             <span className="text-xs text-gray-400">{track?.status ?? 'Chưa rõ'} · mẫu {track?.expert_segments ?? 0} đoạn · bạn {track?.worker_segments ?? 0} đoạn · DTW cost {number(track?.normalized_dtw_cost, 4)}</span></div>
@@ -118,7 +119,7 @@ export function SensorPanel({ detail }: { detail: SessionDetail }) {
     <p className="mt-1 text-sm text-amber-200">Nguồn: {sensors?.status ?? 'chưa có'} · lực/EMG hiện là số mô phỏng, không phải Newton đo thật.</p>
     {sensors?.difference_note && <p className="mt-2 text-xs text-gray-400">{sensors.difference_note}</p>}
     <div className="mt-4 grid gap-4 xl:grid-cols-2">
-      {HANDS.map(hand => { const result = sensors?.hands?.[hand]; return <div key={hand} className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+      {displayHands(detail).map(hand => { const result = sensors?.hands?.[hand]; return <div key={hand} className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
         <div className="mb-2 font-semibold text-cyan-300">{handName(hand)} · {result?.status ?? 'chưa có dữ liệu'}</div>
         <div className="max-h-72 overflow-auto">{result?.pairs?.length ? <table className="w-full min-w-[400px] text-left text-xs">
           <thead className="text-gray-400"><tr><th className="py-2">Đoạn</th><th>Trạng thái</th><th>Lực TB mẫu</th><th>Lực TB bạn</th><th>Chênh lệch</th><th>Đủ số</th></tr></thead>

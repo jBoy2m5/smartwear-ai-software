@@ -2,11 +2,11 @@
 
 ## Công nhân sử dụng
 
-Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Bấm **Bắt đầu quay**, làm thao tác trước camera, rồi bấm **Kết thúc** trên trang. Hình camera có nhãn tay trái/tay phải xuất hiện ngay trên dashboard. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
+Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Bấm **Bắt đầu quay**, làm thao tác bằng **tay phải** trước camera, rồi bấm **Kết thúc** trên trang. Camera chỉ lưu tọa độ và hành động của tay phải trong phiên mới. Backend gửi hình camera chưa vẽ chữ kèm nhãn/tọa độ đúng khung hình; dashboard tự vẽ chữ và điểm tay rõ nét lên hình. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
 
 Nút camera điều khiển **camera gắn với máy chạy AI/backend**. Nếu mở trang từ máy khác, hình trên trang vẫn là camera của máy chủ đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
 
-Dashboard có danh sách phiên, ảnh mẫu/ảnh công nhân, hành động từng tay, cặp DTW và chênh lệch thời gian, nghi vấn MUDA với thời điểm/ảnh, số cảm biến, biểu đồ, SOP, video AVI, ZIP dữ liệu AI và toàn bộ JSON. Số lực, điểm so sánh và đường đi robot được ghi rõ là **DEMO**.
+Dashboard có danh sách phiên, ảnh mẫu/ảnh công nhân, hành động tay phải, cặp DTW và chênh lệch thời gian, nghi vấn MUDA với thời điểm/ảnh, số cảm biến, biểu đồ, SOP, video AVI, ZIP dữ liệu AI và toàn bộ JSON. Phiên cũ đã quay hai tay vẫn đọc được. Số lực, điểm so sánh và đường đi robot được ghi rõ là **DEMO**.
 
 ## Quản trị viên thiết lập một lần
 

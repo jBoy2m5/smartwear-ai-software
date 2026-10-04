@@ -1,0 +1,19 @@
+{
+  "schema_version": "smartwear.backend_bridge_demo.v1",
+  "demo_only": true,
+  "session_id": "DEMO_camera_data_20261004_173313_980416_9c2380er",
+  "source_session": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261004_173313_980416_9c2380er",
+  "source_sha256": {
+    "action_segments.json": "4820fc3d7f6a4319af1fd64e0c2eb246878a4fe21df800b05cf6bbaa7de7d7e8",
+    "multimodal.jsonl": "3e21c60c656654210efe812b3c7bd11879fc74eefc66418587e2e1bb6a826141",
+    "keyframes.json": "d67fa448c594b96b37d433842409d2200e5934fb320b4658b97bbd41e6e3e49c",
+    "session_role.json": "88d6423287b9193eeeeb28a8a48d11fb59e289fa1e9b570b2ddc7a3f57838be0",
+    "sensors.meta.json": "87b1c6792c10a7de1b3724c91aa270589a639ba3013bc27548990b83e6b51c82",
+    "analysis_result.json": "5b7cc69c9434bab0593c661ab9a62158a2689ea0de48202d6ab6dd9a77a4b43f"
+  },
+  "force_rule": "DEMO only: clamp((unitless force_emg_raw - 80)/720, 0, 1)*20; backend N field is display-only, not measured Newton",
+  "phase_rule": "Visible left/right labels share one nonoverlapping phase, e.g. LEFT_GRAB.RIGHT_OPEN",
+  "similarity_rule": "DEMO: 100/(1+weighted mean per-hand normalized DTW cost); no comparison=0, expert baseline=100",
+  "muda_rule": "DEMO sum of deduplicated unconfirmed review-candidate durations; missing action contributes 0; not confirmed waste",
+  "trajectory_rule": "DEMO 100ms-spaced right wrist screen coordinates mapped to a 0.4x0.3 plane at z=0.1; not a calibrated robot path"
+}

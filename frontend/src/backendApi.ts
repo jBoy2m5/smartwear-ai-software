@@ -57,12 +57,24 @@ export interface CaptureStatus {
   updated_at?: string;
 }
 
+export interface CapturePreview {
+  frame_index: number;
+  timestamp_ms: number;
+  camera: { frame_width: number; frame_height: number };
+  right_action: { label: string; tracking_status: string };
+  right_landmarks: Array<{ id: number; x: number; y: number; z: number }>;
+}
+
 export function startCapture(): Promise<CaptureStatus> {
   return requestJson<CaptureStatus>('/api/v1/capture/', 'POST');
 }
 
 export function getCaptureStatus(jobId: string, signal?: AbortSignal): Promise<CaptureStatus> {
   return getJson<CaptureStatus>(`/api/v1/capture/${encodeURIComponent(jobId)}`, signal);
+}
+
+export function getCapturePreview(jobId: string, signal?: AbortSignal): Promise<CapturePreview> {
+  return getJson<CapturePreview>(`/api/v1/capture/${encodeURIComponent(jobId)}/preview`, signal);
 }
 
 export function stopCapture(jobId: string): Promise<CaptureStatus> {

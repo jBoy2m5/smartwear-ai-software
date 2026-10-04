@@ -1,9 +1,10 @@
-"""Dashboard controls for the camera attached to the AI/backend workstation."""
+"""Dashboard controls and raw-frame previews from the AI workstation camera."""
 
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 
 from backend.api.auth import require_api_key
 
@@ -36,13 +37,34 @@ def stop_capture(job_id: JobId, request: Request) -> dict:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/{job_id}/frame", response_class=Response)
-def preview_frame(job_id: JobId, request: Request) -> Response:
+@router.get("/{job_id}/preview")
+def preview_observation(job_id: JobId, request: Request) -> JSONResponse:
     try:
         directory = request.app.state.capture_manager.directory(job_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    for path in reversed(sorted(directory.glob("preview_*.jpg"))):
+    for path in reversed(sorted(directory.glob("preview_*.json"))):
+        if not path.with_suffix(".jpg").is_file():
+            continue
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        return JSONResponse(document, headers={"Cache-Control": "no-store, max-age=0"})
+    raise HTTPException(status_code=404, detail="Camera chưa có hình")
+
+
+@router.get("/{job_id}/frame", response_class=Response)
+def preview_frame(job_id: JobId, request: Request, index: int | None = None) -> Response:
+    try:
+        directory = request.app.state.capture_manager.directory(job_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if index is not None and (index < 0 or index > 99999999):
+        raise HTTPException(status_code=422, detail="Invalid preview frame index")
+    paths = ([directory / f"preview_{index:08d}.jpg"] if index is not None else
+             reversed(sorted(directory.glob("preview_*.jpg"))))
+    for path in paths:
         try:
             image = path.read_bytes()
         except FileNotFoundError:

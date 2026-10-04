@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from backend.core.config import Settings
-from backend.api.routes.capture import preview_frame
+from backend.api.routes.capture import preview_frame, preview_observation
 from backend.services.capture import CaptureManager
 
 
@@ -25,6 +25,22 @@ class CaptureManagerTests(unittest.TestCase):
             response = preview_frame("0" * 32, request)
             self.assertEqual(response.body, b"second")
             self.assertEqual(response.media_type, "image/jpeg")
+            self.assertEqual(response.headers["cache-control"], "no-store, max-age=0")
+            self.assertEqual(preview_frame("0" * 32, request, 1).body, b"first")
+
+    def test_preview_metadata_matches_a_published_image(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "preview_00000001.jpg").write_bytes(b"first")
+            (directory / "preview_00000001.json").write_text(
+                json.dumps({"frame_index": 1, "right_action": {"label": "OPEN"}}),
+                encoding="utf-8")
+            (directory / "preview_00000002.json").write_text(
+                json.dumps({"frame_index": 2}), encoding="utf-8")
+            request = Mock()
+            request.app.state.capture_manager.directory.return_value = directory
+            response = preview_observation("0" * 32, request)
+            self.assertEqual(json.loads(response.body)["frame_index"], 1)
             self.assertEqual(response.headers["cache-control"], "no-store, max-age=0")
 
     def test_start_stop_and_status(self):

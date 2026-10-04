@@ -10,6 +10,14 @@ export type Focus = {
 
 export const HANDS: Hand[] = ['left', 'right'];
 export const handName = (hand: Hand) => hand === 'left' ? 'Tay trái' : 'Tay phải';
+export function displayHands(detail: SessionDetail): Hand[] {
+  const visible = HANDS.filter(hand =>
+    detail.action_phases.some(phase => phase.phase.includes(`${hand.toUpperCase()}_`)) ||
+    (detail.analysis_result?.hands?.[hand]?.worker_segments ?? 0) > 0 ||
+    (detail.analysis_result?.muda_review?.hands?.[hand]?.candidate_count ?? 0) > 0 ||
+    (detail.analysis_result?.sensor_comparison?.hands?.[hand]?.pairs?.length ?? 0) > 0);
+  return visible.length ? visible : ['right'];
+}
 export const seconds = (ms?: number | null) => ms == null ? '—' : `${(ms / 1000).toFixed(3)} s`;
 export const number = (value?: number | null, decimals = 2) =>
   value == null || !Number.isFinite(value) ? '—' : value.toFixed(decimals);
