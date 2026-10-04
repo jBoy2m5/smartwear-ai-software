@@ -58,10 +58,10 @@ python -B .\ai\camera_test.py --practice-sample 04_right_grab_hold_release_open
 ```
 
 Không có tùy chọn này thì chương trình tiếp tục tự chọn mẫu gần nhất.
-Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản gốc mang nhãn đảo được
-giữ tại `ai/generated_data/legacy_handedness_references/` và không được chọn
-để so sánh. Các file kết quả của phiên cũ không bị ghi đè; muốn có nhãn tay
-đúng trong một phiên mới, hãy quay lại bằng phiên bản camera đã sửa.
+Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản sao cũ mang nhãn đảo
+đã được xóa và không được chọn để so sánh. Các file kết quả của phiên cũ không
+bị ghi đè; muốn có nhãn tay đúng trong một phiên mới, hãy quay lại bằng phiên
+bản camera đã sửa.
 
 Mỗi mẫu có `camera.avi` để xem, `reference_sample.json` ghi mô tả và nguồn gốc,
 cùng các file xử lý như một phiên thường. `session_role.json` ghi đây là mẫu demo.
@@ -79,6 +79,11 @@ hành động nhìn thấy càng giống; đây không phải điểm chất lư
 `analysis_result.json` cũng có `muda_review`: các **đoạn nghi vấn để con người
 xem lại**, không phải kết luận Muda. `longer_visible_action` chỉ xuất hiện khi
 một đoạn cùng nhãn được ghép một-một với mẫu, dài hơn ít nhất 500 ms và 1,5 lần.
+`shorter_visible_action` đánh dấu đoạn cùng nhãn ngắn hơn mẫu ít nhất 500 ms và
+1,5 lần, khi đoạn worker dài ít nhất 300 ms và phép ghép cùng nhãn đủ rõ. Một
+nhãn khác thoáng qua dưới 300 ms ở cuối có thể cùng ghép vào đoạn mẫu nhưng
+không bị coi là hành động thêm. Nhận xét này nêu chênh lệch thời lượng để xem
+lại, không kết luận công nhân đã làm sai hoặc tiết kiệm được thời gian.
 `inserted_visible_action` là đoạn khác nhãn, dài ít nhất 300 ms và nằm giữa hai
 đoạn của worker cùng khớp một bước mẫu. Mỗi mục có tay, thời điểm, nhãn và ảnh
 để mở lại video. Đoạn khác nhãn đơn lẻ, mất tay hoặc ghép DTW nhiều-một không
@@ -303,14 +308,4 @@ $result = Get-Content "$session\action_segments.json" -Raw | ConvertFrom-Json
 $result.segments | Format-Table hand,label,tracking_status,start_ms,end_ms,duration_ms
 ```
 
-## Kiểm thử
-
-```powershell
-.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\preprocessing -p "test_*.py" -v
-.\ai\.venv\Scripts\python.exe -B -m unittest discover -s .\ai\sensors -p "test_*.py" -v
-```
-
-Kiểm thử dùng điểm bàn tay mẫu, cả hai động tác đối lập, đảo thứ tự, đổi vị trí,
-mất/xuất hiện lại tay, nhãn mơ hồ, chuyển đổi dữ liệu cũ và pipeline thật qua các
-file. Chưa thay thế kiểm tra độ chính xác ngoài đời với webcam.
 Các bước xử lý dùng thư viện chuẩn Python; chỉ camera cần OpenCV/MediaPipe.

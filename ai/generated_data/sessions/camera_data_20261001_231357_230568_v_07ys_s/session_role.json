@@ -1,0 +1,5 @@
+{
+  "schema_version": "smartwear.session_role.v1",
+  "role": "worker",
+  "segments_sha256": "bbd70eff367ea3079ed090a7f0df1fcf7dd7cdc2d20eb86dfe37b262364eb043"
+}

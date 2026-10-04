@@ -1,32 +1,34 @@
-# React + TypeScript + Vite
+# SmartWear AI dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## Công nhân sử dụng
 
-Currently, two official plugins are available:
+Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Bấm **Bắt đầu quay**, làm thao tác bằng **tay phải** trước camera, rồi bấm **Kết thúc** trên trang. Camera chỉ lưu tọa độ và hành động của tay phải trong phiên mới. Backend gửi hình camera chưa vẽ chữ kèm nhãn/tọa độ đúng khung hình; dashboard tự vẽ chữ và điểm tay rõ nét lên hình. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Nút camera điều khiển **camera gắn với máy chạy AI/backend**. Nếu mở trang từ máy khác, hình trên trang vẫn là camera của máy chủ đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
 
-## React Compiler
+Quản trị viên có thể chọn bộ ESP32-CAM/SmartWrist bằng
+`SMARTWEAR_CAPTURE_MODE=hardware` trước khi chạy backend. Công nhân vẫn dùng
+hai nút trên trang; dữ liệu ADC đo thật hiện dưới mã phiên `MEASURED_`, còn chế
+độ webcam/số mô phỏng giữ mã `DEMO_`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
+thiết bị và dữ liệu gốc tại `ai/hardware/README.md`. Camera ESP32 hiện chỉ
+phát QVGA 320×240 nên UI không thể tạo thêm chi tiết ảnh vượt nguồn gốc.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Dashboard có danh sách phiên, ảnh mẫu/ảnh công nhân, hành động tay phải, cặp DTW và chênh lệch thời gian, nghi vấn MUDA với thời điểm/ảnh, số cảm biến, biểu đồ, SOP, video AVI, ZIP dữ liệu AI và toàn bộ JSON. Phiên cũ đã quay hai tay vẫn đọc được. Số lực, điểm so sánh và đường đi robot được ghi rõ là **DEMO**.
 
-## Expanding the Oxlint configuration
+## Quản trị viên thiết lập một lần
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Trên máy có camera, cài Python với OpenCV/MediaPipe cho AI, môi trường backend và Node.js cho việc build. Tại `C:\Task\smartwear-ai`:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run build -- --configLoader native
+cd ..
+.\backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Backend phục vụ frontend đã build tại `/`, nên **không cần chạy Vite** khi công nhân dùng. Để máy chủ tự chạy khi bật máy, quản trị viên cấu hình dịch vụ hoặc tác vụ khởi động của Windows cho lệnh backend. Máy chạy backend cần thấy webcam và Python có `cv2`, `mediapipe`; nếu Python AI nằm ở nơi khác, đặt `SMARTWEAR_AI_PYTHON` thành đường dẫn tới `python.exe` đó. Nếu backend dùng cổng khác, đặt thêm `SMARTWEAR_CAPTURE_BACKEND_URL` tương ứng để AI gửi kết quả về đúng máy chủ.
+
+Lập trình viên vẫn có thể dùng `npm.cmd run dev -- --configLoader native` tại `frontend/` để phát triển giao diện ở cổng `5173`; Vite chuyển `/api` tới backend cổng `8000`.
+
+Kết quả AI được lưu trong `ai/generated_data/sessions/`; backend lưu dữ liệu riêng dưới `backend/`. Nếu xử lý thất bại, bản ghi camera đã tạo được giữ lại để quản trị viên kiểm tra và phục hồi. Bản demo hiện cần camera gắn với máy chạy AI; camera trên một thiết bị truy cập từ xa chưa được gửi trực tiếp qua trình duyệt.

@@ -140,6 +140,8 @@ class SessionDetail(SessionInput):
     # Older sessions and clients continue to use the existing summary fields.
     analysis_result: dict | None = None
     analysis_image_urls: dict[str, dict[str, str]] | None = None
+    recording_url: str | None = None
+    source_data_url: str | None = None
     export_status: ExportStatus
     export_error: str | None = None
     created_at: datetime

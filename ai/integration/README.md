@@ -1,12 +1,20 @@
 # AI → backend DEMO bridge
 
-The original camera, analysis, and backend code stays unchanged. This new bridge reads
+This bridge reads
 a **completed** AI session, writes `backend_payload_demo.json` plus
 `backend_payload_demo.meta.json` beside the session, sends the payload to backend
 `POST /api/v1/sessions/ingest`, then uploads each declared PNG keyframe. After all
 uploads succeed it writes `backend_publish_demo.receipt.json`. It never overwrites
 the original AI outputs. If the backend is unavailable, the camera session remains
 on disk; retry publication with the bridge command below.
+
+For an optional ESP32-CAM + SmartWrist session, see `ai/hardware/README.md`.
+The same bridge detects `hardware_capture.json` and validated
+`real_sensors.meta.json`, writes `backend_payload_measured.json`, and uses a
+`MEASURED_` session ID. It sends no Newton peak force or robot trajectory
+because the ADC and screen coordinates are uncalibrated. The detailed AI
+comparison still marks worker sensor units and any missing samples. Its receipt
+files use `_measured` instead of `_demo`. The existing DEMO route stays intact.
 
 For worker sessions, the bridge also uploads the **complete** `analysis_result.json`
 and the expert sample images referenced by it. The backend session URL now includes
@@ -17,6 +25,15 @@ worker and expert images. The same detail is at
 `backend_analysis_demo.receipt.json` confirms that the detailed analysis and all
 expert images were sent. Publishing an older completed session again fills in this
 new detail without re-recording or rewriting its original AI files.
+
+If the AI session has `camera.avi` and a matching `camera.video.json`, the bridge
+also uploads that original video and writes `backend_recording_demo.receipt.json`.
+The backend detail exposes `recording_url` for the dashboard's AVI download. Older
+sessions can be republished to attach their video without another camera recording.
+It also packages the session's original camera, sensor, multimodal, action, keyframe,
+comparison, and DEMO payload files in a separate ZIP (the AVI stays a separate
+download). The backend exposes `source_data_url` and the bridge writes
+`backend_source_data_demo.receipt.json` after the upload.
 
 From the repository root, start backend in a separate terminal using its installed
 environment (`python -m uvicorn backend.main:app --reload`), then run **one camera
@@ -39,9 +56,13 @@ Without `--publish`, the bridge only constructs the two local DEMO JSON files.
 Use `--backend-url` if backend runs elsewhere; configure the optional
 `SMARTWEAR_API_KEY` environment variable if backend requires `X-API-Key`.
 
-The backend contract has a single nonoverlapping `action_phases` list. The bridge
-splits visible actions at all left/right boundaries and combines concurrent labels,
-such as `LEFT_GRAB.RIGHT_OPEN`. It never changes the original two-hand analysis.
+New camera captures track only the anatomical right hand. The raw camera frames
+contain no left-hand landmarks or left-hand action; a `left: NO_HAND` placeholder
+remains in the internal two-hand schema for compatibility. The dashboard preview
+serves a clean JPEG and matching right-hand observation for the frontend to draw.
+The backend contract has a single nonoverlapping `action_phases` list. New sessions
+therefore contain `RIGHT_...` phases. The bridge can still read older two-hand
+sessions and combine their concurrent labels, such as `LEFT_GRAB.RIGHT_OPEN`.
 `key_frames` contains existing PNG basenames and those PNGs are uploaded after
 ingest. Sessions and output files remain in `ai/generated_data/sessions/<name>/`;
 backend persists its own database, SOP, robot export, and images under `backend/`.
@@ -54,9 +75,10 @@ display number in a field named N, **not physical Newton**. The similarity displ
 score is `100 / (1 + weighted mean per-hand normalized DTW cost)`; no comparable
 worker actions gives 0, and an expert session gets demo baseline 100. This score
 is not a calibrated work-quality percentage. `muda_detected_seconds` sums distinct
-review-candidate durations; missing actions add 0 because no worker duration was
-observed. These are **unconfirmed suspicions**, not verified wasted seconds.
-Trajectory points sample visible wrist screen coordinates at intervals of at least
+candidate durations or positive extra time. Missing actions add 0 because no worker
+duration was observed; `shorter_visible_action` also adds 0 because it did not
+increase elapsed time. These are **unconfirmed suspicions**, not verified wasted seconds.
+Trajectory points sample the visible **right wrist** screen coordinates at intervals of at least
 100 ms and map them onto a small flat demo plane. They are **not calibrated robot
 coordinates** and must not control a robot. The detailed rules and input hashes
 are recorded in `backend_payload_demo.meta.json`.

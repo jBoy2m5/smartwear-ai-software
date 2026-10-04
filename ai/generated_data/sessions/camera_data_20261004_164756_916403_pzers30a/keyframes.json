@@ -1,0 +1,36 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261004_164756_916403_pzers30a\\camera.jsonl",
+  "camera_sha256": "b197bad94dfb882e3e4d9887c02e4da5df113c1aeabbfb99e00230b8d9137230",
+  "multimodal_sha256": "58683120db3c228a622594629eb75a47236f79e2340e2beb75c8bb50f28a25d0",
+  "segments_sha256": "c900d7d38286610d59d20c091c46613d5b5364984a8d0bcc222e5f56e879ce7c",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 2,
+      "end_ms": 4669,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 2,
+      "end_ms": 4669,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261004_164756_916403_pzers30a\\camera.avi",
+  "video_sha256": "7c4cbe7d24fbf665275ffb7115c799f78411fa2acbeba729654fa3500699721b",
+  "extracted_count": 0,
+  "skipped_count": 2
+}

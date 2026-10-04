@@ -1,0 +1,33 @@
+{
+  "schema_version": "smartwear.backend_publish_demo.v1",
+  "session_id": "DEMO_camera_data_20261002_115152_628432_m8y9oogc",
+  "backend_url": "http://127.0.0.1:8000",
+  "payload_sha256": "e2a8a5ee9183cf0deffbc50de08d461441d4c09c0512897a1356123d57455de6",
+  "uploaded_keyframes": [
+    "segment_0003_left_REACH_frame_000023.png",
+    "segment_0004_left_OPEN_frame_000030.png",
+    "segment_0006_right_OPEN_frame_000035.png",
+    "segment_0007_left_REACH_frame_000037.png",
+    "segment_0016_left_OPEN_frame_000049.png",
+    "segment_0017_right_OPEN_frame_000048.png",
+    "segment_0018_right_GRAB_frame_000055.png",
+    "segment_0020_left_REACH_frame_000062.png",
+    "segment_0021_right_ASSEMBLY_frame_000065.png",
+    "segment_0022_left_OPEN_frame_000064.png",
+    "segment_0023_left_REACH_frame_000066.png",
+    "segment_0024_left_OPEN_frame_000078.png",
+    "segment_0025_right_RELEASE_frame_000075.png",
+    "segment_0026_right_OPEN_frame_000083.png",
+    "segment_0035_left_OPEN_frame_000093.png",
+    "segment_0037_right_GRAB_frame_000095.png"
+  ],
+  "backend_response": {
+    "session_id": "DEMO_camera_data_20261002_115152_628432_m8y9oogc",
+    "created": true,
+    "export_status": "COMPLETED",
+    "message": "Session stored and output artifacts generated",
+    "sop_download_url": "/api/v1/sessions/DEMO_camera_data_20261002_115152_628432_m8y9oogc/download-sop",
+    "robot_json_url": "/api/v1/sessions/DEMO_camera_data_20261002_115152_628432_m8y9oogc/export-rosbag?format=json",
+    "robot_export_url": "/api/v1/sessions/DEMO_camera_data_20261002_115152_628432_m8y9oogc/export-rosbag?format=rosbag"
+  }
+}

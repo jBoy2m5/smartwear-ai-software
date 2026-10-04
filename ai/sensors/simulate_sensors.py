@@ -179,6 +179,44 @@ def validate_record(record):
     timestamp = record["timestamp_ms"]
     if type(timestamp) is not int or timestamp < 0:
         raise ValueError("Invalid timestamp_ms")
+    if record.get("sensor_source") == "measured_hardware":
+        if record.get("schema_version") != "smartwear.sensors.v2" or record.get("imu_head") is not None:
+            raise ValueError("Measured wrist rows must mark unavailable head IMU as null")
+        hands = record.get("hand_sensors")
+        if not isinstance(hands, dict) or set(hands) != set(SIDES):
+            raise ValueError("Measured rows need both schema hand slots")
+        for side in SIDES:
+            hand = hands[side]
+            if hand.get("tracking_status") not in ("detected", "missing", "ambiguous"):
+                raise ValueError("Invalid measured hand tracking status")
+            values = (hand.get("imu_wrist"), hand.get("force_emg_raw"),
+                      hand.get("force_adc"), hand.get("torque"))
+            if side == "left" and any(value is not None for value in values):
+                raise ValueError("The uninstrumented left hand must stay null")
+            if hand.get("torque") is not None:
+                raise ValueError("SmartWrist does not measure torque")
+            if side == "right":
+                adc = hand.get("force_adc")
+                if adc is not None and (not isinstance(adc, list) or len(adc) != 4
+                                        or any(type(value) is not int or not 0 <= value <= 4095
+                                               for value in adc)):
+                    raise ValueError("Invalid four-channel ADC vector")
+                selected = hand.get("force_channel")
+                if adc is None:
+                    if hand.get("force_emg_raw") is not None or hand.get("imu_wrist") is not None:
+                        raise ValueError("Missing wrist sample must have null signals")
+                elif selected is None:
+                    if hand.get("force_emg_raw") is not None:
+                        raise ValueError("Unmapped ADC vector must not invent a scalar force")
+                elif (type(selected) is not int or not 0 <= selected < 4
+                      or hand.get("force_emg_raw") != adc[selected]):
+                    raise ValueError("Scalar ADC must identify its original channel")
+                imu = hand.get("imu_wrist")
+                if imu is not None and (not isinstance(imu, dict)
+                                        or any(type(imu.get(axis)) not in (int, float)
+                                               or not math.isfinite(imu[axis]) for axis in AXES)):
+                    raise ValueError("Invalid measured wrist IMU")
+        return
     values = [record["imu_head"][axis] for axis in AXES]
     if record.get("schema_version") == "smartwear.sensors.v2":
         hands = record.get("hand_sensors")

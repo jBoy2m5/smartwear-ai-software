@@ -65,6 +65,17 @@ class AnalysisDetailTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_analysis(json.dumps(self.document).encode(), self.session_id)
 
+    def test_measured_worker_analysis_uses_measured_session_id(self):
+        self.document["sensor_comparison"] = {
+            "status": "incompatible_sources_no_numeric_delta",
+            "worker_source": {"source": "measured_hardware"}}
+        from backend.services.analysis_detail import parse_analysis
+        content = json.dumps(self.document).encode()
+        parsed = parse_analysis(content, "MEASURED_camera_data_test")
+        self.assertEqual(parsed["worker_session"], "camera_data_test")
+        with self.assertRaises(ValueError):
+            parse_analysis(content, "DEMO_camera_data_test")
+
 
 if __name__ == "__main__":
     unittest.main()

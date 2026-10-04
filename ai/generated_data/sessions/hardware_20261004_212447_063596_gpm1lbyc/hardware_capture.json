@@ -1,0 +1,12 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "recording",
+  "camera_url": "http://192.168.0.101:81/stream",
+  "mqtt_host": "192.168.0.109",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 40
+}

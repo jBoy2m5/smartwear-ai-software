@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import hashlib
 import shutil
 import tempfile
 import unittest
@@ -109,6 +110,55 @@ class BackendIntegrationTests(unittest.TestCase):
     def test_health_and_readiness(self) -> None:
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/ready").json(), {"status": "ready"})
+
+    def test_measured_session_does_not_publish_robot_or_newton_demo(self) -> None:
+        payload = sample_payload("MEASURED_test_wrist")
+        payload["robot_trajectory_points"] = []
+        for phase in payload["action_phases"]:
+            phase["peak_force_N"] = None
+        response = self.client.post("/api/v1/sessions/ingest", json=payload)
+        self.assertEqual(response.status_code, 201, response.text)
+        self.assertIsNone(response.json()["robot_json_url"])
+        detail = self.client.get("/api/v1/sessions/MEASURED_test_wrist").json()
+        self.assertIsNone(detail["robot_export_url"])
+        self.assertEqual(detail["robot_trajectory_points"], [])
+        self.assertTrue(all(phase["peak_force_N"] is None
+                            for phase in detail["action_phases"]))
+
+    def test_recording_upload_download_and_immutable_source(self) -> None:
+        session_id = "DEMO_recording_example"
+        self.ingest(session_id)
+        url = f"/api/v1/sessions/{session_id}/recording"
+        self.assertIsNone(self.client.get(f"/api/v1/sessions/{session_id}").json()["recording_url"])
+        video = b"RIFF\x04\x00\x00\x00AVI " + b"example video data"
+        headers = {"Content-Type": "video/x-msvideo",
+                   "X-Content-SHA256": hashlib.sha256(video).hexdigest()}
+        self.assertEqual(self.client.put(url, content=video, headers=headers).status_code, 200)
+        self.assertEqual(self.client.put(url, content=video, headers=headers).status_code, 200)
+        self.assertEqual(self.client.get(url).content, video)
+        self.assertEqual(self.client.get(f"/api/v1/sessions/{session_id}").json()["recording_url"], url)
+        changed = b"RIFF\x04\x00\x00\x00AVI " + b"different"
+        changed_headers = {"Content-Type": "video/x-msvideo",
+                           "X-Content-SHA256": hashlib.sha256(changed).hexdigest()}
+        self.assertEqual(self.client.put(url, content=changed, headers=changed_headers).status_code, 422)
+        self.assertEqual(self.client.get(url).content, video)
+
+    def test_source_archive_upload_and_download(self) -> None:
+        session_id = "DEMO_source_archive"
+        self.ingest(session_id)
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("camera.jsonl", '{"timestamp_ms": 0}\n')
+            archive.writestr("keyframes/frame.png", b"sample")
+        content = stream.getvalue()
+        url = f"/api/v1/sessions/{session_id}/source-data"
+        headers = {"Content-Type": "application/zip",
+                   "X-Content-SHA256": hashlib.sha256(content).hexdigest()}
+        self.assertEqual(self.client.put(url, content=content, headers=headers).status_code, 200)
+        self.assertEqual(self.client.put(url, content=content, headers=headers).status_code, 200)
+        self.assertEqual(self.client.get(url).content, content)
+        self.assertEqual(self.client.get(f"/api/v1/sessions/{session_id}").json()["source_data_url"], url)
+        self.assertEqual(self.client.put(url, content=b"not a zip", headers=headers).status_code, 422)
 
     def test_openapi_contract_and_static_serving(self) -> None:
         openapi = self.client.get("/openapi.json")

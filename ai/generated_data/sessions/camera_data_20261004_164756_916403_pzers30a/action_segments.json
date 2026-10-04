@@ -1,0 +1,53 @@
+{
+  "schema_version": "smartwear.action_segments.v2",
+  "source_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261004_164756_916403_pzers30a\\multimodal.jsonl",
+  "source_sha256": "58683120db3c228a622594629eb75a47236f79e2340e2beb75c8bb50f28a25d0",
+  "method": "consecutive_camera_labels_per_hand",
+  "action_source": "camera_landmarks_heuristic",
+  "uses_simulated_sensors": false,
+  "max_gap_ms": 500,
+  "frame_count": 129,
+  "segment_count": 2,
+  "first_timestamp_ms": 2,
+  "last_timestamp_ms": 4669,
+  "duration_note": "Label-change boundaries use the next frame time. Gap/end boundaries stop at the last observation; true action end is unknown.",
+  "data_gaps": [],
+  "segments": [
+    {
+      "segment_id": 0,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 128,
+      "frame_count": 129,
+      "start_ms": 2,
+      "last_observed_ms": 4669,
+      "end_ms": 4669,
+      "duration_ms": 4667,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "left",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 1,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 128,
+      "frame_count": 129,
+      "start_ms": 2,
+      "last_observed_ms": 4669,
+      "end_ms": 4669,
+      "duration_ms": 4667,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "right",
+      "tracking_status": "missing"
+    }
+  ],
+  "hand_identity": "camera_recorded_handedness",
+  "segment_counts_by_hand": {
+    "left": 1,
+    "right": 1
+  },
+  "duration_scope": "Per hand; simultaneous left/right durations must not be added"
+}

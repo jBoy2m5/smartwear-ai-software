@@ -1,0 +1,156 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261001_231357_230568_v_07ys_s\\camera.jsonl",
+  "camera_sha256": "7ac9305f1b9f7cb98f3dfc3500fd6951668757b9d9289a6431ed85cf6b6847d8",
+  "multimodal_sha256": "5fb9b8a84895c8a4c290963cf290532fc3e531affe2987f5eb9ddf0caed1da8b",
+  "segments_sha256": "bbd70eff367ea3079ed090a7f0df1fcf7dd7cdc2d20eb86dfe37b262364eb043",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 1513,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 1606,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 1513,
+      "end_ms": 1606,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 3,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 1606,
+      "end_ms": 8047,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 4,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 1606,
+      "end_ms": 1792,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 5,
+      "hand": "right",
+      "label": "OPEN",
+      "start_ms": 1792,
+      "end_ms": 4746,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0005_right_OPEN_frame_000048.png",
+      "frame_id": 48,
+      "timestamp_ms": 3253,
+      "video_frame_index": 48
+    },
+    {
+      "segment_id": 6,
+      "hand": "right",
+      "label": "GRAB",
+      "start_ms": 4746,
+      "end_ms": 5551,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0006_right_GRAB_frame_000069.png",
+      "frame_id": 69,
+      "timestamp_ms": 5104,
+      "video_frame_index": 69
+    },
+    {
+      "segment_id": 7,
+      "hand": "right",
+      "label": "ASSEMBLY",
+      "start_ms": 5551,
+      "end_ms": 6436,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0007_right_ASSEMBLY_frame_000078.png",
+      "frame_id": 78,
+      "timestamp_ms": 5908,
+      "video_frame_index": 78
+    },
+    {
+      "segment_id": 8,
+      "hand": "right",
+      "label": "RELEASE",
+      "start_ms": 6436,
+      "end_ms": 7137,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0008_right_RELEASE_frame_000088.png",
+      "frame_id": 88,
+      "timestamp_ms": 6793,
+      "video_frame_index": 88
+    },
+    {
+      "segment_id": 9,
+      "hand": "right",
+      "label": "OPEN",
+      "start_ms": 7137,
+      "end_ms": 8047,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0009_right_OPEN_frame_000096.png",
+      "frame_id": 96,
+      "timestamp_ms": 7499,
+      "video_frame_index": 96
+    },
+    {
+      "segment_id": 10,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 8047,
+      "end_ms": 8125,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 11,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 8047,
+      "end_ms": 9049,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 12,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 8125,
+      "end_ms": 9049,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "C:\\Task\\smartwear-ai\\ai\\generated_data\\sessions\\camera_data_20261001_231357_230568_v_07ys_s\\camera.avi",
+  "video_sha256": "c549d0b5fb15061bb5c7d56df03b87aafbb22645eef62e117e8a8a9c3bc10a56",
+  "extracted_count": 5,
+  "skipped_count": 8
+}

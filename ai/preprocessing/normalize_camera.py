@@ -53,6 +53,11 @@ def normalize_camera_data(input_path, output_path):
                 if type(data["video_frame_index"]) is not int or data["video_frame_index"] != frame_id:
                     raise ValueError("Video frame indices must match the camera row sequence")
                 normalized["video_frame_index"] = data["video_frame_index"]
+            if "source_epoch_ms" in data:
+                for field in ("source_epoch_ms", "source_frame_seq", "received_epoch_ms"):
+                    if type(data.get(field)) is not int or data[field] < 0:
+                        raise ValueError(f"Invalid hardware camera {field}")
+                    normalized[field] = data[field]
             target.write(json.dumps(normalized, ensure_ascii=False, allow_nan=False) + "\n")
             previous_ms = timestamp_ms
             frame_id += 1

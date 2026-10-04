@@ -31,7 +31,7 @@ from backend.schemas import (
     SessionInput,
     SessionSummary,
 )
-from backend.services.analysis_detail import image_urls, load_analysis
+from backend.services.analysis_detail import image_urls, load_analysis, recording_path, source_archive_path
 
 
 class SopGeneratorPort(Protocol):
@@ -74,13 +74,15 @@ class SessionService:
         try:
             if self.sop_generator is not None:
                 self.sop_generator.generate(payload)
-            if self.robot_exporter is not None:
+            measured = payload.session_id.startswith("MEASURED_")
+            if self.robot_exporter is not None and not measured:
                 self.robot_exporter.export(payload)
         except Exception as exc:
             self._set_export_status(payload.session_id, ExportStatus.FAILED, str(exc))
             raise ArtifactGenerationError("Artifact generation failed") from exc
 
-        all_artifacts_ready = self.sop_generator is not None and self.robot_exporter is not None
+        all_artifacts_ready = (self.sop_generator is not None
+                               and (measured or self.robot_exporter is not None))
         export_status = ExportStatus.COMPLETED if all_artifacts_ready else ExportStatus.PENDING
         if all_artifacts_ready:
             self._set_export_status(payload.session_id, export_status)
@@ -100,12 +102,12 @@ class SessionService:
             ),
             robot_json_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=json"
-                if self.robot_exporter is not None
+                if self.robot_exporter is not None and not measured
                 else None
             ),
             robot_export_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=rosbag"
-                if self.robot_exporter is not None
+                if self.robot_exporter is not None and not measured
                 else None
             ),
         )
@@ -317,16 +319,22 @@ class SessionService:
             ),
             robot_json_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=json"
-                if artifact_ready
+                if artifact_ready and not entity.session_id.startswith("MEASURED_")
                 else None
             ),
             robot_export_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=rosbag"
-                if artifact_ready
+                if artifact_ready and not entity.session_id.startswith("MEASURED_")
                 else None
             ),
             analysis_result=analysis,
             analysis_image_urls=(image_urls(analysis, entity.session_id, self.settings.api_prefix)
                                  if analysis is not None else None),
+            recording_url=(f"{self.settings.api_prefix}/sessions/{entity.session_id}/recording"
+                           if recording_path(self.settings.keyframe_dir, entity.session_id).is_file()
+                           else None),
+            source_data_url=(f"{self.settings.api_prefix}/sessions/{entity.session_id}/source-data"
+                             if source_archive_path(self.settings.keyframe_dir, entity.session_id).is_file()
+                             else None),
         )
 

@@ -49,6 +49,9 @@ def load_sensor_stream(session):
                 or metadata.get("sensors_sha256") != _sha256(path)):
             raise ValueError(f"Sensor source, schema or SHA-256 does not match: {path}")
         rows = list(read_sensor_records(path))
+        if source == "measured_hardware" and any(
+                row.get("sensor_source") != "measured_hardware" for row in rows):
+            raise ValueError("Measured metadata cannot describe simulated sensor rows")
         if (metadata.get("sample_count") != len(camera)
                 or metadata.get("first_timestamp_ms") != camera[0]["timestamp_ms"]
                 or metadata.get("last_timestamp_ms") != camera[-1]["timestamp_ms"]):
@@ -102,27 +105,41 @@ def summarize_segment(rows, segment):
             or last < first or last >= len(rows)):
         raise ValueError("Segment frame range is outside the sensor recording")
     samples = [row for row in rows[first:last + 1]
-               if row["hand_sensors"][side]["tracking_status"] == "detected"]
+               if row["hand_sensors"][side]["tracking_status"] == "detected"
+               and (row["hand_sensors"][side].get("force_emg_raw") is not None
+                    or row["hand_sensors"][side].get("force_adc") is not None)]
     if not samples:
-        return {"sample_count": 0, **{metric: None for metric in METRICS}}
+        return {"sample_count": 0, **{metric: None for metric in METRICS},
+                "force_adc_mean": None, "force_adc_peak": None}
     hand = [row["hand_sensors"][side] for row in samples]
-    force = [value["force_emg_raw"] for value in hand]
-    torque = [abs(value["torque"]["torque"]) for value in hand]
-    head_accel = [_magnitude(row["imu_head"], ("ax", "ay", "az")) for row in samples]
-    wrist_accel = [_magnitude(value["imu_wrist"], ("ax", "ay", "az")) for value in hand]
-    wrist_gyro = [_magnitude(value["imu_wrist"], ("gx", "gy", "gz")) for value in hand]
-    head_gyro = [_magnitude(row["imu_head"], ("gx", "gy", "gz")) for row in samples]
+    force = [value["force_emg_raw"] for value in hand
+             if value.get("force_emg_raw") is not None]
+    adc = [value["force_adc"] for value in hand if value.get("force_adc") is not None]
+    torque = [abs(value["torque"]["torque"]) for value in hand if value.get("torque")]
+    angles = [value["torque"]["angle"] for value in hand if value.get("torque")]
+    head_accel = [_magnitude(row["imu_head"], ("ax", "ay", "az")) for row in samples
+                  if row.get("imu_head")]
+    wrist_accel = [_magnitude(value["imu_wrist"], ("ax", "ay", "az")) for value in hand
+                   if value.get("imu_wrist")]
+    wrist_gyro = [_magnitude(value["imu_wrist"], ("gx", "gy", "gz")) for value in hand
+                  if value.get("imu_wrist")]
+    head_gyro = [_magnitude(row["imu_head"], ("gx", "gy", "gz")) for row in samples
+                 if row.get("imu_head")]
+    mean = lambda values: round(statistics.fmean(values), 4) if values else None
     return {"sample_count": len(samples),
-            "force_mean": round(statistics.fmean(force), 4),
-            "force_peak": round(max(force), 4),
-            "torque_mean": round(statistics.fmean(torque), 4),
-            "torque_peak": round(max(torque), 4),
-            "torque_angle_change": round(hand[-1]["torque"]["angle"] -
-                                         hand[0]["torque"]["angle"], 4),
-            "head_acceleration_mean": round(statistics.fmean(head_accel), 4),
-            "wrist_acceleration_mean": round(statistics.fmean(wrist_accel), 4),
-            "wrist_angular_speed_mean": round(statistics.fmean(wrist_gyro), 4),
-            "head_angular_speed_mean": round(statistics.fmean(head_gyro), 4)}
+            "force_mean": mean(force),
+            "force_peak": round(max(force), 4) if force else None,
+            "force_adc_mean": ([round(statistics.fmean(value[i] for value in adc), 4)
+                                for i in range(4)] if adc else None),
+            "force_adc_peak": ([max(value[i] for value in adc) for i in range(4)]
+                                if adc else None),
+            "torque_mean": mean(torque),
+            "torque_peak": round(max(torque), 4) if torque else None,
+            "torque_angle_change": round(angles[-1] - angles[0], 4) if angles else None,
+            "head_acceleration_mean": mean(head_accel),
+            "wrist_acceleration_mean": mean(wrist_accel),
+            "wrist_angular_speed_mean": mean(wrist_gyro),
+            "head_angular_speed_mean": mean(head_gyro)}
 
 
 def compare_sensor_segments(expert_session, worker_session, action_document):
@@ -155,20 +172,29 @@ def compare_sensor_segments(expert_session, worker_session, action_document):
             pair_status = ("different_visible_action" if not aligned["same_label"] else
                            "incompatible_sources" if status == "incompatible_sources_no_numeric_delta"
                            else "comparable")
-            delta = ({metric: round(ws[metric] - es[metric], 4) for metric in METRICS}
+            delta = ({metric: (round(ws[metric] - es[metric], 4)
+                               if ws[metric] is not None and es[metric] is not None else None)
+                      for metric in METRICS}
                      if pair_status == "comparable"
                      and es["sample_count"] and ws["sample_count"] else None)
             pairs.append({"expert_segment_id": e["segment_id"],
                           "worker_segment_id": w["segment_id"],
                           "expert_label": e["label"], "worker_label": w["label"],
                           "comparison_status": pair_status,
-                          "expert": es, "worker": ws, "worker_minus_expert": delta})
+                          "expert": es, "worker": ws, "worker_minus_expert": delta,
+                          "worker_minus_expert_adc": (
+                              [round(w - x, 4) for w, x in zip(ws["force_adc_mean"],
+                                                                  es["force_adc_mean"])]
+                              if pair_status == "comparable"
+                              and ws["force_adc_mean"] is not None
+                              and es["force_adc_mean"] is not None else None)})
         tracks[side] = {"status": "compared" if pairs else "insufficient_visible_actions",
                         "pairs": pairs}
     return {"status": status, "expert_source": expert_source,
             "worker_source": worker_source,
-            "difference_note": ("Numeric differences are illustrative only for simulated signals. "
-                                "Real measurements require matching units, calibration and camera timestamps."),
-            "force_note": ("force_emg_raw is an uncalibrated raw value for demo signals; "
-                           "it is not Newton or physiological sEMG."),
+            "difference_note": ("Measured differences use matching raw units/device mappings; "
+                                "ADC counts are not Newton. DEMO differences are illustrative."),
+            "force_note": ("Measured force_emg_raw is a selected ADC channel only when its "
+                           "mapping is configured; all four raw channels remain available. "
+                           "ADC counts are not Newton or sEMG."),
             "hands": tracks}

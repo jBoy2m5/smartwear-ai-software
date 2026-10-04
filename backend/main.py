@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,7 @@ from backend.core.exceptions import (
 from backend.core.logging import configure_logging
 from backend.db import build_database
 from backend.services import RobotDatasetExporter, SessionService, SopGenerator
+from backend.services.capture import CaptureManager
 from backend.websocket import router as websocket_router
 from backend.websocket.manager import ConnectionManager
 
@@ -51,6 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sop_generator=SopGenerator(runtime_settings.pdf_dir),
             robot_exporter=RobotDatasetExporter(runtime_settings.dataset_dir),
         )
+        application.state.capture_manager = CaptureManager(runtime_settings)
         yield
         database.dispose()
 
@@ -128,6 +131,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 content={"status": "not_ready"},
             )
         return {"status": "ready"}
+
+    frontend_dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+    if (frontend_dist / "index.html").is_file():
+        application.mount("/", StaticFiles(directory=frontend_dist, html=True),
+                          name="frontend")
 
     return application
 
