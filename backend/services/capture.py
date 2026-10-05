@@ -25,9 +25,10 @@ class CaptureManager:
         self._process: subprocess.Popen | None = None
         self._active_id: str | None = None
         self._python: str | None = None
+        self._python_mode: str | None = None
 
-    def _ai_python(self) -> str:
-        if self._python:
+    def _ai_python(self, capture_mode: str) -> str:
+        if self._python and self._python_mode == capture_mode:
             return self._python
         candidates = [os.getenv("SMARTWEAR_AI_PYTHON"), shutil.which("python"),
                       getattr(sys, "_base_executable", None), sys.executable]
@@ -35,26 +36,27 @@ class CaptureManager:
             try:
                 result = subprocess.run(
                     [candidate, "-B", "-c", ("import cv2, mediapipe, paho.mqtt.client"
-                                            if os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").lower()
-                                            == "hardware" else "import cv2, mediapipe")],
+                                            if capture_mode == "hardware" else "import cv2, mediapipe")],
                     cwd=PROJECT_ROOT, capture_output=True, timeout=20,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )
                 if result.returncode == 0:
                     self._python = candidate
+                    self._python_mode = capture_mode
                     return candidate
             except (OSError, subprocess.TimeoutExpired):
                 continue
         raise RuntimeError("Máy chạy backend chưa có Python với OpenCV, MediaPipe"
-                           + (" và Paho MQTT" if os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").lower()
-                              == "hardware" else "") + ". "
+                           + (" và Paho MQTT" if capture_mode == "hardware" else "") + ". "
                            "Quản trị viên cần cấu hình SMARTWEAR_AI_PYTHON.")
 
-    def start(self) -> dict:
+    def start(self, capture_mode: str = "hardware") -> dict:
+        if capture_mode not in ("hardware", "demo"):
+            raise RuntimeError("Chế độ quay không hợp lệ")
         with self._lock:
             if self._process is not None and self._process.poll() is None:
                 raise RuntimeError("Một phiên camera đang chạy. Hãy kết thúc phiên đó trước.")
-            python = self._ai_python()
+            python = self._ai_python(capture_mode)
             if not CAPTURE_SCRIPT.is_file():
                 raise RuntimeError("Không tìm thấy chương trình AI camera")
             job_id = uuid.uuid4().hex
@@ -63,6 +65,7 @@ class CaptureManager:
             backend_url = os.getenv("SMARTWEAR_CAPTURE_BACKEND_URL", "http://127.0.0.1:8000")
             environment = os.environ.copy()
             environment["PYTHONIOENCODING"] = "utf-8"
+            environment["SMARTWEAR_CAPTURE_MODE"] = capture_mode
             with (directory / "run.log").open("wb") as log:
                 process = subprocess.Popen(
                     [python, "-B", str(CAPTURE_SCRIPT), "--job-dir", str(directory),
@@ -73,8 +76,10 @@ class CaptureManager:
                 )
             self._process = process
             self._active_id = job_id
-            return {"job_id": job_id, "stage": "starting", "message": "Đang mở camera",
-                    "session_id": None}
+            return {"job_id": job_id, "stage": "starting",
+                    "message": ("Đang kết nối camera ESP32" if capture_mode == "hardware"
+                                else "Đang mở webcam DEMO"),
+                    "session_id": None, "capture_mode": capture_mode}
 
     def directory(self, job_id: str) -> Path:
         if len(job_id) != 32 or any(c not in "0123456789abcdef" for c in job_id):

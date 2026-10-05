@@ -1,7 +1,7 @@
 """Dashboard controls and raw-frame previews from the AI workstation camera."""
 
 import json
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from fastapi.responses import JSONResponse, Response
@@ -14,9 +14,9 @@ JobId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def start_capture(request: Request) -> dict:
+def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware") -> dict:
     try:
-        return request.app.state.capture_manager.start()
+        return request.app.state.capture_manager.start(capture_mode)
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

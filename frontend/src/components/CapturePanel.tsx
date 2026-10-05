@@ -88,7 +88,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const begin = async () => {
     setBusy(true); setError(null); setDisplayFrame(null);
     try {
-      const created = await startCapture();
+      const created = await startCapture('hardware');
       notified.current = null;
       window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
       setJob(created);
@@ -122,7 +122,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
         <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>
-          <p className="text-xs text-gray-400">Nguồn camera do máy AI cấu hình · chỉ theo dõi tay phải · tự lưu sau khi kết thúc</p></div></div>
+          <p className="text-xs text-gray-400">{job?.capture_mode === 'demo'
+            ? 'Nguồn phiên này: webcam + cảm biến DEMO'
+            : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
+              : 'Nguồn: ESP32-CAM + SmartWrist · không dùng webcam khi mất phần cứng'} · chỉ theo dõi tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => void begin()} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">

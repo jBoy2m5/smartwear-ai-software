@@ -19,7 +19,8 @@ from integration.backend_bridge import publish  # noqa: E402
 
 def write_status(job_dir, stage, message, session_id=None):
     document = {"stage": stage, "message": message, "session_id": session_id,
-                "updated_at": datetime.now(timezone.utc).isoformat()}
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "capture_mode": os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").strip().lower()}
     temporary = job_dir / "status.tmp"
     with temporary.open("w", encoding="utf-8", newline="\n") as stream:
         json.dump(document, stream, ensure_ascii=False)

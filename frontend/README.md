@@ -4,12 +4,11 @@
 
 Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Bấm **Bắt đầu quay**, làm thao tác bằng **tay phải** trước camera, rồi bấm **Kết thúc** trên trang. Camera chỉ lưu tọa độ và hành động của tay phải trong phiên mới. Backend gửi hình camera chưa vẽ chữ kèm nhãn/tọa độ đúng khung hình; dashboard tự vẽ chữ và điểm tay rõ nét lên hình. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
 
-Nút camera điều khiển **camera gắn với máy chạy AI/backend**. Nếu mở trang từ máy khác, hình trên trang vẫn là camera của máy chủ đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
+Nút camera trên dashboard yêu cầu **ESP32-CAM + SmartWrist**. Nếu ESP32 không gửi ảnh, trang báo lỗi; nó không lấy webcam của máy tính để thay thế. Nếu mở trang từ máy khác, nguồn ảnh vẫn là ESP32 mà máy chủ AI kết nối tới. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
 
-Quản trị viên có thể chọn bộ ESP32-CAM/SmartWrist bằng
-`SMARTWEAR_CAPTURE_MODE=hardware` trước khi chạy backend. Công nhân vẫn dùng
+Quản trị viên cấu hình địa chỉ ESP32-CAM/SmartWrist trước khi chạy backend. Công nhân vẫn dùng
 hai nút trên trang; dữ liệu ADC đo thật hiện dưới mã phiên `MEASURED_`, còn chế
-độ webcam/số mô phỏng giữ mã `DEMO_`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
+độ webcam/số mô phỏng giữ mã `DEMO_` khi API được gọi với `capture_mode=demo`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
 thiết bị và dữ liệu gốc tại `ai/hardware/README.md`. Camera ESP32 hiện chỉ
 phát QVGA 320×240 nên UI không thể tạo thêm chi tiết ảnh vượt nguồn gốc.
 

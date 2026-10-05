@@ -55,6 +55,7 @@ export interface CaptureStatus {
   message: string;
   session_id: string | null;
   updated_at?: string;
+  capture_mode?: 'hardware' | 'demo';
 }
 
 export interface CapturePreview {
@@ -66,8 +67,8 @@ export interface CapturePreview {
   wrist_status?: 'receiving' | 'missing';
 }
 
-export function startCapture(): Promise<CaptureStatus> {
-  return requestJson<CaptureStatus>('/api/v1/capture/', 'POST');
+export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware'): Promise<CaptureStatus> {
+  return requestJson<CaptureStatus>(`/api/v1/capture/?capture_mode=${captureMode}`, 'POST');
 }
 
 export function getCaptureStatus(jobId: string, signal?: AbortSignal): Promise<CaptureStatus> {

@@ -50,10 +50,13 @@ class CaptureManagerTests(unittest.TestCase):
             manager = CaptureManager(settings)
             process = Mock()
             process.poll.return_value = None
-            with patch.object(manager, "_ai_python", return_value="python"), \
+            with patch.dict("os.environ", {"SMARTWEAR_CAPTURE_MODE": "demo"}), \
+                    patch.object(manager, "_ai_python", return_value="python"), \
                     patch("backend.services.capture.subprocess.Popen", return_value=process) as launch:
                 started = manager.start()
             self.assertEqual(launch.call_args.kwargs["env"]["PYTHONIOENCODING"], "utf-8")
+            self.assertEqual(launch.call_args.kwargs["env"]["SMARTWEAR_CAPTURE_MODE"], "hardware")
+            self.assertEqual(started["capture_mode"], "hardware")
             job_id = started["job_id"]
             directory = manager.directory(job_id)
             self.assertEqual(manager.status(job_id)["stage"], "starting")
