@@ -1,0 +1,32 @@
+{
+  "schema_version": "smartwear.backend_publish_demo.v1",
+  "session_id": "DEMO_camera_data_20261006_105735_889210_yr63r62k",
+  "backend_url": "http://127.0.0.1:8000",
+  "payload_sha256": "0ba249713bb19d77a34668832074b65d29a053726502b66efd3013a8a46a5def",
+  "uploaded_keyframes": [
+    "segment_0003_right_REACH_frame_000033.png",
+    "segment_0004_right_OPEN_frame_000052.png",
+    "segment_0005_right_REACH_frame_000072.png",
+    "segment_0006_right_OPEN_frame_000082.png",
+    "segment_0007_right_REACH_frame_000091.png",
+    "segment_0008_right_OPEN_frame_000119.png",
+    "segment_0009_right_REACH_frame_000147.png",
+    "segment_0010_right_OPEN_frame_000162.png",
+    "segment_0011_right_REACH_frame_000177.png",
+    "segment_0012_right_OPEN_frame_000193.png",
+    "segment_0013_right_REACH_frame_000207.png",
+    "segment_0014_right_OPEN_frame_000208.png",
+    "segment_0015_right_REACH_frame_000210.png",
+    "segment_0016_right_OPEN_frame_000232.png",
+    "segment_0017_right_REACH_frame_000253.png"
+  ],
+  "backend_response": {
+    "session_id": "DEMO_camera_data_20261006_105735_889210_yr63r62k",
+    "created": true,
+    "export_status": "COMPLETED",
+    "message": "Session stored and output artifacts generated",
+    "sop_download_url": "/api/v1/sessions/DEMO_camera_data_20261006_105735_889210_yr63r62k/download-sop",
+    "robot_json_url": "/api/v1/sessions/DEMO_camera_data_20261006_105735_889210_yr63r62k/export-rosbag?format=json",
+    "robot_export_url": "/api/v1/sessions/DEMO_camera_data_20261006_105735_889210_yr63r62k/export-rosbag?format=rosbag"
+  }
+}

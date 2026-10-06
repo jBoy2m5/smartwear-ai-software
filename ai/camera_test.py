@@ -33,18 +33,27 @@ def point_records(points):
 def make_frame_data(result, timestamp_ms, width, height, detector, tracked_side=None):
     """Pure conversion shared by live capture and camera-free integration tests."""
     hands = []
+    # MediaPipe can reverse its Left/Right prediction when the same hand turns
+    # from palm to back. In right-only capture, one visible hand is the hand the
+    # operator deliberately presented; retain its landmarks and mark the
+    # identity assumption. Never apply this shortcut when two hands are visible.
+    assume_tracked_side = tracked_side is not None and len(result.hand_landmarks) == 1
     for index, landmarks in enumerate(result.hand_landmarks):
         categories = result.handedness[index] if index < len(result.handedness) else []
         world = result.hand_world_landmarks[index] if index < len(result.hand_world_landmarks) else []
         model_side = categories[0].category_name if categories else "unknown"
         side = anatomical_handedness(model_side)
+        assumed_side = assume_tracked_side and side.lower() != tracked_side
+        if assumed_side:
+            side = tracked_side.capitalize()
         if tracked_side is not None and side.lower() != tracked_side:
             continue
         hands.append({
             "hand_index": index,
             "handedness": side,
             "model_handedness": model_side,
-            "handedness_convention": "anatomical_from_mirrored_camera",
+            "handedness_convention": (f"single_visible_hand_assumed_{tracked_side}"
+                                      if assumed_side else "anatomical_from_mirrored_camera"),
             "handedness_score": round(categories[0].score, 4) if categories else None,
             "landmarks": point_records(landmarks),
             "world_landmarks": point_records(world),
