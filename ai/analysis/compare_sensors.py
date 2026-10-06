@@ -38,6 +38,8 @@ def load_sensor_stream(session):
         raise ValueError(f"Two-hand normalized camera data is required: {session}")
     real = session / "real_sensors.jsonl"
     generated = session / "sensors.jsonl"
+    if (session / "hardware_capture.json").is_file() and not real.is_file():
+        raise ValueError("Hardware session is missing measured sensors; no simulated fallback")
     if real.exists() or generated.exists():
         path = real if real.exists() else generated
         meta_path = path.with_suffix(".meta.json")

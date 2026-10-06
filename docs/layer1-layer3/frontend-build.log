@@ -1,0 +1,19 @@
+
+> smartwear-dashboard@0.0.0 build
+> tsc -b && vite build
+
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 2463 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.49 kB │ gzip:   0.32 kB
+dist/assets/index-ChK8xMz6.css   20.14 kB │ gzip:   4.98 kB
+dist/assets/index-YNITxBUd.js   635.32 kB │ gzip: 187.44 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.15s

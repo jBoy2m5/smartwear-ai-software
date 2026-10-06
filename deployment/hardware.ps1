@@ -1,0 +1,12 @@
+# Dot-source before launching any hardware command: . .\deployment\hardware.ps1
+$env:SMARTWEAR_CAPTURE_MODE = 'hardware'
+$env:SMARTWEAR_CAMERA_URL = 'http://192.168.137.111:81/stream'
+$env:SMARTWEAR_MQTT_HOST = '192.168.137.1'
+$env:SMARTWEAR_MQTT_PORT = '1883'
+$env:SMARTWEAR_MQTT_TOPIC = 'wearable/user01/wrist/data'
+$env:SMARTWEAR_ALIGNMENT_WINDOW_MS = '10'
+$env:SMARTWEAR_WRIST_ID = 'smartwrist-user01'
+$env:SMARTWEAR_AI_PYTHON = Join-Path (Split-Path $PSScriptRoot -Parent) '.venv\Scripts\python.exe'
+$env:PLATFORMIO_CORE_DIR = Join-Path (Split-Path $PSScriptRoot -Parent) '.platformio'
+$env:PYTHONIOENCODING = 'utf-8'
+$env:SMARTWEAR_CAPTURE_BACKEND_URL = 'http://127.0.0.1:8000'

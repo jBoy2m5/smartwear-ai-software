@@ -1,0 +1,41 @@
+{
+  "note": "Built, not flashed. Binary contains local WiFi settings; keep private.",
+  "artifacts": [
+    {
+      "target": "smartcap",
+      "path": "firmware/.pio/build/smartcap/firmware.bin",
+      "bytes": 868064,
+      "sha256": "0eb7c817ef288c2daf9ea3bd77e8e5b6de7b702d275c40f854ca0866b18a6ab8"
+    },
+    {
+      "target": "smartcap",
+      "path": "firmware/.pio/build/smartcap/bootloader.bin",
+      "bytes": 17536,
+      "sha256": "3d234a7471f67b013686dabd4dee7c1fa915c9928463616a94bc9297acf1abf8"
+    },
+    {
+      "target": "smartcap",
+      "path": "firmware/.pio/build/smartcap/partitions.bin",
+      "bytes": 3072,
+      "sha256": "aaae2888c5a6a348004b5b436f47abb25ae32e72d9003902955a998eda723edd"
+    },
+    {
+      "target": "smartwrist",
+      "path": "firmware/.pio/build/smartwrist/firmware.bin",
+      "bytes": 796016,
+      "sha256": "ce574b02b27353a0c0f20e58413cc760c4b5f7d44d671b61cf1f37260f0ec866"
+    },
+    {
+      "target": "smartwrist",
+      "path": "firmware/.pio/build/smartwrist/bootloader.bin",
+      "bytes": 17536,
+      "sha256": "3d234a7471f67b013686dabd4dee7c1fa915c9928463616a94bc9297acf1abf8"
+    },
+    {
+      "target": "smartwrist",
+      "path": "firmware/.pio/build/smartwrist/partitions.bin",
+      "bytes": 3072,
+      "sha256": "148b959cbff1c38aa8e1d5c0ba9d612c54997b945e56a63f41223eef650653a1"
+    }
+  ]
+}

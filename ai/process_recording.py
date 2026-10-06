@@ -21,6 +21,9 @@ def process_recording(camera_file, output_root=DEFAULT_OUTPUT_ROOT, session_dir=
 
     output_root = Path(output_root).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
+    if session_dir is None and (camera_file.parent / "hardware_capture.json").is_file():
+        # A manual retry must retain measured provenance, never enter the simulator.
+        session_dir = camera_file.parent
     if session_dir is None:
         # Manual retries of older recordings get a fresh session; never overwrite.
         session = Path(tempfile.mkdtemp(prefix=camera_file.stem + "_", dir=output_root))

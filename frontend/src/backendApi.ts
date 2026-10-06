@@ -65,6 +65,8 @@ export interface CapturePreview {
   right_action: { label: string; tracking_status: string };
   right_landmarks: Array<{ id: number; x: number; y: number; z: number }>;
   wrist_status?: 'receiving' | 'missing';
+  live_alignment?: { sensor_status: 'matched' | 'missing'; delta_ms: number | null };
+  wrist_sample?: { seq: number; acc: number[]; gyro: number[]; force: number[] } | null;
 }
 
 export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware'): Promise<CaptureStatus> {

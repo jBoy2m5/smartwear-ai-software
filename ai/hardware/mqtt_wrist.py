@@ -7,6 +7,7 @@ import threading
 import time
 from collections import Counter
 from pathlib import Path
+from hardware.live_alignment import WristBuffer
 
 
 def validate_wrist_payload(payload):
@@ -23,7 +24,7 @@ def validate_wrist_payload(payload):
                 or any(type(item) not in (int, float) or not math.isfinite(item)
                        for item in readings)):
             raise ValueError(f"Invalid wrist {field} vector")
-    if any(not 0 <= sample <= 4095 or int(sample) != sample for sample in value["force"]):
+    if any(type(sample) is not int or not 0 <= sample <= 4095 for sample in value["force"]):
         raise ValueError("FSR ADC channels must be 0..4095 integer counts")
     return {"t_ms": epoch, "seq": sequence,
             "acc": value["acc"], "gyro": value["gyro"],
@@ -47,6 +48,7 @@ class WristReceiver:
         self.generation = 0
         self.writer_error = None
         self.last_received_epoch_ms = None
+        self.buffer = WristBuffer(maxlen=100)
 
     def _on_connect(self, client, _userdata, _flags, reason_code, _properties):
         if reason_code == 0:
@@ -102,6 +104,7 @@ class WristReceiver:
                         self.last_received_epoch_ms = sample["received_epoch_ms"]
                         sample["generation"] = self.generation
                         self.counters["received"] += 1
+                    self.buffer.append(sample)
                     stream.write(json.dumps(sample, ensure_ascii=False, allow_nan=False) + "\n")
                     stream.flush()
                     self.pending.task_done()

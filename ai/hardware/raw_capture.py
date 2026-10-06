@@ -15,6 +15,7 @@ sys.path.insert(0, str(AI_DIR))
 
 from hardware.camera_receiver import CameraReceiver  # noqa: E402
 from hardware.mqtt_wrist import WristReceiver  # noqa: E402
+from hardware.config import HardwareConfig  # noqa: E402
 from process_recording import DEFAULT_OUTPUT_ROOT  # noqa: E402
 
 
@@ -33,8 +34,8 @@ def _write_manifest(path, document):
     os.replace(temporary, path)
 
 
-def collect_raw(camera_url="http://192.168.0.101:81/stream",
-                mqtt_host="192.168.0.109", mqtt_port=1883,
+def collect_raw(camera_url="http://192.168.137.111:81/stream",
+                mqtt_host="192.168.137.1", mqtt_port=1883,
                 topic="wearable/user01/wrist/data", duration_s=60,
                 output_dir=None, stop_requested=None):
     if not 0 < duration_s <= 3600:
@@ -126,11 +127,12 @@ def collect_raw(camera_url="http://192.168.0.101:81/stream",
 
 
 def main(argv=None):
+    defaults = HardwareConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--camera-url", default="http://192.168.0.101:81/stream")
-    parser.add_argument("--mqtt-host", default="192.168.0.109")
-    parser.add_argument("--mqtt-port", type=int, default=1883)
-    parser.add_argument("--topic", default="wearable/user01/wrist/data")
+    parser.add_argument("--camera-url", default=defaults.camera_url)
+    parser.add_argument("--mqtt-host", default=defaults.mqtt_host)
+    parser.add_argument("--mqtt-port", type=int, default=defaults.mqtt_port)
+    parser.add_argument("--topic", default=defaults.topic)
     parser.add_argument("--duration-s", type=int, default=60)
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args(argv)

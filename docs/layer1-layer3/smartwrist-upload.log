@@ -1,0 +1,107 @@
+Processing smartwrist (board: esp32dev; platform: espressif32@6.9.0; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.9.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - tool-mkfatfs @ 2.0.1 
+ - tool-mklittlefs @ 1.203.210628 (2.3) 
+ - tool-mkspiffs @ 2.230.0 (2.30) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 34 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- PubSubClient @ 2.8.0
+|-- Wire @ 2.0.0
+|-- WiFi @ 2.0.0
+Building in release mode
+Retrieving maximum program size .pio\build\smartwrist\firmware.elf
+Checking size .pio\build\smartwrist\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]  13.9% (used 45644 bytes from 327680 bytes)
+Flash: [======    ]  60.2% (used 789445 bytes from 1310720 bytes)
+Configuring upload protocol...
+AVAILABLE: cmsis-dap, esp-bridge, esp-prog, espota, esptool, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa
+CURRENT: upload_protocol = esptool
+Looking for upload port...
+Using manually specified: COM7
+Uploading .pio\build\smartwrist\firmware.bin
+esptool.py v4.5.1
+Serial port COM7
+Connecting.......
+Chip is ESP32-D0WD-V3 (revision v3.1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+Crystal is 40MHz
+MAC: 68:09:47:df:56:00
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00001000 to 0x00005fff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+Flash will be erased from 0x0000e000 to 0x0000ffff...
+Flash will be erased from 0x00010000 to 0x000d2fff...
+Compressed 17536 bytes to 12202...
+Writing at 0x00001000... (100 %)
+Wrote 17536 bytes (12202 compressed) at 0x00001000 in 0.6 seconds (effective 239.5 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 146...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (146 compressed) at 0x00008000 in 0.1 seconds (effective 351.8 kbit/s)...
+Hash of data verified.
+Compressed 8192 bytes to 47...
+Writing at 0x0000e000... (100 %)
+Wrote 8192 bytes (47 compressed) at 0x0000e000 in 0.1 seconds (effective 485.1 kbit/s)...
+Hash of data verified.
+Compressed 796016 bytes to 514877...
+Writing at 0x00010000... (3 %)
+Writing at 0x0001cbad... (6 %)
+Writing at 0x00026ac0... (9 %)
+Writing at 0x0003308f... (12 %)
+Writing at 0x00038572... (15 %)
+Writing at 0x0003dee9... (18 %)
+Writing at 0x000433e9... (21 %)
+Writing at 0x00048c5a... (25 %)
+Writing at 0x0004dcc7... (28 %)
+Writing at 0x00052eb9... (31 %)
+Writing at 0x000581f0... (34 %)
+Writing at 0x0005d403... (37 %)
+Writing at 0x0006277c... (40 %)
+Writing at 0x00067b7e... (43 %)
+Writing at 0x0006cd64... (46 %)
+Writing at 0x00072965... (50 %)
+Writing at 0x000780bc... (53 %)
+Writing at 0x0007d3bb... (56 %)
+Writing at 0x0008273d... (59 %)
+Writing at 0x00087b36... (62 %)
+Writing at 0x0008d20a... (65 %)
+Writing at 0x00092879... (68 %)
+Writing at 0x00098051... (71 %)
+Writing at 0x0009df6f... (75 %)
+Writing at 0x000a37b6... (78 %)
+Writing at 0x000abd3f... (81 %)
+Writing at 0x000b4929... (84 %)
+Writing at 0x000b9b8c... (87 %)
+Writing at 0x000bf9a0... (90 %)
+Writing at 0x000c50e7... (93 %)
+Writing at 0x000ca57e... (96 %)
+Writing at 0x000cff0f... (100 %)
+Wrote 796016 bytes (514877 compressed) at 0x00010000 in 12.7 seconds (effective 500.7 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+========================= [SUCCESS] Took 18.50 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+smartwrist     SUCCESS   00:00:18.497
+========================= 1 succeeded in 00:00:18.497 =========================

@@ -166,6 +166,13 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
             completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : 'Sẵn sàng'}</div>
         <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa tay phải vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
+        {displayFrame?.live_alignment && <div className="mt-3 text-sm text-gray-300">
+          <p>Ghép camera/vòng tay: {displayFrame.live_alignment.sensor_status === 'matched'
+            ? `lệch ${displayFrame.live_alignment.delta_ms} ms` : 'thiếu mẫu phù hợp'}</p>
+          {displayFrame.wrist_sample && <p className="mt-1 font-mono text-xs">
+            FSR ADC: {displayFrame.wrist_sample.force.join(' · ')}
+          </p>}
+        </div>}
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}

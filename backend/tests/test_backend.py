@@ -93,7 +93,7 @@ class BackendIntegrationTests(unittest.TestCase):
             dataset_dir=self.test_root / "static" / "dataset",
             max_page_size=50,
         )
-        self.app = create_app(self.settings)
+        self.app = create_app(self.settings, serve_frontend=False)
         self.client = TestClient(self.app)
         self.client.__enter__()
 

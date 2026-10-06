@@ -42,6 +42,8 @@ def publish_preview(job_dir, jpeg_bytes, data, keep=30):
                 "right_landmarks": right_hand["landmarks"] if right_hand else []}
     if "wrist_status" in data:
         document["wrist_status"] = data["wrist_status"]
+        document["live_alignment"] = data.get("live_alignment")
+        document["wrist_sample"] = data.get("wrist_sample")
     metadata_tmp = job_dir / f"{name}.json.tmp"
     metadata_tmp.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
     os.replace(metadata_tmp, job_dir / f"{name}.json")
@@ -111,10 +113,12 @@ def main(argv=None):
             stop_requested = lambda: (job_dir / "stop.flag").exists() or time.monotonic() - started >= 180
             if capture_mode == "hardware":
                 from hardware.record_hardware import record_hardware
+                from hardware.config import HardwareConfig
+                hardware = HardwareConfig.from_environment()
                 output = record_hardware(
-                    camera_url=os.getenv("SMARTWEAR_CAMERA_URL", "http://192.168.0.101:81/stream"),
-                    mqtt_host=os.getenv("SMARTWEAR_MQTT_HOST", "192.168.0.109"),
-                    topic=os.getenv("SMARTWEAR_MQTT_TOPIC", "wearable/user01/wrist/data"),
+                    camera_url=hardware.camera_url,
+                    mqtt_host=hardware.mqtt_host, mqtt_port=hardware.mqtt_port,
+                    topic=hardware.topic, alignment_window_ms=hardware.alignment_window_ms,
                     force_channel=(int(os.environ["SMARTWEAR_FORCE_CHANNEL"])
                                    if os.getenv("SMARTWEAR_FORCE_CHANNEL") else None),
                     device_id=os.getenv("SMARTWEAR_WRIST_ID", "smartwrist-user01"),

@@ -1,0 +1,30 @@
+{
+  "config": {
+    "camera_url": "http://192.168.137.111:81/stream",
+    "mqtt_host": "192.168.137.1",
+    "mqtt_port": 1883,
+    "topic": "wearable/user01/wrist/data",
+    "alignment_window_ms": 10
+  },
+  "checked_epoch_ms": 1791256068397,
+  "checks": {
+    "camera_tcp": {
+      "ok": true
+    },
+    "mqtt_tcp": {
+      "ok": true
+    },
+    "ntp": {
+      "ok": true,
+      "stratum": 10,
+      "server_epoch": 1791256068.395664
+    },
+    "dependencies": {
+      "cv2": true,
+      "mediapipe": true,
+      "paho": true,
+      "fastapi": true
+    }
+  },
+  "note": "Open TCP ports do not prove valid JPEG/MQTT samples or timing KPIs."
+}

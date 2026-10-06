@@ -1,0 +1,9 @@
+.venv/
+**/__pycache__/
+.pytest_cache/
+.platformio/
+firmware/.pio/
+firmware/include/secrets.h
+frontend/node_modules/
+frontend/dist/
+backend/data/

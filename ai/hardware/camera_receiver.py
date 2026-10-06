@@ -58,8 +58,11 @@ class CameraReceiver:
                                 try:
                                     self.frames.put_nowait(item)
                                 except queue.Full:
-                                    self.frames.get_nowait()
-                                    self.frames.task_done()
+                                    try:
+                                        self.frames.get_nowait()
+                                        self.frames.task_done()
+                                    except queue.Empty:
+                                        pass  # Consumer drained it after the Full check.
                                     self.frames.put_nowait(item)
                                     with self.lock:
                                         self.counters["dropped_for_inference"] += 1

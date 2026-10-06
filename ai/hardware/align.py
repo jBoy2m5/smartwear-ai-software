@@ -17,7 +17,7 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def align_session(session, window_ms=40, force_channel=None, device_id="smartwrist-user01"):
+def align_session(session, window_ms=10, force_channel=None, device_id="smartwrist-user01"):
     session = Path(session).resolve()
     camera_file = session / "camera.normalized.jsonl"
     wrist_file = session / "wrist_raw.jsonl"
@@ -128,7 +128,7 @@ def align_session(session, window_ms=40, force_channel=None, device_id="smartwri
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", type=Path, required=True)
-    parser.add_argument("--window-ms", type=int, default=40)
+    parser.add_argument("--window-ms", type=int, default=10)
     parser.add_argument("--force-channel", type=int)
     parser.add_argument("--device-id", default="smartwrist-user01")
     args = parser.parse_args(argv)

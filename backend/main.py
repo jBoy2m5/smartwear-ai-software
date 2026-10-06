@@ -30,7 +30,7 @@ from backend.websocket.manager import ConnectionManager
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, serve_frontend: bool = True) -> FastAPI:
     """Create the SmartWear FastAPI application."""
     runtime_settings = settings or get_settings()
 
@@ -133,7 +133,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ready"}
 
     frontend_dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
-    if (frontend_dist / "index.html").is_file():
+    if serve_frontend and (frontend_dist / "index.html").is_file():
         application.mount("/", StaticFiles(directory=frontend_dist, html=True),
                           name="frontend")
 
