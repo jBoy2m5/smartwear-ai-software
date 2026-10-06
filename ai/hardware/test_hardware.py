@@ -17,6 +17,7 @@ sys.path.insert(0, str(AI_DIR))
 sys.path.insert(0, str(AI_DIR.parent))
 
 from hand_observation import TwoHandActionDetector  # noqa: E402
+from camera_test import make_frame_data  # noqa: E402
 from analysis.compare_sensors import load_sensor_stream  # noqa: E402
 from hardware.align import align_session  # noqa: E402
 from hardware.camera_receiver import CameraReceiver  # noqa: E402
@@ -36,6 +37,31 @@ class SplitReads(io.BytesIO):
 
 
 class HardwareTests(unittest.TestCase):
+    def test_right_only_capture_keeps_one_hand_when_model_side_flips(self):
+        points = [SimpleNamespace(x=0.1 + index * 0.01, y=0.2 + index * 0.01,
+                                  z=0.0) for index in range(21)]
+        category = lambda name: [SimpleNamespace(category_name=name, score=0.99)]
+        for model_side in ("Left", "Right"):
+            with self.subTest(model_side=model_side):
+                result = SimpleNamespace(hand_landmarks=[points],
+                                         hand_world_landmarks=[points],
+                                         handedness=[category(model_side)])
+                frame = make_frame_data(result, 0, 320, 240,
+                                        TwoHandActionDetector(), tracked_side="right")
+                self.assertEqual(len(frame["hands"]), 1)
+                self.assertEqual(frame["hands"][0]["handedness"], "Right")
+                self.assertEqual(frame["hand_actions"]["right"]["tracking_status"], "detected")
+                if model_side == "Right":
+                    self.assertEqual(frame["hands"][0]["handedness_convention"],
+                                     "single_visible_hand_assumed_right")
+
+        result = SimpleNamespace(hand_landmarks=[points, points],
+                                 hand_world_landmarks=[points, points],
+                                 handedness=[category("Right"), category("Left")])
+        frame = make_frame_data(result, 0, 320, 240,
+                                TwoHandActionDetector(), tracked_side="right")
+        self.assertEqual([hand["hand_index"] for hand in frame["hands"]], [1])
+
     def test_mjpeg_split_jpeg_case_insensitive_headers_and_multiple_parts(self):
         jpeg = b"\xff\xd8some-jpeg\xff\xd9"
         part = (b"--frame\r\nX-FRAME-SEQ: {seq}\r\nContent-Length: {length}\r\n"

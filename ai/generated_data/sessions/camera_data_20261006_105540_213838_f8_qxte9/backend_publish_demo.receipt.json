@@ -1,0 +1,19 @@
+{
+  "schema_version": "smartwear.backend_publish_demo.v1",
+  "session_id": "DEMO_camera_data_20261006_105540_213838_f8_qxte9",
+  "backend_url": "http://127.0.0.1:8000",
+  "payload_sha256": "f4024a227c4fbfa152886cf396c7617085ea894b1a99057fb5b120e828fea4d6",
+  "uploaded_keyframes": [
+    "segment_0005_right_OPEN_frame_000025.png",
+    "segment_0006_right_REACH_frame_000027.png"
+  ],
+  "backend_response": {
+    "session_id": "DEMO_camera_data_20261006_105540_213838_f8_qxte9",
+    "created": true,
+    "export_status": "COMPLETED",
+    "message": "Session stored and output artifacts generated",
+    "sop_download_url": "/api/v1/sessions/DEMO_camera_data_20261006_105540_213838_f8_qxte9/download-sop",
+    "robot_json_url": "/api/v1/sessions/DEMO_camera_data_20261006_105540_213838_f8_qxte9/export-rosbag?format=json",
+    "robot_export_url": "/api/v1/sessions/DEMO_camera_data_20261006_105540_213838_f8_qxte9/export-rosbag?format=rosbag"
+  }
+}

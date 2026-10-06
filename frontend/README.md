@@ -2,14 +2,13 @@
 
 ## Công nhân sử dụng
 
-Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Bấm **Bắt đầu quay**, làm thao tác bằng **tay phải** trước camera, rồi bấm **Kết thúc** trên trang. Camera chỉ lưu tọa độ và hành động của tay phải trong phiên mới. Backend gửi hình camera chưa vẽ chữ kèm nhãn/tọa độ đúng khung hình; dashboard tự vẽ chữ và điểm tay rõ nét lên hình. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
+Mở **http://127.0.0.1:8000/** trên Chrome của máy chạy SmartWear AI. Chọn **Quay ESP32 + vòng tay** khi có phần cứng, hoặc **Quay webcam (DEMO)** để thử camera máy tính khi chưa có phần cứng. Chỉ đưa **tay phải** vào hình, rồi bấm **Kết thúc** trên trang. Camera chỉ lưu tọa độ và hành động của tay phải trong phiên mới. Backend gửi hình camera chưa vẽ chữ kèm nhãn/tọa độ đúng khung hình; dashboard tự vẽ chữ và điểm tay rõ nét lên hình. Trang tự xử lý, so với mẫu gần nhất, lưu lên backend và mở kết quả vừa quay. Không cần PowerShell, cửa sổ OpenCV hay phím Q.
 
-Nút camera điều khiển **camera gắn với máy chạy AI/backend**. Nếu mở trang từ máy khác, hình trên trang vẫn là camera của máy chủ đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
+Hai nút chọn nguồn riêng biệt, **không tự chuyển qua lại**. Nút ESP32 yêu cầu **ESP32-CAM + SmartWrist**; nếu ESP32 không gửi ảnh, trang báo lỗi. Nút webcam chỉ dùng **camera gắn với máy chạy AI/backend**, không mở ESP32 và không đọc SmartWrist; cảm biến ở phiên này là số mô phỏng và phiên mang nhãn `DEMO_`. Nếu mở trang từ máy khác, webcam vẫn là camera của máy chủ AI, không phải camera của trình duyệt ở máy đó. Mỗi máy chủ hiện chỉ quay một phiên cùng lúc; một phiên tối đa 3 phút.
 
-Quản trị viên có thể chọn bộ ESP32-CAM/SmartWrist bằng
-`SMARTWEAR_CAPTURE_MODE=hardware` trước khi chạy backend. Công nhân vẫn dùng
+Quản trị viên cấu hình địa chỉ ESP32-CAM/SmartWrist trước khi chạy backend. Công nhân vẫn dùng
 hai nút trên trang; dữ liệu ADC đo thật hiện dưới mã phiên `MEASURED_`, còn chế
-độ webcam/số mô phỏng giữ mã `DEMO_`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
+độ webcam/số mô phỏng giữ mã `DEMO_` khi API được gọi với `capture_mode=demo`. Xem hướng dẫn thiết lập, kiểm tra đồng hồ
 thiết bị và dữ liệu gốc tại `ai/hardware/README.md`. Camera ESP32 hiện chỉ
 phát QVGA 320×240 nên UI không thể tạo thêm chi tiết ảnh vượt nguồn gốc.
 

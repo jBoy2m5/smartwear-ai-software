@@ -85,10 +85,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     }
   }, [job, onCompleted]);
 
-  const begin = async () => {
+  const begin = async (captureMode: 'hardware' | 'demo') => {
     setBusy(true); setError(null); setDisplayFrame(null);
     try {
-      const created = await startCapture();
+      const created = await startCapture(captureMode);
       notified.current = null;
       window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
       setJob(created);
@@ -122,11 +122,17 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
         <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>
-          <p className="text-xs text-gray-400">Nguồn camera do máy AI cấu hình · chỉ theo dõi tay phải · tự lưu sau khi kết thúc</p></div></div>
+          <p className="text-xs text-gray-400">{job?.capture_mode === 'demo'
+            ? 'Nguồn phiên này: webcam máy AI + cảm biến DEMO; không dùng phần cứng'
+            : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
+              : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · chỉ đưa tay phải vào hình</p></div></div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void begin()} disabled={busy || Boolean(working)}
+        <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
-          <Play size={17} />Bắt đầu quay</button>
+          <Play size={17} />Quay ESP32 + vòng tay</button>
+        <button type="button" onClick={() => void begin('demo')} disabled={busy || Boolean(working)}
+          className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-4 py-2 font-bold text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
+          <Camera size={17} />Quay webcam (DEMO)</button>
         <button type="button" onClick={() => void end()} disabled={busy || !job || !['starting', 'recording'].includes(job.stage)}
           className="inline-flex items-center gap-2 rounded-lg border border-alertRed/60 bg-alertRed/15 px-4 py-2 font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-40">
           <CircleStop size={17} />Kết thúc</button>
@@ -150,7 +156,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
               SmartWrist: {displayFrame.wrist_status === 'receiving' ? 'đang nhận dữ liệu' : 'chưa có dữ liệu'}
             </div>}
           </div>
-        </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Bấm “Bắt đầu quay” để xem camera và nhãn hành động.'}</div>}
+        </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
         {recording && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
       </div>
       <div className="flex flex-col justify-center rounded-lg border border-slate-700 bg-slate-900/60 p-4">
@@ -159,7 +165,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           {job ? ({ starting: 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
             completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : 'Sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa tay vào vùng camera rồi bấm Bắt đầu quay.'}</p>
+        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa tay phải vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}
