@@ -35,5 +35,6 @@ def multimodal_frame(packet, frame_bgr, sample):
     return {"frame_id": packet.sequence, "t_ms": packet.epoch_ms,
             "delta_ms": abs(sample["t_ms"] - packet.epoch_ms) if sample else None,
             "frame": frame_bgr,
-            "wrist": ({key: sample[key] for key in ("seq", "acc", "gyro", "force")}
+            "wrist": ({key: sample[key] for key in ("seq", "acc", "gyro", "force", "imu_status", "imu_address", "imu_age_ms")
+                       if key in sample}
                       if sample else None), "head": None}

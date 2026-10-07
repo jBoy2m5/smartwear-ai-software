@@ -1,4 +1,4 @@
-"""Run right-hand camera capture for a dashboard-controlled session."""
+"""Run left/right hand capture for a dashboard-controlled session."""
 
 import argparse
 import json
@@ -34,12 +34,15 @@ def publish_preview(job_dir, jpeg_bytes, data, keep=30):
     temporary = job_dir / f"{name}.tmp"
     temporary.write_bytes(jpeg_bytes)
     os.replace(temporary, job_dir / f"{name}.jpg")
-    right_hand = next((hand for hand in data["hands"]
-                       if hand["handedness"].lower() == "right"), None)
     document = {"frame_index": frame_index, "timestamp_ms": data["timestamp"],
-                "camera": data["camera"],
-                "right_action": data["hand_actions"]["right"],
-                "right_landmarks": right_hand["landmarks"] if right_hand else []}
+                "camera": data["camera"]}
+    for side in ("left", "right"):
+        action = data["hand_actions"][side]
+        # Ambiguous duplicate classifications must not render as one certain hand.
+        hand = next((hand for hand in data["hands"]
+                     if hand["hand_index"] == action["hand_index"]), None)
+        document[f"{side}_action"] = action
+        document[f"{side}_landmarks"] = hand["landmarks"] if hand else []
     if "wrist_status" in data:
         document["wrist_status"] = data["wrist_status"]
         document["live_alignment"] = data.get("live_alignment")
@@ -107,7 +110,7 @@ def main(argv=None):
             raise ValueError("SMARTWEAR_CAPTURE_MODE must be demo or hardware")
         write_status(job_dir, "recording", ("Đang nhận ảnh ESP32; kiểm tra vòng tay ở hình xem trước"
                                             if capture_mode == "hardware" else
-                                            "Camera đang ghi tay phải"))
+                                            "Camera đang ghi tay trái và tay phải"))
         started = time.monotonic()
         with ThreadPoolExecutor(max_workers=1) as executor:
             stop_requested = lambda: (job_dir / "stop.flag").exists() or time.monotonic() - started >= 180

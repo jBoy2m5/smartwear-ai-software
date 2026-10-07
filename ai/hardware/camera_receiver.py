@@ -24,6 +24,7 @@ class CameraReceiver:
         self.error = None
         self.last_sequence = None
         self.last_epoch = None
+        self.last_stream_error = None
 
     def _record(self, stream, index, frame, received_epoch_ms):
         offset = stream.tell()
@@ -72,13 +73,16 @@ class CameraReceiver:
                             with self.lock:
                                 self.counters["stream_disconnects"] += 1
                     except urllib.error.HTTPError as exc:
+                        with self.lock:
+                            self.last_stream_error = str(exc)
                         if exc.code != 503:
                             raise
                         with self.lock:
                             self.counters["http_503"] += 1
-                    except (EOFError, OSError, ValueError, urllib.error.URLError):
+                    except (EOFError, OSError, ValueError, urllib.error.URLError) as exc:
                         with self.lock:
                             self.counters["stream_errors"] += 1
+                            self.last_stream_error = str(exc)
                     if not self.stop_event.is_set():
                         self.stop_event.wait(delay)
                         delay = min(delay * 2, 5)
@@ -106,6 +110,8 @@ class CameraReceiver:
     def snapshot(self):
         with self.lock:
             result = dict(self.counters)
+            if self.last_stream_error is not None:
+                result["last_stream_error"] = self.last_stream_error
         result["queue_size"] = self.frames.qsize()
         return result
 

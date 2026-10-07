@@ -1,4 +1,4 @@
-"""Capture the right hand, save its actions, then run the session pipeline."""
+"""Capture anatomical left/right hands and run the session pipeline."""
 
 import argparse
 import json
@@ -22,7 +22,7 @@ MODEL_PATH = SCRIPT_DIR / "hand_landmarker.task"
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/"
              "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task")
 COLORS = {"left": (255, 200, 80), "right": (80, 230, 120)}
-WINDOW = "SmartWear AI - Right Hand"
+WINDOW = "SmartWear AI - Left / Right Hands"
 
 
 def point_records(points):
@@ -33,27 +33,20 @@ def point_records(points):
 def make_frame_data(result, timestamp_ms, width, height, detector, tracked_side=None):
     """Pure conversion shared by live capture and camera-free integration tests."""
     hands = []
-    # MediaPipe can reverse its Left/Right prediction when the same hand turns
-    # from palm to back. In right-only capture, one visible hand is the hand the
-    # operator deliberately presented; retain its landmarks and mark the
-    # identity assumption. Never apply this shortcut when two hands are visible.
-    assume_tracked_side = tracked_side is not None and len(result.hand_landmarks) == 1
+    if tracked_side not in (None, "left", "right"):
+        raise ValueError("tracked_side must be left, right or None")
     for index, landmarks in enumerate(result.hand_landmarks):
         categories = result.handedness[index] if index < len(result.handedness) else []
         world = result.hand_world_landmarks[index] if index < len(result.hand_world_landmarks) else []
         model_side = categories[0].category_name if categories else "unknown"
         side = anatomical_handedness(model_side)
-        assumed_side = assume_tracked_side and side.lower() != tracked_side
-        if assumed_side:
-            side = tracked_side.capitalize()
         if tracked_side is not None and side.lower() != tracked_side:
             continue
         hands.append({
             "hand_index": index,
             "handedness": side,
             "model_handedness": model_side,
-            "handedness_convention": (f"single_visible_hand_assumed_{tracked_side}"
-                                      if assumed_side else "anatomical_from_mirrored_camera"),
+            "handedness_convention": "anatomical_from_mirrored_camera",
             "handedness_score": round(categories[0].score, 4) if categories else None,
             "landmarks": point_records(landmarks),
             "world_landmarks": point_records(world),
@@ -70,11 +63,12 @@ def draw_frame(cv2, frame, data, instruction="Q: stop and process"):
         for point in hand["landmarks"]:
             cv2.circle(frame, (int(point["x"] * frame.shape[1]),
                                int(point["y"] * frame.shape[0])), 4, color, -1)
-    action = data["hand_actions"]["right"]
-    label = "UNCERTAIN" if action["tracking_status"] == "ambiguous" else action["label"]
-    cv2.putText(frame, f"RIGHT: {label}", (20, 40),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS["right"], 2)
-    cv2.putText(frame, instruction, (20, 75),
+    for index, side in enumerate(("left", "right")):
+        action = data["hand_actions"][side]
+        label = "UNCERTAIN" if action["tracking_status"] == "ambiguous" else action["label"]
+        cv2.putText(frame, f"{side.upper()}: {label}", (10, 25 + index * 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, COLORS[side], 2)
+    cv2.putText(frame, instruction, (10, 85),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 
@@ -131,7 +125,7 @@ def record_camera(stop_requested=None, on_frame=None, show_window=True):
         output = session / "camera.jsonl"
         video = RecordingVideo(output, cv2)
         print(f"Thu muc phien: {session}")
-        print("Camera da mo. Chi theo doi tay phai. Nhan Q de dung.")
+        print("Camera da mo. Theo doi tay trai va tay phai. Nhan Q de dung.")
         with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker, \
                 output.open("x", encoding="utf-8", newline="\n") as stream:
             detector = TwoHandActionDetector()
@@ -156,15 +150,15 @@ def record_camera(stop_requested=None, on_frame=None, show_window=True):
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 result = landmarker.detect_for_video(image, timestamp)
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
-                                       detector, tracked_side="right")
+                                       detector)
                 # Save the same mirrored image used by MediaPipe, before drawing UI.
                 data["video_frame_index"] = video.write(frame)
                 stream.write(json.dumps(data, ensure_ascii=False, allow_nan=False) + "\n")
                 stream.flush()
-                current = (data["hand_actions"]["right"]["label"],
-                           data["hand_actions"]["right"]["tracking_status"])
+                current = tuple((data["hand_actions"][side]["label"],
+                                 data["hand_actions"][side]["tracking_status"]) for side in ("left", "right"))
                 if current != previous_actions:
-                    print(f"{timestamp / 1000:.2f}s  RIGHT: {current[0]}")
+                    print(f"{timestamp / 1000:.2f}s  LEFT: {current[0][0]} RIGHT: {current[1][0]}")
                     previous_actions = current
                 if on_frame is not None:
                     on_frame(cv2, frame, data)

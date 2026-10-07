@@ -1,4 +1,4 @@
-"""Record ESP32 MJPEG and SmartWrist MQTT as one right-hand AI session."""
+"""Record both hands from ESP32 MJPEG and the instrumented right SmartWrist."""
 
 import argparse
 import json
@@ -79,6 +79,8 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                 item = receiver.get(timeout=0.5)
                 if item is None:
                     if t0 is None and time.monotonic() - started > 15:
+                        print(f"Camera connection diagnostics: {receiver.snapshot()}",
+                              file=sys.stderr, flush=True)
                         raise TimeoutError("ESP32 camera did not supply a valid JPEG within 15 s")
                     continue
                 packet, received_epoch_ms = item
@@ -99,7 +101,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 result = landmarker.detect_for_video(image, timestamp)
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
-                                       detector, tracked_side="right")
+                                       detector)
                 wrist_state = wrist.snapshot()
                 data["wrist_status"] = (
                     "receiving" if wrist_state.get("received", 0) > 0
@@ -120,7 +122,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                     on_frame(cv2, frame, data)
                 if show_window:
                     draw_frame(cv2, frame, data)
-                    cv2.imshow("SmartWear ESP32 - Right Hand", frame)
+                    cv2.imshow("SmartWear ESP32 - Left / Right Hands", frame)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
                 now = time.monotonic()
@@ -182,6 +184,9 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
 
 
 def main(argv=None):
+    # Windows redirected output can default to cp1252; reference titles use UTF-8.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     defaults = HardwareConfig.from_environment()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--camera-url", default=defaults.camera_url)

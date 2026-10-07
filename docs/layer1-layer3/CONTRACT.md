@@ -2,7 +2,11 @@
 
 ## Layer 1
 
-SmartCap chỉ có OV2640, không MPU6050. AI-Thinker pinout dùng trong `firmware/src/smartcap.cpp`; JPEG QVGA 320×240, quality 12, PSRAM hai buffer, grab latest. HTTP port 81 chỉ một consumer; dashboard dùng preview từ backend, không mở thêm stream trên camera.
+SmartCap chỉ có OV2640, không MPU6050. AI-Thinker pinout dùng trong `firmware/src/smartcap.cpp`; JPEG QVGA 320×240, quality 15, PSRAM ba buffer, XCLK 16 MHz, grab latest. HTTP port 81 chỉ một consumer; dashboard dùng preview từ backend, không mở thêm stream trên camera.
+
+HTTP server cho tối đa hai socket để tiếp nhận reconnect trong lúc socket cũ đóng, bật LRU purge và send/recv timeout 2 giây. Handler stream vẫn đồng bộ, không hỗ trợ hai consumer camera đồng thời. Timestamp không tăng phải nhường CPU; đứng quá 2 giây thì đóng stream để consumer reconnect.
+
+Người dùng xác nhận ngày 07/10/2026 SmartCap đã bỏ IMU để tối ưu thời gian: `imu_head=null` là chủ đích. Firmware SmartCap khởi tạo Wi-Fi/NTP trước camera, có log boot và heartbeat để theo dõi lỗi khởi động ngắt quãng. SmartWrist giữ nguồn IMU/ADC riêng.
 
 Mỗi phần MJPEG có `Content-Type: image/jpeg`, `Content-Length`, `X-Timestamp-Ms`, `X-Frame-Seq`. Timestamp lấy từ `camera_fb_t.timestamp` (mốc DMA từ lúc boot) rồi chuyển sang epoch bằng anchor NTP. Không dùng thời điểm gửi/nhận ảnh làm thời điểm chụp. Chưa sync NTP trả 503. Seq tăng toàn boot, không reset khi nối lại HTTP.
 

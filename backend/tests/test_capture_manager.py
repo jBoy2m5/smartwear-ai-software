@@ -80,11 +80,14 @@ class CaptureManagerTests(unittest.TestCase):
             root = Path(temporary)
             fake = root / "fake_capture.py"
             fake.write_text(
-                "import json, pathlib, sys, time\n"
+                "import json, os, pathlib, sys, time\n"
                 "p = pathlib.Path(sys.argv[sys.argv.index('--job-dir') + 1])\n"
-                "(p/'status.json').write_text(json.dumps({'stage':'recording','message':'on','session_id':None}))\n"
+                "def status(document):\n"
+                "    (p/'status.tmp').write_text(json.dumps(document), encoding='utf-8')\n"
+                "    os.replace(p/'status.tmp', p/'status.json')\n"
+                "status({'stage':'recording','message':'on','session_id':None})\n"
                 "while not (p/'stop.flag').exists(): time.sleep(.02)\n"
-                "(p/'status.json').write_text(json.dumps({'stage':'completed','message':'done','session_id':'DEMO_test'}))\n",
+                "status({'stage':'completed','message':'done','session_id':'DEMO_test'})\n",
                 encoding="utf-8",
             )
             manager = CaptureManager(Settings(environment="test", static_dir=root / "static"))

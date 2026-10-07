@@ -37,7 +37,7 @@ class SplitReads(io.BytesIO):
 
 
 class HardwareTests(unittest.TestCase):
-    def test_right_only_capture_keeps_one_hand_when_model_side_flips(self):
+    def test_capture_preserves_anatomical_sides_without_assuming_right(self):
         points = [SimpleNamespace(x=0.1 + index * 0.01, y=0.2 + index * 0.01,
                                   z=0.0) for index in range(21)]
         category = lambda name: [SimpleNamespace(category_name=name, score=0.99)]
@@ -46,21 +46,77 @@ class HardwareTests(unittest.TestCase):
                 result = SimpleNamespace(hand_landmarks=[points],
                                          hand_world_landmarks=[points],
                                          handedness=[category(model_side)])
-                frame = make_frame_data(result, 0, 320, 240,
-                                        TwoHandActionDetector(), tracked_side="right")
+                frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
                 self.assertEqual(len(frame["hands"]), 1)
-                self.assertEqual(frame["hands"][0]["handedness"], "Right")
-                self.assertEqual(frame["hand_actions"]["right"]["tracking_status"], "detected")
-                if model_side == "Right":
-                    self.assertEqual(frame["hands"][0]["handedness_convention"],
-                                     "single_visible_hand_assumed_right")
+                side = "right" if model_side == "Left" else "left"
+                other = "left" if side == "right" else "right"
+                self.assertEqual(frame["hands"][0]["handedness"].lower(), side)
+                self.assertEqual(frame["hand_actions"][side]["tracking_status"], "detected")
+                self.assertEqual(frame["hand_actions"][other]["tracking_status"], "missing")
+                filtered = make_frame_data(result, 0, 320, 240, TwoHandActionDetector(), tracked_side="right")
+                self.assertEqual(len(filtered["hands"]), int(side == "right"))
 
         result = SimpleNamespace(hand_landmarks=[points, points],
                                  hand_world_landmarks=[points, points],
                                  handedness=[category("Right"), category("Left")])
-        frame = make_frame_data(result, 0, 320, 240,
-                                TwoHandActionDetector(), tracked_side="right")
-        self.assertEqual([hand["hand_index"] for hand in frame["hands"]], [1])
+        frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
+        self.assertEqual([hand["handedness"] for hand in frame["hands"]], ["Left", "Right"])
+        self.assertEqual(frame["hand_actions"]["left"]["hand_index"], 0)
+        self.assertEqual(frame["hand_actions"]["right"]["hand_index"], 1)
+
+    def test_partial_wrist_requires_explicit_null_imu(self):
+        payload = {"t_ms": BASE, "seq": 1, "acc": None, "gyro": None,
+                   "force": [1, 2, 3, 4], "imu_status": "unavailable", "imu_address": None}
+        self.assertIsNone(validate_wrist_payload(payload)["acc"])
+        for invalid in ({**payload, "imu_status": "ok"},
+                        {**payload, "acc": [0, 0, 0]},
+                        {**payload, "imu_address": 104},
+                        {key: value for key, value in payload.items() if key != "imu_status"}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                validate_wrist_payload(invalid)
+
+    def test_partial_wrist_aligns_adc_without_inventing_imu(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            session = Path(temporary)
+            self.write_inputs(session)
+            path = session / "wrist_raw.jsonl"
+            rows = [json.loads(line) for line in path.read_text().splitlines()]
+            for row in rows:
+                row.update(acc=None, gyro=None, imu_status="unavailable", imu_address=None)
+            path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+            process_recording(session / "camera.jsonl", session.parent, session)
+            metadata = json.loads((session / "real_sensors.meta.json").read_text())
+            self.assertGreater(metadata["matched_count"], 0)
+            self.assertEqual(metadata["imu_available_count"], 0)
+            self.assertEqual(metadata["imu_unavailable_count"], metadata["matched_count"])
+            sensors = [json.loads(line) for line in (session / "real_sensors.jsonl").read_text().splitlines()]
+            for row in sensors:
+                self.assertIsNone(row["hand_sensors"]["right"]["imu_wrist"])
+            self.assertTrue(any(row["hand_sensors"]["right"]["force_adc"] for row in sensors))
+
+    def test_preview_keeps_both_sides_when_detection_order_changes(self):
+        from integration.frontend_capture import publish_preview
+        points = lambda x: [SimpleNamespace(x=x, y=index / 30, z=0.0) for index in range(21)]
+        category = lambda name: [SimpleNamespace(category_name=name, score=0.99)]
+        detector = TwoHandActionDetector()
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            for index, sides in enumerate((("Right", "Left"), ("Left", "Right"), ("Right", "Right"))):
+                result = SimpleNamespace(hand_landmarks=[points(0.2), points(0.8)],
+                                         hand_world_landmarks=[[], []],
+                                         handedness=[category(side) for side in sides])
+                data = make_frame_data(result, index * 40, 320, 240, detector)
+                data["video_frame_index"] = index
+                publish_preview(directory, b"test JPEG", data)
+                preview = json.loads((directory / f"preview_{index:08d}.json").read_text())
+                for side, model_side in (("left", "Right"), ("right", "Left")):
+                    if index == 2:
+                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "ambiguous")
+                        self.assertEqual(preview[f"{side}_landmarks"], [])
+                    else:
+                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "detected")
+                        self.assertEqual(preview[f"{side}_landmarks"][0]["x"],
+                                         0.2 if sides[0] == model_side else 0.8)
 
     def test_mjpeg_split_jpeg_case_insensitive_headers_and_multiple_parts(self):
         jpeg = b"\xff\xd8some-jpeg\xff\xd9"
@@ -105,6 +161,7 @@ class HardwareTests(unittest.TestCase):
             self.assertEqual(packet.jpeg, jpeg)
             self.assertEqual((Path(temporary) / "camera_raw.mjpeg").read_bytes(), jpeg)
             self.assertEqual(receiver.snapshot()["http_503"], 1)
+            self.assertIn("last_stream_error", receiver.snapshot())
 
     def test_wrist_validation_rejects_malformed_and_nonfinite(self):
         valid = {"t_ms": BASE, "seq": 1, "acc": [0, 0, 1],

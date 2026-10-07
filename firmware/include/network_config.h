@@ -41,14 +41,19 @@ static bool sourceEpochMs(int64_t monotonicUs, int64_t &epochMs) {
 }
 
 static void startNetwork(const IPAddress &address, const char *hostname) {
+    Serial.println("Network: initializing WiFi station"); Serial.flush();
     WiFi.mode(WIFI_STA);
+    Serial.println("Network: configuring station"); Serial.flush();
     WiFi.setHostname(hostname);
     WiFi.setSleep(false);
     WiFi.setAutoReconnect(true);
     if (!WiFi.config(address, ROUTER, NETMASK, ROUTER)) {
         Serial.println("Static IP configuration failed");
     }
+    Serial.println("Network: connecting to configured hotspot"); Serial.flush();
     WiFi.begin(SMARTWEAR_WIFI_SSID, SMARTWEAR_WIFI_PASSWORD);
+    Serial.println("Network: starting NTP"); Serial.flush();
     sntp_set_time_sync_notification_cb(timeSynced);
     configTime(0, 0, NTP_HOST);
+    Serial.println("Network: initialization returned"); Serial.flush();
 }

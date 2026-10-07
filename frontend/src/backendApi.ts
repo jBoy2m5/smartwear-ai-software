@@ -64,9 +64,12 @@ export interface CapturePreview {
   camera: { frame_width: number; frame_height: number };
   right_action: { label: string; tracking_status: string };
   right_landmarks: Array<{ id: number; x: number; y: number; z: number }>;
+  left_action?: { label: string; tracking_status: string };
+  left_landmarks?: Array<{ id: number; x: number; y: number; z: number }>;
   wrist_status?: 'receiving' | 'missing';
   live_alignment?: { sensor_status: 'matched' | 'missing'; delta_ms: number | null };
-  wrist_sample?: { seq: number; acc: number[]; gyro: number[]; force: number[] } | null;
+  wrist_sample?: { seq: number; acc: number[] | null; gyro: number[] | null; force: number[];
+    imu_status?: 'ok' | 'unavailable'; imu_address?: number | null } | null;
 }
 
 export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware'): Promise<CaptureStatus> {

@@ -64,13 +64,17 @@ def align_session(session, window_ms=10, force_channel=None, device_id="smartwri
         if matched:
             offset = nearest["t_ms"] - epoch
             offsets.append(offset)
-            imu = {axis: nearest["acc"][index] for index, axis in enumerate(("ax", "ay", "az"))}
-            imu.update({axis: nearest["gyro"][index] for index, axis in enumerate(("gx", "gy", "gz"))})
+            imu = None
+            if nearest["acc"] is not None and nearest["gyro"] is not None:
+                imu = {axis: nearest["acc"][index] for index, axis in enumerate(("ax", "ay", "az"))}
+                imu.update({axis: nearest["gyro"][index] for index, axis in enumerate(("gx", "gy", "gz"))})
         else:
             offset, imu = None, None
         right = {"tracking_status": frame["hand_actions"]["right"]["tracking_status"],
                  "sensor_status": "matched" if matched else "missing",
                  "imu_wrist": imu,
+                 "imu_status": ("ok" if imu is not None else "unavailable") if matched else "missing",
+                 "imu_age_ms": nearest.get("imu_age_ms") if matched else None,
                  "force_emg_raw": (nearest["force"][force_channel]
                                    if matched and force_channel is not None else None),
                  "force_adc": nearest["force"] if matched else None,
@@ -99,6 +103,8 @@ def align_session(session, window_ms=10, force_channel=None, device_id="smartwri
         "sample_count": count, "first_timestamp_ms": camera[0]["timestamp_ms"],
         "last_timestamp_ms": last, "matched_count": len(offsets),
         "missing_count": count - len(offsets),
+        "imu_available_count": sum(row["hand_sensors"]["right"]["imu_wrist"] is not None for row in rows),
+        "imu_unavailable_count": sum(row["hand_sensors"]["right"]["imu_status"] == "unavailable" for row in rows),
         "alignment_window_ms": window_ms,
         "max_abs_alignment_offset_ms": max(map(abs, offsets)),
         "mean_abs_alignment_offset_ms": round(statistics.fmean(map(abs, offsets)), 3),

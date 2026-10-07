@@ -24,7 +24,7 @@ chứa một JSON cho cả tài liệu.
 
 | Mục | Code hiện chờ |
 | --- | --- |
-| Broker | `192.168.0.109`, cổng TCP `1883` |
+| Broker | `192.168.137.1`, cổng TCP `1883` |
 | Topic | `wearable/user01/wrist/data` (đúng cả chữ hoa/thường) |
 | Cách gửi | Mỗi lần đo publish **một JSON object UTF-8**, tối đa 4096 byte; subscriber dùng QoS 0 |
 | Mục tiêu tốc độ | Khoảng 50 mẫu/giây; đây là mục tiêu, không phải số đã nghiệm thu |
@@ -139,9 +139,9 @@ pipeline cũ đọc được. Xem [camera_test.py](../camera_test.py) và
    `smartwear.camera.v2`, thêm `frame_id`, `timestamp_ms`, `relative_time_s`,
    giữ `source_epoch_ms`/`source_frame_seq`.
 2. AI tìm mẫu SmartWrist có `t_ms` **gần nhất** với `source_epoch_ms` của mỗi
-   ảnh. Ngưỡng mặc định là **±40 ms**; ngoài ngưỡng là `missing`, không giữ số
+   ảnh. Ngưỡng mặc định là **±10 ms**; ngoài ngưỡng là `missing`, không giữ số
    cũ mãi hoặc sinh số giả. NTP trên hai thiết bị cần hoạt động, nhưng ghép
-   trong ±40 ms **không chứng minh** sai số đồng hồ thực nhỏ hơn 40 ms.
+   trong ±10 ms **không chứng minh** sai số đồng hồ thực nhỏ hơn 10 ms.
 3. `real_sensors.jsonl`: một dòng `smartwear.sensors.v2` **cho mỗi ảnh đã chuẩn
    hóa**, kể cả ảnh không ghép được cảm biến. Ví dụ cấu trúc của một dòng đã
    ghép (số minh họa):
@@ -259,7 +259,7 @@ Nhóm phần cứng cần gửi **nguyên văn một tin nhắn MQTT thật** v�
 
 | Câu hỏi đối chiếu | Code AI hiện chờ |
 | --- | --- |
-| Topic, broker và cổng? | `wearable/user01/wrist/data` → `.109:1883` |
+| Topic, broker và cổng? | `wearable/user01/wrist/data` → `192.168.137.1:1883` |
 | Tên trường và mảng? | `t_ms`, `seq`, `acc[3]`, `gyro[3]`, `force[4]` |
 | `t_ms` có phải epoch mili giây sau khi NTP hợp lệ? | Có |
 | Bốn phần tử `force` nối với vị trí/chân nào? | Chưa biết; phải cung cấp ánh xạ |

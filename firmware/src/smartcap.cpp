@@ -13,6 +13,7 @@ static esp_err_t streamCamera(httpd_req_t *request) {
     httpd_resp_set_type(request, "multipart/x-mixed-replace; boundary=smartwear");
     httpd_resp_set_hdr(request, "Cache-Control", "no-store");
     int64_t previous = -1;
+    int64_t lastFreshFrameUs = esp_timer_get_time();
     while (WiFi.status() == WL_CONNECTED) {
         camera_fb_t *fb = esp_camera_fb_get();
         if (!fb) return ESP_FAIL;
@@ -21,9 +22,16 @@ static esp_err_t streamCamera(httpd_req_t *request) {
         sourceEpochMs(captured, epoch);
         if (epoch <= previous) {
             esp_camera_fb_return(fb);
+            // A stale buffer must not turn this HTTP task into a busy loop.
+            vTaskDelay(1);
+            if (esp_timer_get_time() - lastFreshFrameUs > 2000000) {
+                Serial.println("Camera timestamps stalled; closing stream for reconnect");
+                return ESP_ERR_TIMEOUT;
+            }
             continue;
         }
         previous = epoch;
+        lastFreshFrameUs = esp_timer_get_time();
         char header[224];
         int length = snprintf(header, sizeof(header),
             "--smartwear\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n"
@@ -42,10 +50,25 @@ static esp_err_t streamCamera(httpd_req_t *request) {
 
 void setup() {
     Serial.begin(115200);
+    // OV2640 PWDN is active high. Bring up the radio with the sensor off.
+    pinMode(32, OUTPUT);
+    digitalWrite(32, HIGH);
+    Serial.printf("SmartCap camera-only boot: heap=%u PSRAM=%s\n",
+                  unsigned(ESP.getFreeHeap()), psramFound() ? "ready" : "missing");
+    Serial.flush();
     if (!psramFound()) {
         Serial.println("PSRAM required for double-buffered QVGA capture");
         while (true) delay(1000);
     }
+    // Start WiFi before enabling camera DMA/VSYNC traffic during network init.
+    startNetwork(IPAddress(192,168,137,111), "smartwear-cap");
+    const uint32_t connectionStarted = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - connectionStarted < 15000) {
+        delay(50);
+    }
+    Serial.printf("Radio startup complete: WiFi=%d; powering camera via driver\n",
+                  int(WiFi.status()));
+    Serial.flush();
     camera_config_t config = {};
     config.pin_pwdn = 32; config.pin_reset = -1;
     config.pin_xclk = 0; config.pin_sccb_sda = 26; config.pin_sccb_scl = 27;
@@ -57,16 +80,22 @@ void setup() {
     config.pixel_format = PIXFORMAT_JPEG; config.frame_size = FRAMESIZE_QVGA;
     config.jpeg_quality = 15; config.fb_count = 3;
     config.fb_location = CAMERA_FB_IN_PSRAM; config.grab_mode = CAMERA_GRAB_LATEST;
-    if (esp_camera_init(&config) != ESP_OK) {
-        Serial.println("Camera initialization failed");
+    Serial.println("Initializing OV2640 QVGA camera (no head IMU)");
+    Serial.flush();
+    const esp_err_t cameraResult = esp_camera_init(&config);
+    if (cameraResult != ESP_OK) {
+        Serial.printf("Camera initialization failed: 0x%x\n", unsigned(cameraResult));
         while (true) delay(1000);
     }
-    startNetwork(IPAddress(192,168,137,111), "smartwear-cap");
+    Serial.println("Camera initialized; starting HTTP stream server");
+    Serial.flush();
     httpd_config_t serverConfig = HTTPD_DEFAULT_CONFIG();
     serverConfig.server_port = 81;
-    serverConfig.max_open_sockets = 1; // One ingestion consumer; do not open in browser.
-    serverConfig.lru_purge_enable = false;
-    serverConfig.send_wait_timeout = 5;
+    // One synchronous stream handler; allow a reconnect while the old socket closes.
+    serverConfig.max_open_sockets = 2;
+    serverConfig.lru_purge_enable = true;
+    serverConfig.send_wait_timeout = 2;
+    serverConfig.recv_wait_timeout = 2;
     httpd_handle_t server = nullptr;
     if (httpd_start(&server, &serverConfig) != ESP_OK) {
         Serial.println("HTTP server failed");
@@ -78,4 +107,15 @@ void setup() {
     Serial.println("SmartCap: http://192.168.137.111:81/stream; waiting for WiFi/NTP");
 }
 
-void loop() { delay(1000); }
+void loop() {
+    static uint32_t lastReport = 0;
+    if (millis() - lastReport >= 5000) {
+        int64_t epoch;
+        Serial.printf("SmartCap WiFi=%d IP=%s NTP=%s frames=%lu heap=%u\n",
+                      int(WiFi.status()), WiFi.localIP().toString().c_str(),
+                      sourceEpochMs(esp_timer_get_time(), epoch) ? "ready" : "waiting",
+                      (unsigned long)sequence, unsigned(ESP.getFreeHeap()));
+        lastReport = millis();
+    }
+    delay(1000);
+}

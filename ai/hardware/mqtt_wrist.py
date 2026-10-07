@@ -18,7 +18,15 @@ def validate_wrist_payload(payload):
     if (type(epoch) is not int or epoch < 1_577_836_800_000
             or type(sequence) is not int or sequence < 0):
         raise ValueError("Invalid wrist epoch or sequence")
+    imu_status = value.get("imu_status", "ok")
+    if imu_status not in ("ok", "unavailable"):
+        raise ValueError("Invalid IMU status")
+    if imu_status == "unavailable" and ("acc" not in value or "gyro" not in value
+                                       or value["acc"] is not None or value["gyro"] is not None):
+        raise ValueError("Unavailable IMU must explicitly contain null acc and gyro")
     for field, count in (("acc", 3), ("gyro", 3), ("force", 4)):
+        if field in ("acc", "gyro") and imu_status == "unavailable":
+            continue
         readings = value.get(field)
         if (not isinstance(readings, list) or len(readings) != count
                 or any(type(item) not in (int, float) or not math.isfinite(item)
@@ -26,9 +34,24 @@ def validate_wrist_payload(payload):
             raise ValueError(f"Invalid wrist {field} vector")
     if any(type(sample) is not int or not 0 <= sample <= 4095 for sample in value["force"]):
         raise ValueError("FSR ADC channels must be 0..4095 integer counts")
-    return {"t_ms": epoch, "seq": sequence,
+    result = {"t_ms": epoch, "seq": sequence,
             "acc": value["acc"], "gyro": value["gyro"],
             "force": [int(item) for item in value["force"]]}
+    if "imu_status" in value:
+        result["imu_status"] = imu_status
+    if "imu_address" in value:
+        address = value["imu_address"]
+        if ((imu_status == "unavailable" and address is not None)
+                or (imu_status == "ok" and (type(address) is not int or address not in (0x68, 0x69)))):
+            raise ValueError("Invalid IMU address/status")
+        result["imu_address"] = address
+    if "imu_age_ms" in value:
+        age = value["imu_age_ms"]
+        if ((imu_status == "unavailable" and age is not None)
+                or (imu_status == "ok" and (type(age) is not int or not 0 <= age <= 40))):
+            raise ValueError("Invalid or stale IMU age")
+        result["imu_age_ms"] = age
+    return result
 
 
 class WristReceiver:

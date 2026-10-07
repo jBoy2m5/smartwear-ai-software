@@ -11,7 +11,12 @@ STATES = {"OPEN", "CLOSED", "OTHER", "NONE"}
 
 
 def anatomical_handedness(model_label):
-    """Correct the reported MediaPipe side for this mirrored camera input."""
+    """Tasks HandLandmarker uses unmirrored-image labels; our input is flipped.
+
+    Tasks' label map is 0=Right, 1=Left, unlike legacy mp.solutions.hands.
+    Swap exactly once after cv2.flip(frame, 1); never infer a side from position
+    or from the number of hands. Raw model labels are retained in each record.
+    """
     return {"Left": "Right", "Right": "Left"}.get(model_label, "unknown")
 
 

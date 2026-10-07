@@ -47,7 +47,7 @@ Các lệnh firewall là hướng dẫn cho máy đích; chưa được chạy t
 
 ## 3. Build và nạp firmware
 
-Người dùng đã xác nhận: **SmartCap = COM5 (CH340)**, **SmartWrist = COM7 (CP210x)**. `firmware/platformio.ini` đã lưu cả `upload_port` và `monitor_port` cho từng target, baud monitor 115200. Khi bo vẫn dùng các cổng này, có thể bỏ `--upload-port`:
+Sau đổi cáp/cổng USB ngày 07/10/2026: **SmartCap = COM5 (CH340)**, **SmartWrist = COM7 (CP210x)**. `firmware/platformio.ini` đã lưu cả `upload_port` và `monitor_port` cho từng target, baud monitor 115200. Khi bo vẫn dùng các cổng này, có thể bỏ `--upload-port`:
 
 ```powershell
 .\.venv\Scripts\python.exe -m platformio run -d firmware -e smartcap -t upload
