@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, CircleStop, Play, RotateCw } from 'lucide-react';
-import { backendUrl, getCapturePreview, getCaptureStatus, startCapture, stopCapture } from '../backendApi';
+import { backendUrl, getCapturePreview, getCaptureStatus, startCapture, stopCapture, listProcedures, listReferences } from '../backendApi';
+import type { Procedure, ExpertReference, CaptureContext } from '../backendApi';
 import type { CapturePreview, CaptureStatus } from '../backendApi';
 
 const ACTIVE = new Set(['starting', 'recording', 'stopping', 'processing', 'publishing']);
@@ -17,6 +18,23 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const imageUrls = useRef<string[]>([]);
   const jobId = job?.job_id;
   const stage = job?.stage;
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [taskKey, setTaskKey] = useState('LOG_KIT:1');
+  const [role, setRole] = useState<'expert' | 'worker' | 'demo'>('expert');
+  const [participant, setParticipant] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [references, setReferences] = useState<ExpertReference[]>([]);
+  const [reference, setReference] = useState('');
+  const [trialStage, setTrialStage] = useState<'before_learning' | 'after_learning' | 'practice'>('before_learning');
+  const task = procedures.find(p => `${p.task_id}:${p.version}` === taskKey);
+
+  useEffect(() => { void listProcedures().then(setProcedures).catch(reason => setError(String(reason))); }, []);
+  useEffect(() => {
+    let active = true;
+    setReference(''); setReferences([]);
+    if (task) void listReferences(task.task_id, task.version).then(items => { if (active) setReferences(items); }).catch(reason => { if (active) setError(String(reason)); });
+    return () => { active = false; };
+  }, [task]);
 
   useEffect(() => {
     const saved = window.sessionStorage.getItem('smartwear_capture_job');
@@ -88,7 +106,16 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const begin = async (captureMode: 'hardware' | 'demo') => {
     setBusy(true); setError(null); setDisplayFrame(null);
     try {
-      const created = await startCapture(captureMode);
+      if (captureMode === 'demo' && role !== 'demo') throw new Error('Chọn chế độ thử DEMO để dùng webcam mô phỏng.');
+      if (role !== 'demo' && (!task || !participant.trim() || !consent || (role === 'worker' && !reference))) {
+        throw new Error('Chọn công đoạn, người thao tác, đồng ý ghi hình và mẫu chuyên gia đã duyệt (nếu quay học viên).');
+      }
+      const context: CaptureContext = { role, task_id: role === 'demo' ? null : task!.task_id,
+        procedure_version: role === 'demo' ? null : task!.version,
+        reference_session_id: role === 'worker' ? reference : null,
+        participant_id: participant.trim(), consent_confirmed: consent, purpose: 'training_demo',
+        trial_stage: role === 'expert' ? 'reference' : role === 'demo' ? 'technical' : trialStage };
+      const created = await startCapture(captureMode, context);
       notified.current = null;
       window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
       setJob(created);
@@ -124,6 +151,29 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   });
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
+    <div className="grid gap-3 border-b border-slate-700 p-4 md:grid-cols-2">
+      <label className="text-sm">Mục đích phiên
+        <select value={role} disabled={Boolean(working)} onChange={event => setRole(event.target.value as typeof role)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          <option value="expert">Ghi mẫu người hướng dẫn / chuyên gia</option><option value="worker">Người học — so với mẫu đã duyệt</option><option value="demo">Thử pipeline với mẫu DEMO (không phải expert thật)</option>
+        </select>
+      </label>
+      <label className="text-sm">Công đoạn / phiên bản
+        <select value={taskKey} disabled={Boolean(working)} onChange={event => setTaskKey(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          {procedures.map(p => <option key={`${p.task_id}:${p.version}`} value={`${p.task_id}:${p.version}`}>{p.department} · {p.title} · v{p.version}</option>)}
+        </select>
+      </label>
+      {role === 'worker' && <label className="text-sm">Mẫu đã duyệt cùng công đoạn
+        <select value={reference} disabled={Boolean(working)} onChange={event => setReference(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          <option value="">Chọn mẫu chuyên gia</option>{references.map(item => <option key={item.session_id} value={item.session_id}>{item.context.participant_id} · {item.session_id} · duyệt bởi {item.reviewer}</option>)}
+        </select>{references.length === 0 && <span className="text-xs text-amber-200">Chưa có mẫu được duyệt; ghi và duyệt mẫu trước.</span>}
+      </label>}
+      <label className="text-sm">Mã người thao tác (dùng bí danh)
+        <input value={participant} disabled={Boolean(working)} onChange={event => setParticipant(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2" />
+      </label>
+      {role === 'worker' && <label className="text-sm">Lượt thực nghiệm<select value={trialStage} disabled={Boolean(working)} onChange={event => setTrialStage(event.target.value as typeof trialStage)} className="mt-1 w-full rounded bg-slate-900 p-2"><option value="before_learning">Trước khi học SOP</option><option value="after_learning">Sau khi học SOP</option><option value="practice">Luyện tập</option></select></label>}
+      <label className="text-sm"><input type="checkbox" checked={consent} disabled={Boolean(working)} onChange={event => setConsent(event.target.checked)} /> Người thao tác đồng ý ghi hình cho bài thực hành này.</label>
+      {task && <p className="text-xs text-gray-400">Tiêu chí bài mẫu: {task.success_criteria} · SOP chỉ là nháp trước khi người hướng dẫn duyệt.</p>}
+    </div>
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
         <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>

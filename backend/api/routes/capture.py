@@ -3,7 +3,8 @@
 import json
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request, status
+from backend.schemas.knowledge import CaptureContext
 from fastapi.responses import JSONResponse, Response
 
 from backend.api.auth import require_api_key
@@ -14,10 +15,16 @@ JobId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware") -> dict:
+def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware",
+                  context: CaptureContext | None = Body(default=None)) -> dict:
     try:
+        if context is not None:
+            if capture_mode == 'demo' and context.role != 'demo':
+                raise ValueError('Expert/worker reference workflows require measured hardware')
+            resolved = request.app.state.knowledge_service.capture_context(context)
+            return request.app.state.capture_manager.start(capture_mode, context=resolved)
         return request.app.state.capture_manager.start(capture_mode)
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 

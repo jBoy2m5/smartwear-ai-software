@@ -100,6 +100,7 @@ class WristReceiver:
                 self.counters["malformed"] += 1
             return
         sample["received_epoch_ms"] = time.time_ns() // 1_000_000
+        sample["received_monotonic_ns"] = time.monotonic_ns()
         sample["topic"] = message.topic
         try:
             self.pending.put_nowait(sample)

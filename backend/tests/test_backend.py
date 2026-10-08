@@ -10,6 +10,7 @@ import unittest
 import zipfile
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -19,6 +20,7 @@ from sqlalchemy import func, select
 from backend.core.config import BACKEND_ROOT, Settings
 from backend.main import create_app
 from backend.models import ActionPhase, RobotTrajectoryPoint
+from backend.models.knowledge import KnowledgeRevision
 from backend.schemas import SessionInput
 from backend.services.robot_export import RobotDatasetExporter
 
@@ -111,12 +113,55 @@ class BackendIntegrationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/ready").json(), {"status": "ready"})
 
+    def test_delete_session_removes_backend_data_and_artifacts(self) -> None:
+        session_id = "DELETE_TEST_001"
+        self.ingest(session_id)
+        image_dir = self.settings.keyframe_dir / session_id
+        analysis_dir = self.settings.static_dir.parent / "data" / "analysis" / session_id
+        image_dir.mkdir(parents=True)
+        analysis_dir.mkdir(parents=True)
+        (image_dir / "sample.jpg").write_bytes(b"image")
+        (analysis_dir / "camera.avi").write_bytes(b"video")
+        with self.app.state.database.transaction() as db:
+            db.add(KnowledgeRevision(kind="session", key=session_id, revision=1,
+                                     document={"context": {"reference_session_id": None}}))
+
+        response = self.client.delete(f"/api/v1/sessions/{session_id}")
+        self.assertEqual(response.status_code, 204, response.text)
+        self.assertEqual(self.client.get(f"/api/v1/sessions/{session_id}").status_code, 404)
+        self.assertFalse(image_dir.exists())
+        self.assertFalse(analysis_dir.exists())
+        self.assertFalse((self.settings.pdf_dir / f"sop_{session_id}.pdf").exists())
+        with self.app.state.database.transaction() as db:
+            self.assertIsNone(db.get(KnowledgeRevision, ("session", session_id, 1)))
+        self.assertEqual(self.client.delete(f"/api/v1/sessions/{session_id}").status_code, 404)
+
+    def test_delete_session_rejects_reference_in_use(self) -> None:
+        self.ingest("REFERENCE_TEST")
+        self.ingest("WORKER_TEST")
+        with self.app.state.database.transaction() as db:
+            db.add(KnowledgeRevision(kind="session", key="WORKER_TEST", revision=1,
+                                     document={"context": {"reference_session_id": "REFERENCE_TEST"}}))
+        response = self.client.delete("/api/v1/sessions/REFERENCE_TEST")
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(self.client.get("/api/v1/sessions/REFERENCE_TEST").status_code, 200)
+
+    def test_delete_session_rejects_active_capture(self) -> None:
+        self.ingest("ACTIVE_CAPTURE_TEST")
+        with patch.object(self.app.state.capture_manager, "has_active_capture", return_value=True):
+            response = self.client.delete("/api/v1/sessions/ACTIVE_CAPTURE_TEST")
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(self.client.get("/api/v1/sessions/ACTIVE_CAPTURE_TEST").status_code, 200)
+
     def test_measured_session_does_not_publish_robot_or_newton_demo(self) -> None:
         payload = sample_payload("MEASURED_test_wrist")
         payload["robot_trajectory_points"] = []
         for phase in payload["action_phases"]:
             phase["peak_force_N"] = None
-        response = self.client.post("/api/v1/sessions/ingest", json=payload)
+        with self.client.websocket_connect("/ws/live-stream") as websocket:
+            response = self.client.post("/api/v1/sessions/ingest", json=payload)
+            event = websocket.receive_json()
+        self.assertIsNone(event["force"])
         self.assertEqual(response.status_code, 201, response.text)
         self.assertIsNone(response.json()["robot_json_url"])
         detail = self.client.get("/api/v1/sessions/MEASURED_test_wrist").json()

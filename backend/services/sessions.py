@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import tempfile
+import shutil
 from pathlib import Path, PurePath
 from typing import Literal, Protocol
 
 from PIL import Image, UnidentifiedImageError
+from sqlalchemy import select
 
 from backend.core.config import Settings
 from backend.core.exceptions import (
@@ -18,6 +20,7 @@ from backend.core.exceptions import (
 )
 from backend.db.session import Database
 from backend.models import AnalysisSession
+from backend.models.knowledge import KnowledgeRevision
 from backend.repositories import SessionRepository
 from backend.schemas import (
     DashboardCharts,
@@ -31,7 +34,7 @@ from backend.schemas import (
     SessionInput,
     SessionSummary,
 )
-from backend.services.analysis_detail import image_urls, load_analysis, recording_path, source_archive_path
+from backend.services.analysis_detail import analysis_directory, image_urls, load_analysis, recording_path, source_archive_path
 
 
 class SopGeneratorPort(Protocol):
@@ -126,6 +129,49 @@ class SessionService:
             if entity is None:
                 raise ResourceNotFoundError(f"Session '{session_id}' was not found")
             return self._to_detail(entity)
+
+    def delete_session(self, session_id: str) -> None:
+        """Delete one published session and its backend-owned artifacts.
+
+        The original AI capture directory is deliberately retained for recovery.
+        """
+        directories = (
+            (self.settings.keyframe_dir, self.settings.keyframe_dir / session_id),
+            (analysis_directory(self.settings.keyframe_dir, session_id).parent,
+             analysis_directory(self.settings.keyframe_dir, session_id)),
+        )
+        files = (
+            *((self.settings.pdf_dir, self.settings.pdf_dir / f"sop_{session_id}.{ext}")
+              for ext in ("pdf", "html")),
+            (self.settings.dataset_dir, self.settings.dataset_dir / f"robot_dataset_{session_id}.json"),
+            *((self.settings.dataset_dir, self.settings.dataset_dir / f"rosbag_{session_id}.{ext}")
+              for ext in ("db3", "zip")),
+        )
+        for root, target in (*directories, *files):
+            if target.parent.resolve() != root.resolve() or target.is_symlink():
+                raise ValueError("Unsafe session artifact path")
+
+        with self.database.transaction() as db_session:
+            repository = SessionRepository(db_session)
+            if repository.get(session_id) is None:
+                raise ResourceNotFoundError(f"Session '{session_id}' was not found")
+            revisions = db_session.scalars(
+                select(KnowledgeRevision).where(KnowledgeRevision.kind == "session")
+            ).all()
+            if any(row.key != session_id and
+                   row.document.get("context", {}).get("reference_session_id") == session_id
+                   for row in revisions):
+                raise ValueError("Session is used as a reference by another saved session")
+            for row in revisions:
+                if row.key == session_id:
+                    db_session.delete(row)
+            repository.delete(session_id)
+
+        for root, target in directories:
+            if target.is_dir():
+                shutil.rmtree(target)
+        for root, target in files:
+            target.unlink(missing_ok=True)
 
     def dashboard_summary(self) -> DashboardSummary:
         """Return aggregate operational metrics."""

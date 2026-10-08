@@ -51,6 +51,7 @@ class CaptureManagerTests(unittest.TestCase):
             process = Mock()
             process.poll.return_value = None
             with patch.dict("os.environ", {"SMARTWEAR_CAPTURE_MODE": "demo"}), \
+                    patch.object(manager, "_hardware_preflight"), \
                     patch.object(manager, "_ai_python", return_value="python"), \
                     patch("backend.services.capture.subprocess.Popen", return_value=process) as launch:
                 started = manager.start()
@@ -92,6 +93,7 @@ class CaptureManagerTests(unittest.TestCase):
             )
             manager = CaptureManager(Settings(environment="test", static_dir=root / "static"))
             with patch.object(manager, "_ai_python", return_value=sys.executable), \
+                    patch.object(manager, "_hardware_preflight"), \
                     patch("backend.services.capture.CAPTURE_SCRIPT", fake):
                 job_id = manager.start()["job_id"]
             try:
@@ -108,3 +110,21 @@ class CaptureManagerTests(unittest.TestCase):
                     manager._process.terminate()
                 if manager._process:
                     manager._process.wait(timeout=5)
+
+    def test_preflight_names_missing_hotspot_before_creating_job(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manager=CaptureManager(Settings(environment='test',static_dir=Path(temporary)/'static'))
+            with patch('backend.services.capture.socket.socket') as probe:
+                probe.return_value.__enter__.return_value.bind.side_effect=OSError('address unavailable')
+                with self.assertRaisesRegex(RuntimeError,'hotspot 192.168.137.1'):
+                    manager.start()
+            self.assertEqual(list(manager.root.iterdir()),[])
+
+    def test_preflight_names_camera_after_hotspot_is_present(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manager=CaptureManager(Settings(environment='test',static_dir=Path(temporary)/'static'))
+            with patch('backend.services.capture.socket.socket'), \
+                    patch('backend.services.capture.socket.create_connection',side_effect=TimeoutError('timed out')):
+                with self.assertRaisesRegex(RuntimeError,'Không kết nối được SmartCap'):
+                    manager.start()
+            self.assertEqual(list(manager.root.iterdir()),[])

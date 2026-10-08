@@ -441,6 +441,7 @@ def source_archive_bytes(session_dir):
         "backend_payload_measured.meta.json", "hardware_capture.json",
         "camera_packets.jsonl", "wrist_raw.jsonl",
         "real_sensors.jsonl", "real_sensors.meta.json",
+        "capture_context.json", "capture_manifest.json",
     )
     paths = [session / name for name in filenames if (session / name).is_file()]
     # Raw JPEG bytes always remain in the local session. Include them in the

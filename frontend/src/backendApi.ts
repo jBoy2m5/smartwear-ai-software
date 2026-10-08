@@ -12,9 +12,10 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return requestJson<T>(path, 'GET', signal);
 }
 
-async function requestJson<T>(path: string, method: 'GET' | 'POST', signal?: AbortSignal): Promise<T> {
+async function requestJson<T>(path: string, method: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, body?: unknown): Promise<T> {
   const response = await fetch(backendUrl(path)!, {
-    method, signal, headers: { Accept: 'application/json' },
+    method, signal, headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!response.ok) {
     let detail = '';
@@ -49,6 +50,16 @@ export function getSession(sessionId: string, signal?: AbortSignal): Promise<Ses
   return getJson<SessionDetail>(`/api/v1/sessions/${encodeURIComponent(sessionId)}`, signal);
 }
 
+export async function deleteSession(sessionId: string): Promise<void> {
+  const response = await fetch(backendUrl(`/api/v1/sessions/${encodeURIComponent(sessionId)}`)!, {
+    method: 'DELETE', headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { detail?: string };
+    throw new Error(body.detail ?? `Backend HTTP ${response.status}`);
+  }
+}
+
 export interface CaptureStatus {
   job_id: string;
   stage: 'starting' | 'recording' | 'stopping' | 'processing' | 'publishing' | 'completed' | 'failed';
@@ -72,8 +83,56 @@ export interface CapturePreview {
     imu_status?: 'ok' | 'unavailable'; imu_address?: number | null } | null;
 }
 
-export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware'): Promise<CaptureStatus> {
-  return requestJson<CaptureStatus>(`/api/v1/capture/?capture_mode=${captureMode}`, 'POST');
+export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware', context?: CaptureContext): Promise<CaptureStatus> {
+  return requestJson<CaptureStatus>(`/api/v1/capture/?capture_mode=${captureMode}`, 'POST', undefined, context);
+}
+
+export interface TaskStep {
+  step_id: string; title: string; instruction: string; why: string; tips: string;
+  common_errors: string; safety: string; acceptable_variation: string;
+  start_s: number | null; end_s: number | null; keyframe: string | null;
+}
+export interface Procedure {
+  task_id: string; version: string; title: string; department: string;
+  tools: string; success_criteria: string; steps: TaskStep[];
+}
+export interface CaptureContext {
+  role: 'expert' | 'worker' | 'demo'; task_id: string | null; procedure_version: string | null;
+  reference_session_id: string | null; participant_id: string; consent_confirmed: boolean; purpose: string;
+  trial_stage: 'reference' | 'before_learning' | 'after_learning' | 'practice' | 'technical';
+}
+export interface SessionKnowledge {
+  revision: number; context: CaptureContext; source_session_name: string; reference_revision: number | null;
+  steps: TaskStep[]; review_status: 'draft' | 'approved' | 'retired'; reviewer: string;
+  review_rationale: string; clarity_confirmed: boolean; outcome: 'unknown' | 'passed' | 'failed';
+  prompt_count: number | null; confirmed_errors: string; retention_policy: string;
+  license_status: 'unknown' | 'project_internal' | 'approved_for_training'; updated_at?: string;
+}
+export interface ExpertReference extends SessionKnowledge { session_id: string }
+export function listProcedures() { return getJson<Procedure[]>('/api/v1/knowledge/procedures'); }
+export function listReferences(task: string, version: string) {
+  return getJson<ExpertReference[]>(`/api/v1/knowledge/references?task_id=${encodeURIComponent(task)}&version=${encodeURIComponent(version)}`);
+}
+export function getKnowledge(id: string) { return getJson<SessionKnowledge>(`/api/v1/knowledge/sessions/${encodeURIComponent(id)}`); }
+export function saveKnowledge(id: string, value: SessionKnowledge) {
+  const { updated_at: _updated, ...body } = value;
+  return requestJson<SessionKnowledge>(`/api/v1/knowledge/sessions/${encodeURIComponent(id)}`, 'PUT', undefined, body);
+}
+export interface QualityReport {
+  warnings: string[]; clock_accuracy_status: string; robot_ready: boolean;
+  camera: { frame_width: number; frame_height: number; fps_measured: number | null };
+  alignment: { coverage: number }; wrist: { device_rate_hz: number | null; imu_available_samples: number };
+}
+export function getQuality(id: string) { return getJson<QualityReport>(`/api/v1/knowledge/sessions/${encodeURIComponent(id)}/quality`); }
+export function generateProducts(id: string) {
+  return requestJson<ProductManifest>(`/api/v1/knowledge/sessions/${encodeURIComponent(id)}/products`, 'POST');
+}
+export interface ProductManifest {
+  episode_id: string; generation_elapsed_ms: number;
+  video_timebase: { source_start_s: number; reference_source_start_s: number | null };
+  quality_state: { learner_ready: boolean; learner_reasons: string[] };
+  artifacts: Array<{ path: string; sha256: string; size_bytes: number }>;
+  learner_steps: TaskStep[]; worker_steps: TaskStep[];
 }
 
 export function getCaptureStatus(jobId: string, signal?: AbortSignal): Promise<CaptureStatus> {

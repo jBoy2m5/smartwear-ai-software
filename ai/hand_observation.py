@@ -143,7 +143,9 @@ def select_hands(hands):
     for side, group in grouped.items():
         if not group:
             result[side] = ("missing", None)
-        elif not valid_landmarks(group[0].get("landmarks")):
+        elif (not valid_landmarks(group[0].get("landmarks")) or
+              (isinstance(group[0].get("handedness_score"), (int, float))
+               and group[0]["handedness_score"] < 0.5)):
             result[side] = ("ambiguous", None)
         else:
             result[side] = ("detected", group[0])

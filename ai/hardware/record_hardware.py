@@ -5,6 +5,8 @@ import json
 import os
 import sys
 import tempfile
+import hashlib
+import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
@@ -20,13 +22,14 @@ from hardware.config import HardwareConfig  # noqa: E402
 from hardware.live_alignment import multimodal_frame  # noqa: E402
 from video_recording import RecordingVideo  # noqa: E402
 
+CAPTURE_SCRIPT_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 def record_hardware(camera_url="http://192.168.137.111:81/stream",
                     mqtt_host="192.168.137.1", mqtt_port=1883,
                     topic="wearable/user01/wrist/data", force_channel=None,
                     device_id="smartwrist-user01", alignment_window_ms=10,
                     duration_s=180, stop_requested=None, on_frame=None,
-                    show_window=True, on_multimodal=None):
+                    show_window=True, on_multimodal=None, capture_context=None):
     import cv2
     import mediapipe as mp
     import numpy as np
@@ -45,6 +48,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
               "mqtt_port": mqtt_port, "mqtt_topic": topic,
               "wrist_side": "right", "force_channel": force_channel,
               "device_id": device_id, "alignment_window_ms": alignment_window_ms}
+    capture_started_monotonic = time.monotonic_ns()
     marker.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     receiver = CameraReceiver(session, camera_url)
     wrist = WristReceiver(session / "wrist_raw.jsonl", mqtt_host, topic, mqtt_port)
@@ -153,6 +157,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
             except Exception as exc:
                 if cleanup_error is None:
                     cleanup_error = exc
+        capture_stopped_monotonic = time.monotonic_ns()
         if show_window:
             cv2.destroyAllWindows()
         if cleanup_error is not None and sys.exc_info()[0] is None:
@@ -180,6 +185,24 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
     temporary.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, marker)
     print(f"Saved real-input camera and wrist streams: {session}", flush=True)
+    commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=AI_DIR.parent,
+                            capture_output=True, text=True, check=False).stdout.strip() or None
+    artifacts = []
+    for path in sorted(session.iterdir()):
+        if path.is_file():
+            artifacts.append({'path': path.name, 'size_bytes': path.stat().st_size,
+                              'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+    manifest = {'schema_version': 'smartwear.capture/1.0', 'source_kind': 'measured',
+                'source_session_name': session.name, 'context': capture_context or {},
+                'pipeline_version': commit, 'capture_script_sha256': CAPTURE_SCRIPT_SHA256,
+                'model_sha256': hashlib.sha256(MODEL_PATH.read_bytes()).hexdigest(),
+                'camera': {'mirror_for_inference': True, 'rotation_degrees': 0,
+                           'firmware_version': 'unknown; not reported by device'},
+                'events': [{'name': 'capture_started', 'host_monotonic_ns': capture_started_monotonic},
+                           {'name': 'capture_stopped', 'host_monotonic_ns': capture_stopped_monotonic}],
+                'clock_domain': 'device_NTP_epoch_with_recorder_receive_monotonic',
+                'clock_accuracy': 'unknown', 'artifacts': artifacts}
+    (session / 'capture_manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf-8')
     return camera_file
 
 

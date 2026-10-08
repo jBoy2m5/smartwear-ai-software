@@ -2,7 +2,22 @@
 
 Cập nhật: 07/10/2026. Mở file này trước khi tiếp tục công việc.
 
+**Sự cố tối 07/10:** job `2298f986b42e48bb9eaa5072ed9d6ca5` không nhận JPEG vì hotspot `.1`/MQTT/NTP đang tắt, camera `.111` timeout. Raw giữ nguyên, các stream 0 byte. Đã sửa backend preflight và nạp lại; xem `docs/layer1-layer3/CAMERA-INCIDENT-20261007-EVENING.md`. Chờ bật hotspot trước khi kiểm thiết bị hoặc quay lại.
+
+**Kết quả sau khi tiếp tục:** đọc `docs/DATA_PRODUCTS_REVIEW_20261007.md`. Đã sửa exporter và kiểm gói đo thật với mã cuối; backend đang chạy tại http://127.0.0.1:8000/ ở thời điểm bàn giao. Báo cáo mới `docs/layer1-layer3/data-products-validation-resumed.json`; chưa quay/duyệt A/B, chưa visual-QA vì công cụ không có browser. Các đoạn dưới là lịch sử, không thay thế cập nhật này.
+
+**Bàn giao mới nhất sau khi người dùng yêu cầu lưu tiến trình:** đọc `docs/NEXT_SESSION_DATA_PRODUCTS.md` trước. File đó ghi chi tiết code chưa commit, tests cuối, runtime cần reload và các bước review/thực nghiệm còn chờ. Công việc workflow chuyên gia/data products đã dừng để bàn giao; chưa tuyên bố hoàn tất toàn bộ hai roadmap.
+
 ## Mục tiêu còn đang làm
+
+### Workflow chuyên gia và hai gói dữ liệu (triển khai theo hai tài liệu docs)
+
+- Đã bổ sung dashboard role/task/version/participant/consent/trial stage; worker chọn reference expert đã duyệt cùng task/version, pin review revision, không fallback DEMO. Registry/notes/review append-only trong bảng DB `knowledge_revisions`.
+- Có form SOP/note/start–end/keyframe/outcome/prompt count, quality report, HTML/MP4/micro-clip/overlay 2D và exporter observation HDF5/MCAP/checksum/validator. Robot action không có nên luôn chặn robot export; legacy không có metadata thì chỉ xuất bản kỹ thuật nháp.
+- Dependencies mới đã cài/pin: h5py 3.16.0, imageio-ffmpeg 0.6.0, mcap 1.5.0. Backend/production venv phải cài lại requirements trước khi chạy.
+- Tests: 58 passed + 8 subtests; frontend build đạt. Real archive export/read-back trên phiên `MEASURED_hardware_20261007_150625_216050_uk5sxhc9` đạt 1555 frames, MCAP 4610 FSR + 4610 trạng thái IMU, 12 artifact hash/size; learner/robot-ready false. Chưa gán phiên đó thành expert A/B.
+- Backend đã reload sau kiểm tra không có capture hoạt động. Cần đảm bảo nạp lần cuối sau sửa exporter/review gate. Không tự quay reference, giả reviewer/consent hay đánh dấu nghiệm thu thật khi người dùng chưa cung cấp người/vật dụng.
+- Hướng dẫn và phạm vi còn chờ: `docs/IMPLEMENTATION_PROGRESS.md`; phiếu trống `docs/demo-kit/EVIDENCE.md`. Đã hỏi người dùng về vật dụng/người hướng dẫn/người học, chưa nhận xác nhận. P2 robot/control/calibration và P3 thực nghiệm/baseline cần nguồn dữ liệu/hardware/bằng chứng riêng.
 
 ### Trạng thái mới nhất sau đổi cáp/cổng USB
 

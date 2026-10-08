@@ -23,6 +23,7 @@ from backend.core.logging import configure_logging
 from backend.db import build_database
 from backend.services import RobotDatasetExporter, SessionService, SopGenerator
 from backend.services.capture import CaptureManager
+from backend.services.knowledge import KnowledgeService
 from backend.websocket import router as websocket_router
 from backend.websocket.manager import ConnectionManager
 
@@ -54,6 +55,9 @@ def create_app(settings: Settings | None = None, *, serve_frontend: bool = True)
             robot_exporter=RobotDatasetExporter(runtime_settings.dataset_dir),
         )
         application.state.capture_manager = CaptureManager(runtime_settings)
+        application.state.knowledge_service = KnowledgeService(database, runtime_settings,
+                                                               application.state.session_service)
+        application.state.knowledge_service.seed()
         yield
         database.dispose()
 
@@ -73,7 +77,7 @@ def create_app(settings: Settings | None = None, *, serve_frontend: bool = True)
         CORSMiddleware,
         allow_origins=list(runtime_settings.cors_origins),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "X-API-Key"],
     )
     application.include_router(api_router, prefix=runtime_settings.api_prefix)

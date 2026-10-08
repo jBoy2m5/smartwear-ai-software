@@ -75,6 +75,7 @@ the `api_key` query parameter.
 | `GET` | `/api/v1/sessions/` | List sessions with offset pagination |
 | `GET` | `/api/v1/sessions/dashboard/summary` | Aggregate operational metrics |
 | `GET` | `/api/v1/sessions/{session_id}` | Return a complete session |
+| `DELETE` | `/api/v1/sessions/{session_id}` | Remove a saved session and backend-owned artifacts |
 | `PUT` | `/api/v1/sessions/{session_id}/analysis-result` | Attach the complete AI comparison JSON to an existing DEMO session |
 | `GET` | `/api/v1/sessions/{session_id}/analysis-result` | Return all DTW/Muda/sensor details and image URLs |
 | `PUT` | `/api/v1/sessions/{session_id}/analysis-images/expert/{filename}` | Upload an expert image referenced by the comparison |

@@ -134,14 +134,21 @@ class DeploymentTests(unittest.TestCase):
     def test_actual_ai_receives_aligned_synthetic_frames(self):
         import cv2
         import numpy as np
+        import time
+        from types import SimpleNamespace
         from hardware.record_hardware import record_hardware
         success, jpeg = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))
         self.assertTrue(success)
         handoffs = []
+        finalization_times = []
+        def git_version(*args, **kwargs):
+            finalization_times.append(time.monotonic_ns())
+            return SimpleNamespace(stdout='fixture-commit')
         with tempfile.TemporaryDirectory() as temporary, \
                 patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
                 patch("hardware.record_hardware.CameraReceiver") as camera, \
-                patch("hardware.record_hardware.WristReceiver") as wrist:
+                patch("hardware.record_hardware.WristReceiver") as wrist, \
+                patch("hardware.record_hardware.subprocess.run", side_effect=git_version):
             camera.return_value.snapshot.return_value = {"received_jpeg": 3}
             camera.return_value.get.side_effect = [
                 (CameraFrame(jpeg.tobytes(), BASE + index * 40, index), BASE + index * 40 + 2)
@@ -157,6 +164,10 @@ class DeploymentTests(unittest.TestCase):
             self.assertTrue(all(row["live_alignment"]["delta_ms"] == 5 for row in rows))
             self.assertEqual(handoffs[0]["frame"].shape, (240, 320, 3))
             self.assertTrue(output.with_suffix(".avi").is_file())
+            manifest=json.loads((output.parent/'capture_manifest.json').read_text(encoding='utf-8'))
+            events={event['name']:event['host_monotonic_ns'] for event in manifest['events']}
+            self.assertLess(events['capture_started'],events['capture_stopped'])
+            self.assertLessEqual(events['capture_stopped'],finalization_times[0])
 
 
 if __name__ == "__main__":

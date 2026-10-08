@@ -26,12 +26,15 @@ class CameraReceiver:
         self.last_epoch = None
         self.last_stream_error = None
 
-    def _record(self, stream, index, frame, received_epoch_ms):
+    def _record(self, stream, index, frame, received_epoch_ms, received_monotonic_ns=None):
+        if received_monotonic_ns is None:
+            received_monotonic_ns = time.monotonic_ns()
         offset = stream.tell()
         stream.write(frame.jpeg)
         stream.flush()
         index.write(json.dumps({"seq": frame.sequence, "epoch_ms": frame.epoch_ms,
                                 "received_epoch_ms": received_epoch_ms,
+                                "received_monotonic_ns": received_monotonic_ns,
                                 "offset": offset, "length": len(frame.jpeg),
                                 "sha256": hashlib.sha256(frame.jpeg).hexdigest()}) + "\n")
         index.flush()
@@ -54,7 +57,7 @@ class CameraReceiver:
                                          or frame.epoch_ms <= self.last_epoch)):
                                     raise RuntimeError("Camera sequence or clock reset; start a new session")
                                 self.last_sequence, self.last_epoch = frame.sequence, frame.epoch_ms
-                                self._record(raw, index, frame, received)
+                                self._record(raw, index, frame, received, time.monotonic_ns())
                                 item = (frame, received)
                                 try:
                                     self.frames.put_nowait(item)
