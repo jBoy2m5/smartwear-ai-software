@@ -119,8 +119,8 @@ def valid_landmarks(points):
 def select_hands(hands):
     """Resolve anatomical sides by corrected camera handedness, never list order.
 
-    This is for one operator. Duplicate/unknown handedness cannot be safely
-    resolved to left/right: report ambiguity rather than guessing identities.
+    This is for one operator. Duplicate labels make that side ambiguous;
+    unknown handedness makes both sides ambiguous rather than guessing.
     """
     if not isinstance(hands, list):
         raise ValueError("hands must be a list")
@@ -137,12 +137,14 @@ def select_hands(hands):
         else:
             grouped[side].append(hand)
             indices.add(index)
-    if ambiguous or any(len(group) > 1 for group in grouped.values()):
+    if ambiguous:
         return {side: ("ambiguous", None) for side in SIDES}
     result = {}
     for side, group in grouped.items():
         if not group:
             result[side] = ("missing", None)
+        elif len(group) > 1:
+            result[side] = ("ambiguous", None)
         elif not valid_landmarks(group[0].get("landmarks")):
             result[side] = ("ambiguous", None)
         else:

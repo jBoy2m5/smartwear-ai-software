@@ -1,4 +1,4 @@
-# SmartWear AI — camera và xử lý hai tay
+# SmartWear AI — camera và xử lý tay phải
 
 ## Chạy một lần
 
@@ -7,9 +7,9 @@ cd C:\Task\smartwear-ai
 python -B .\ai\camera_test.py
 ```
 
-Camera hiện hai dòng riêng: LEFT (tay trái) và RIGHT (tay phải).
-Một tay có thể GRAB trong khi tay kia OPEN hoặc REACH. Nhấn Q để dừng.
-Chương trình tự chạy: chuẩn hóa → cảm biến giả → multimodal → chia đoạn từng tay
+Camera chỉ hiện nhãn và điểm của tay phải thật. Chỉ đưa tay trái vào hình sẽ
+hiện `RIGHT: NO_HAND`; nhấn Q để dừng. Chương trình tự chạy: chuẩn hóa → cảm
+biến giả → multimodal → chia đoạn tay phải
 → trích ảnh tiêu biểu → chọn mẫu demo gần nhất → so sánh.
 
 Ngay khi camera mở, chương trình tạo một thư mục phiên và ghi cả ba file gốc
@@ -38,15 +38,15 @@ C:\Task\smartwear-ai\ai\generated_data\sessions\camera_data_<ngày giờ>_<mã r
 ## Thử so sánh bằng các video mẫu có sẵn
 
 Chỉ cần chạy `python -B .\ai\camera_test.py`, quay thao tác của bạn và nhấn Q.
-Chương trình tự xử lý phiên của bạn như một phiên worker, chọn đoạn mẫu demo gần
-nhất trong `ai/generated_data/reference_samples`, rồi tạo `analysis_result.json`
+Chương trình tự xử lý phiên của bạn như một phiên worker, chọn đoạn mẫu demo
+chỉ có hành động tay phải trong `ai/generated_data/reference_samples`, rồi tạo `analysis_result.json`
 trong thư mục phiên của bạn. Không cần gõ vai trò hay chép đường dẫn mẫu.
 
 Các đoạn mẫu được **cắt từ video camera đã ghi trước đó**. Chúng là bài tập để
 thử chức năng, chưa được chuyên gia nhà máy xác nhận:
 
-- `01_two_hands_reach_grab`: hai tay mở/đưa tới rồi nắm; cuối đoạn tay phải mở.
-- `02_left_hand_grab_hold`: hai tay nắm; tay phải rời khung, tay trái tiếp tục giữ.
+- `01_two_hands_reach_grab`: mẫu hai tay cũ, giữ để đọc phiên cũ; phiên quay tay phải mới không tự chọn.
+- `02_left_hand_grab_hold`: mẫu hai tay cũ, giữ để đọc phiên cũ; phiên quay tay phải mới không tự chọn.
 - `04_right_grab_hold_release_open`: tay phải nắm, giữ gần như đứng yên, thả và
   mở. Video dài khoảng 4,8 giây, có bốn bước ổn định và một nhãn dao động 47 ms.
   Xem `PRACTICE.md` trong thư mục mẫu để thử làm thêm, lặp, bỏ sót và kéo dài.
@@ -57,7 +57,7 @@ thử chức năng, chưa được chuyên gia nhà máy xác nhận:
 python -B .\ai\camera_test.py --practice-sample 04_right_grab_hold_release_open
 ```
 
-Không có tùy chọn này thì chương trình tiếp tục tự chọn mẫu gần nhất.
+Không có tùy chọn này thì chương trình tiếp tục tự chọn mẫu tay phải gần nhất.
 Các mẫu 01, 02 và 04 đã được dựng lại với nhãn tay thật. Bản sao cũ mang nhãn đảo
 đã được xóa và không được chọn để so sánh. Các file kết quả của phiên cũ không
 bị ghi đè; muốn có nhãn tay đúng trong một phiên mới, hãy quay lại bằng phiên
@@ -65,10 +65,13 @@ bản camera đã sửa.
 
 Mỗi mẫu có `camera.avi` để xem, `reference_sample.json` ghi mô tả và nguồn gốc,
 cùng các file xử lý như một phiên thường. `session_role.json` ghi đây là mẫu demo.
-Phần chọn mẫu dùng DTW để tìm đoạn gần nhất trong **ba mẫu có sẵn**, không tự tạo
-một thao tác chuẩn mới.
+Hiện chỉ mẫu 04 có hành động tay phải mà không có hành động tay trái, nên phiên
+mới tự chọn mẫu 04. Khi thêm mẫu tay phải khác, chương trình sẽ so các mẫu hợp lệ
+bằng DTW. Nó không tự tạo một thao tác chuẩn mới.
 
-File kết quả so sánh hai tay riêng biệt bằng DTW trên các đoạn hành động nhìn thấy từ camera;
+File kết quả giữ cấu trúc so sánh hai tay để đọc phiên cũ; phiên mới chỉ có
+đoạn nhìn thấy của tay phải và tay trái là `insufficient_visible_actions`.
+DTW so các đoạn hành động nhìn thấy từ camera;
 `alignment` nêu hai đoạn được ghép, chênh lệch thời gian và đường dẫn ảnh tiêu biểu
 nếu video có ảnh. Mỗi mục `review_candidates` ghi tay, `start_ms`/`end_ms`
 tính từ đầu video worker, nhãn của hai phiên và `worker_image_path` (kèm
@@ -193,7 +196,9 @@ ngay lúc đọc kết quả mô hình. Trường `model_handedness` giữ nhãn
 `handedness` là tay thật; `hand_actions.left/right` và toàn bộ dữ liệu cảm biến,
 đoạn, ảnh, so sánh đều dựa vào tay thật. Không dùng vị trí trong danh sách hoặc
 bên trái/bên phải màn hình. Thứ tự phát hiện đảo vẫn giữ lịch sử theo tay.
-Chương trình dành cho **hai tay của một người**, không nhận dạng danh tính nhiều người.
+Phiên quay mới chỉ lưu tọa độ và hành động tay phải. Khóa `left: NO_HAND` trong
+schema v2 chỉ để các bước xử lý cũ đọc được file; đó không phải dữ liệu tay trái.
+Các phiên hai tay đã quay trước đây vẫn đọc được.
 
 Mỗi tay có tracking_status:
 - detected: có đúng một tay hợp lệ mang nhãn bên này.
@@ -201,8 +206,8 @@ Mỗi tay có tracking_status:
 - ambiguous: không phân biệt chắc tay (nhãn trùng, unknown, điểm lỗi...);
   label = OTHER, hand_state = OTHER; màn hình hiện UNCERTAIN.
 
-Nếu có nhãn unknown hoặc hai tay cùng được gán Left/Right, cả hai nhánh chuyển
-ambiguous để không chọn bừa. Điểm gốc vẫn được lưu. Tay mất/không xác định sẽ
+Nếu nhiều bàn tay cùng được gán tay phải, nhánh phải chuyển `ambiguous` để không
+chọn bừa; nhánh trái vẫn `NO_HAND`. Tay mất/không xác định sẽ
 đặt lại lịch sử; tay còn lại không bị ảnh hưởng khi vẫn xác định được.
 Khoảng cách khung >500 ms cũng đặt lại lịch sử nhận diện.
 

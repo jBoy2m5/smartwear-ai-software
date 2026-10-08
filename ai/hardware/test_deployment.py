@@ -138,7 +138,11 @@ class DeploymentTests(unittest.TestCase):
         success, jpeg = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))
         self.assertTrue(success)
         handoffs = []
+        def copy_manifest(source, destination):
+            Path(destination).write_bytes(Path(source).read_bytes())
+
         with tempfile.TemporaryDirectory() as temporary, \
+                patch("hardware.record_hardware.os.replace", side_effect=copy_manifest), \
                 patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
                 patch("hardware.record_hardware.CameraReceiver") as camera, \
                 patch("hardware.record_hardware.WristReceiver") as wrist:

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Images, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { getSession, listSessions } from './backendApi';
-import { candidateList, dateTime, defaultFocus, number } from './presentation';
+import { candidateList, dateTime, defaultFocus, displayHands, number } from './presentation';
 import type { Focus } from './presentation';
 import type { SessionDetail, SessionSummary } from './sessionTypes';
 import { SessionCharts, ImageViewer } from './components/SessionVisuals';
@@ -128,7 +128,7 @@ export default function SessionDashboard() {
             <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
               <MetricCard label="Điểm so khớp DEMO" value={number(selected.dtw_metrics.similarity_score, 1)} note="Điểm hiển thị từ DTW; không phải phần trăm làm đúng." />
               <MetricCard label="Đoạn cần xem lại" value={String(candidates.length)} note="Nghi vấn từ AI; chưa kết luận thao tác sai." danger={candidates.length > 0} />
-              <MetricCard label="Tổng thời lượng nghi vấn" value={`${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note="Tổng DEMO; hai tay có thể chồng thời gian." danger={candidates.length > 0} />
+              <MetricCard label="Tổng thời lượng nghi vấn" value={`${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note={displayHands(selected).length > 1 ? 'Tổng DEMO; hai tay có thể chồng thời gian.' : 'Tổng DEMO của tay phải; chưa phải thời gian lãng phí đã xác nhận.'} danger={candidates.length > 0} />
               <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh phiên quay · ${selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
             </div>
             <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">

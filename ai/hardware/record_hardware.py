@@ -1,4 +1,4 @@
-"""Record both hands from ESP32 MJPEG and the instrumented right SmartWrist."""
+"""Record the right hand from ESP32 MJPEG and the right SmartWrist."""
 
 import argparse
 import json
@@ -101,7 +101,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 result = landmarker.detect_for_video(image, timestamp)
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
-                                       detector)
+                                       detector, tracked_side="right")
                 wrist_state = wrist.snapshot()
                 data["wrist_status"] = (
                     "receiving" if wrist_state.get("received", 0) > 0
@@ -122,7 +122,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                     on_frame(cv2, frame, data)
                 if show_window:
                     draw_frame(cv2, frame, data)
-                    cv2.imshow("SmartWear ESP32 - Left / Right Hands", frame)
+                    cv2.imshow("SmartWear ESP32 - Right Hand", frame)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
                 now = time.monotonic()

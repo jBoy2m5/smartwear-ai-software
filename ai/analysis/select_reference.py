@@ -25,7 +25,8 @@ def selection_cost(document):
     return round(total / max(1, weight), 4)
 
 
-def select_reference(worker_session, reference_root, output=None, sample_id=None):
+def select_reference(worker_session, reference_root, output=None, sample_id=None,
+                     right_only=False):
     worker_session = Path(worker_session).resolve()
     reference_root = Path(reference_root).resolve()
     output = Path(output).resolve() if output else worker_session / "analysis_result.json"
@@ -43,6 +44,8 @@ def select_reference(worker_session, reference_root, output=None, sample_id=None
         info = json.loads(info_path.read_text(encoding="utf-8"))
         if info.get("schema_version") != "smartwear.demo_reference.v1":
             raise ValueError(f"Invalid demo reference metadata: {candidate}")
+        if right_only and info.get("visible_labels_by_hand", {}).get("left"):
+            continue
         try:
             document = build_comparison(candidate, worker_session)
         except ValueError as exc:

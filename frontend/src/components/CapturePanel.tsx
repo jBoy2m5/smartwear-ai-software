@@ -112,16 +112,12 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const working = job && ACTIVE.has(job.stage);
   const width = displayFrame?.camera.frame_width ?? 640;
   const height = displayFrame?.camera.frame_height ?? 480;
-  const hands = (['left', 'right'] as const).map(side => {
-    const landmarks = displayFrame?.[`${side}_landmarks`] ?? [];
-    const action = displayFrame?.[`${side}_action`];
-    const points = new Map(landmarks.map(point => [point.id, point]));
-    return { side, landmarks, points, wrist: points.get(0),
-      title: side === 'left' ? 'Tay trái' : 'Tay phải',
-      color: side === 'left' ? '#fbbf24' : '#22d3ee',
-      label: !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
-        : action.tracking_status === 'missing' ? 'KHÔNG THẤY TAY' : action.label };
-  });
+  const landmarks = displayFrame?.right_landmarks ?? [];
+  const points = new Map(landmarks.map(point => [point.id, point]));
+  const wrist = points.get(0);
+  const action = displayFrame?.right_action;
+  const actionLabel = !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
+    : action.tracking_status === 'missing' ? 'KHÔNG THẤY TAY' : action.label;
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
@@ -130,7 +126,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           <p className="text-xs text-gray-400">{job?.capture_mode === 'demo'
             ? 'Nguồn phiên này: webcam máy AI + cảm biến DEMO; không dùng phần cứng'
             : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
-              : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · nhận diện riêng tay trái và tay phải</p></div></div>
+              : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · chỉ theo dõi tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
@@ -146,18 +142,16 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)]">
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
         {displayFrame ? <div className="relative shrink-0 overflow-hidden" style={{ height: `min(100%, ${height}px)`, aspectRatio: `${width} / ${height}`, maxWidth: '100%' }}>
-          <img src={displayFrame.url} alt="Hình camera tay trái và tay phải" className="h-full w-full object-fill" />
+          <img src={displayFrame.url} alt="Hình camera tay phải" className="h-full w-full object-fill" />
           <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-            {hands.map(hand => <g key={hand.side}>
-              {FINGERS.map((finger, index) => <polyline key={index} points={finger.map(id => hand.points.get(id)).filter(point => point != null).map(point => `${point!.x * width},${point!.y * height}`).join(' ')}
-                fill="none" stroke={hand.color} strokeWidth="2" strokeOpacity="0.85" />)}
-              {hand.landmarks.map(point => <circle key={point.id} cx={point.x * width} cy={point.y * height}
-                r="3" fill={hand.color} stroke="#082f49" strokeWidth="1" />)}
-              {hand.wrist && <text x={Math.max(4, Math.min(width - 64, hand.wrist.x * width))}
-                y={Math.max(14, Math.min(height - 4, hand.wrist.y * height - 10))}
-                fill={hand.color} stroke="#020617" strokeWidth="2" paintOrder="stroke"
-                fontSize="13" fontWeight="bold">{hand.title}</text>}
-            </g>)}
+            {FINGERS.map((finger, index) => <polyline key={index} points={finger.map(id => points.get(id)).filter(point => point != null).map(point => `${point!.x * width},${point!.y * height}`).join(' ')}
+              fill="none" stroke="#22d3ee" strokeWidth="2" strokeOpacity="0.85" />)}
+            {landmarks.map(point => <circle key={point.id} cx={point.x * width} cy={point.y * height}
+              r="3" fill="#22d3ee" stroke="#082f49" strokeWidth="1" />)}
+            {wrist && <text x={Math.max(4, Math.min(width - 64, wrist.x * width))}
+              y={Math.max(14, Math.min(height - 4, wrist.y * height - 10))}
+              fill="#22d3ee" stroke="#020617" strokeWidth="2" paintOrder="stroke"
+              fontSize="13" fontWeight="bold">Tay phải</text>}
           </svg>
         </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
         {recording && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
@@ -168,13 +162,11 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           {job ? ({ starting: 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
             completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : 'Sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa bàn tay vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
-        {displayFrame && <div className="mt-3 grid grid-cols-2 gap-2">
-          {hands.map(hand => <div key={hand.side} className="rounded border border-slate-700 bg-slate-950/60 p-2">
-            <div className="text-sm font-bold" style={{ color: hand.color }}>{hand.title}</div>
-            <div className="mt-1 text-xs font-semibold text-gray-200">{hand.label}</div>
-            {hand.wrist && <div className="mt-1 font-mono text-xs text-gray-400">X {hand.wrist.x.toFixed(3)} · Y {hand.wrist.y.toFixed(3)}</div>}
-          </div>)}
+        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa tay phải vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
+        {displayFrame && <div className="mt-3 rounded border border-slate-700 bg-slate-950/60 p-2">
+          <div className="text-sm font-bold text-cyan-300">Tay phải</div>
+          <div className="mt-1 text-xs font-semibold text-gray-200">{actionLabel}</div>
+          {wrist && <div className="mt-1 font-mono text-xs text-gray-400">X {wrist.x.toFixed(3)} · Y {wrist.y.toFixed(3)}</div>}
         </div>}
         {displayFrame?.wrist_status && <p className={`mt-3 text-sm ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
           SmartWrist (tay phải): {displayFrame.wrist_status === 'receiving' ? 'đang nhận dữ liệu' : 'chưa có dữ liệu'}

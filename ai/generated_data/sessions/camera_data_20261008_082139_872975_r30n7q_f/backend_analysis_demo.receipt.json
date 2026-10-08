@@ -1,0 +1,14 @@
+{
+  "schema_version": "smartwear.backend_analysis_demo.v1",
+  "session_id": "DEMO_camera_data_20261008_082139_872975_r30n7q_f",
+  "backend_url": "http://127.0.0.1:8000",
+  "analysis_sha256": "aeeb487ccee5b9c08609914f118b64ab600ab57e06798d5930ba1df49bf27806",
+  "expert_images_sha256": {
+    "segment_0001_right_GRAB_frame_000008.png": "bba1cae379c00f38a2d6d52aac2c8f8d42218b7ce0b4291c747800f79a3920f2",
+    "segment_0002_right_ASSEMBLY_frame_000024.png": "a8f15fd0d16e6902bfa4363f113b796b696a99364347c4de5dd8b1dcf25e0bd2",
+    "segment_0003_right_GRAB_frame_000032.png": "3bb25b9118b7f91af0ad509fd953c492c247b67a59fd910277aa8ea2c24fb9d1",
+    "segment_0004_right_RELEASE_frame_000039.png": "9737dd4088eef662c7f8811ea2ed2dbd3d5bf26e4454b14fbc30872abbc0be9d",
+    "segment_0005_right_OPEN_frame_000072.png": "d3681adc2facfc690c392ef2351da31033ed28f209346678fe2fb46098d77854"
+  },
+  "analysis_url": "/api/v1/sessions/DEMO_camera_data_20261008_082139_872975_r30n7q_f/analysis-result"
+}

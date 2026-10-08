@@ -55,6 +55,9 @@ class HardwareTests(unittest.TestCase):
                 self.assertEqual(frame["hand_actions"][other]["tracking_status"], "missing")
                 filtered = make_frame_data(result, 0, 320, 240, TwoHandActionDetector(), tracked_side="right")
                 self.assertEqual(len(filtered["hands"]), int(side == "right"))
+                self.assertEqual(filtered["hand_actions"]["left"]["label"], "NO_HAND")
+                if side == "left":
+                    self.assertEqual(filtered["hand_actions"]["right"]["label"], "NO_HAND")
 
         result = SimpleNamespace(hand_landmarks=[points, points],
                                  hand_world_landmarks=[points, points],
@@ -94,29 +97,38 @@ class HardwareTests(unittest.TestCase):
                 self.assertIsNone(row["hand_sensors"]["right"]["imu_wrist"])
             self.assertTrue(any(row["hand_sensors"]["right"]["force_adc"] for row in sensors))
 
-    def test_preview_keeps_both_sides_when_detection_order_changes(self):
+    def test_preview_only_publishes_right_hand_when_detection_order_changes(self):
         from integration.frontend_capture import publish_preview
         points = lambda x: [SimpleNamespace(x=x, y=index / 30, z=0.0) for index in range(21)]
         category = lambda name: [SimpleNamespace(category_name=name, score=0.99)]
         detector = TwoHandActionDetector()
-        with tempfile.TemporaryDirectory() as temporary:
+        def copy_published_file(source, destination):
+            Path(destination).write_bytes(Path(source).read_bytes())
+
+        with tempfile.TemporaryDirectory() as temporary, patch(
+                "integration.frontend_capture.os.replace", side_effect=copy_published_file):
             directory = Path(temporary)
-            for index, sides in enumerate((("Right", "Left"), ("Left", "Right"), ("Right", "Right"))):
+            for index, sides in enumerate((("Right", "Left"), ("Left", "Right"),
+                                           ("Right", "Right"), ("Left", "Left"))):
                 result = SimpleNamespace(hand_landmarks=[points(0.2), points(0.8)],
                                          hand_world_landmarks=[[], []],
                                          handedness=[category(side) for side in sides])
-                data = make_frame_data(result, index * 40, 320, 240, detector)
+                data = make_frame_data(result, index * 40, 320, 240, detector,
+                                       tracked_side="right")
                 data["video_frame_index"] = index
                 publish_preview(directory, b"test JPEG", data)
                 preview = json.loads((directory / f"preview_{index:08d}.json").read_text())
-                for side, model_side in (("left", "Right"), ("right", "Left")):
-                    if index == 2:
-                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "ambiguous")
-                        self.assertEqual(preview[f"{side}_landmarks"], [])
-                    else:
-                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "detected")
-                        self.assertEqual(preview[f"{side}_landmarks"][0]["x"],
-                                         0.2 if sides[0] == model_side else 0.8)
+                self.assertNotIn("left_action", preview)
+                self.assertNotIn("left_landmarks", preview)
+                self.assertEqual(data["hand_actions"]["left"]["label"], "NO_HAND")
+                if index < 2:
+                    self.assertEqual(preview["right_action"]["tracking_status"], "detected")
+                    self.assertEqual(preview["right_landmarks"][0]["x"],
+                                     0.2 if sides[0] == "Left" else 0.8)
+                else:
+                    self.assertEqual(preview["right_action"]["tracking_status"],
+                                     "missing" if index == 2 else "ambiguous")
+                    self.assertEqual(preview["right_landmarks"], [])
 
     def test_mjpeg_split_jpeg_case_insensitive_headers_and_multiple_parts(self):
         jpeg = b"\xff\xd8some-jpeg\xff\xd9"
@@ -260,6 +272,9 @@ class HardwareTests(unittest.TestCase):
             self.assertTrue(all(item["peak_force_N"] is None
                                 for item in payload["action_phases"]))
             self.assertEqual(meta["sensor_source"], "measured_hardware")
+            self.assertTrue(all(item["phase"].startswith("RIGHT_")
+                                for item in payload["action_phases"]))
+            self.assertIn("Only visible right-hand actions", meta["phase_rule"])
 
     def test_missing_or_reset_wrist_never_falls_back_to_simulator(self):
         for missing, reset in ((True, False), (False, True)):

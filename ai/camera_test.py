@@ -1,4 +1,4 @@
-"""Capture anatomical left/right hands and run the session pipeline."""
+"""Capture the anatomical right hand and run the session pipeline."""
 
 import argparse
 import json
@@ -21,8 +21,8 @@ REFERENCE_ROOT = SCRIPT_DIR / "generated_data" / "reference_samples"
 MODEL_PATH = SCRIPT_DIR / "hand_landmarker.task"
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/"
              "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task")
-COLORS = {"left": (255, 200, 80), "right": (80, 230, 120)}
-WINDOW = "SmartWear AI - Left / Right Hands"
+RIGHT_COLOR = (80, 230, 120)
+WINDOW = "SmartWear AI - Right Hand"
 
 
 def point_records(points):
@@ -58,17 +58,16 @@ def make_frame_data(result, timestamp_ms, width, height, detector, tracked_side=
 
 def draw_frame(cv2, frame, data, instruction="Q: stop and process"):
     for hand in data["hands"]:
-        side = hand["handedness"].lower()
-        color = COLORS.get(side, (150, 150, 150))
+        if hand["handedness"].lower() != "right":
+            continue
         for point in hand["landmarks"]:
             cv2.circle(frame, (int(point["x"] * frame.shape[1]),
-                               int(point["y"] * frame.shape[0])), 4, color, -1)
-    for index, side in enumerate(("left", "right")):
-        action = data["hand_actions"][side]
-        label = "UNCERTAIN" if action["tracking_status"] == "ambiguous" else action["label"]
-        cv2.putText(frame, f"{side.upper()}: {label}", (10, 25 + index * 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, COLORS[side], 2)
-    cv2.putText(frame, instruction, (10, 85),
+                               int(point["y"] * frame.shape[0])), 4, RIGHT_COLOR, -1)
+    action = data["hand_actions"]["right"]
+    label = "UNCERTAIN" if action["tracking_status"] == "ambiguous" else action["label"]
+    cv2.putText(frame, f"RIGHT: {label}", (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, RIGHT_COLOR, 2)
+    cv2.putText(frame, instruction, (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 
@@ -125,7 +124,7 @@ def record_camera(stop_requested=None, on_frame=None, show_window=True):
         output = session / "camera.jsonl"
         video = RecordingVideo(output, cv2)
         print(f"Thu muc phien: {session}")
-        print("Camera da mo. Theo doi tay trai va tay phai. Nhan Q de dung.")
+        print("Camera da mo. Chi theo doi tay phai. Nhan Q de dung.")
         with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker, \
                 output.open("x", encoding="utf-8", newline="\n") as stream:
             detector = TwoHandActionDetector()
@@ -150,15 +149,15 @@ def record_camera(stop_requested=None, on_frame=None, show_window=True):
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 result = landmarker.detect_for_video(image, timestamp)
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
-                                       detector)
+                                       detector, tracked_side="right")
                 # Save the same mirrored image used by MediaPipe, before drawing UI.
                 data["video_frame_index"] = video.write(frame)
                 stream.write(json.dumps(data, ensure_ascii=False, allow_nan=False) + "\n")
                 stream.flush()
-                current = tuple((data["hand_actions"][side]["label"],
-                                 data["hand_actions"][side]["tracking_status"]) for side in ("left", "right"))
+                current = (data["hand_actions"]["right"]["label"],
+                           data["hand_actions"]["right"]["tracking_status"])
                 if current != previous_actions:
-                    print(f"{timestamp / 1000:.2f}s  LEFT: {current[0][0]} RIGHT: {current[1][0]}")
+                    print(f"{timestamp / 1000:.2f}s  RIGHT: {current[0]}")
                     previous_actions = current
                 if on_frame is not None:
                     on_frame(cv2, frame, data)
@@ -206,7 +205,7 @@ def finish_recording(output, role=None, expert_session=None, practice_sample=Non
         print(f"Vai tro phien: {role}")
     if auto_reference:
         result, selected = select_reference(output.parent, REFERENCE_ROOT,
-                                            sample_id=practice_sample)
+                                            sample_id=practice_sample, right_only=True)
         print(f"Mau demo gan nhat: {selected['title']}")
         print(f"Ket qua so sanh: {result}")
     elif role == "worker":
@@ -220,9 +219,8 @@ def finish_recording(output, role=None, expert_session=None, practice_sample=Non
             "simulated_demo_comparison": "so mo phong, khong phai luc do that",
             "incompatible_sources_no_numeric_delta": "nguon khac nhau; khong tru hai gia tri",
         }[source])
-        counts = {side: analysis["muda_review"]["hands"][side]["candidate_count"]
-                  for side in ("left", "right")}
-        print(f"Doan can xem lai (chua ket luan Muda): LEFT {counts['left']}, RIGHT {counts['right']}")
+        count = analysis["muda_review"]["hands"]["right"]["candidate_count"]
+        print(f"Doan tay phai can xem lai (chua ket luan Muda): {count}")
     return combined
 
 

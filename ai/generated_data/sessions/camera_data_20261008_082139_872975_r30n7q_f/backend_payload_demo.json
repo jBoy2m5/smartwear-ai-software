@@ -1,0 +1,302 @@
+{
+  "session_id": "DEMO_camera_data_20261008_082139_872975_r30n7q_f",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0003_right_GRAB_frame_000050.png",
+    "segment_0004_right_RELEASE_frame_000060.png",
+    "segment_0005_right_GRAB_frame_000068.png",
+    "segment_0006_right_ASSEMBLY_frame_000074.png",
+    "segment_0007_right_GRAB_frame_000076.png",
+    "segment_0008_right_ASSEMBLY_frame_000077.png",
+    "segment_0009_right_RELEASE_frame_000082.png",
+    "segment_0010_right_OPEN_frame_000087.png",
+    "segment_0011_right_GRAB_frame_000090.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 2.766,
+      "end_time": 3.715,
+      "peak_force_N": 19.124
+    },
+    {
+      "phase": "RIGHT_RELEASE",
+      "start_time": 3.715,
+      "end_time": 4.427,
+      "peak_force_N": 14.852
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 4.427,
+      "end_time": 5.264,
+      "peak_force_N": 18.832
+    },
+    {
+      "phase": "RIGHT_ASSEMBLY",
+      "start_time": 5.264,
+      "end_time": 5.543,
+      "peak_force_N": 19.033
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 5.543,
+      "end_time": 5.637,
+      "peak_force_N": 19.535
+    },
+    {
+      "phase": "RIGHT_ASSEMBLY",
+      "start_time": 5.637,
+      "end_time": 5.715,
+      "peak_force_N": 19.913
+    },
+    {
+      "phase": "RIGHT_RELEASE",
+      "start_time": 5.715,
+      "end_time": 6.432,
+      "peak_force_N": 15.55
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 6.432,
+      "end_time": 6.713,
+      "peak_force_N": 2.557
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 6.713,
+      "end_time": 6.977,
+      "peak_force_N": 12.275
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 47.42,
+    "muda_detected_seconds": 0.712
+  },
+  "robot_trajectory_points": [
+    {
+      "t": 2.58,
+      "pos": [
+        0.192,
+        0.0897,
+        0.1
+      ],
+      "force": 0.792
+    },
+    {
+      "t": 2.766,
+      "pos": [
+        0.183,
+        0.0944,
+        0.1
+      ],
+      "force": 5.974
+    },
+    {
+      "t": 2.953,
+      "pos": [
+        0.1807,
+        0.0946,
+        0.1
+      ],
+      "force": 11.802
+    },
+    {
+      "t": 3.155,
+      "pos": [
+        0.1869,
+        0.0935,
+        0.1
+      ],
+      "force": 15.089
+    },
+    {
+      "t": 3.326,
+      "pos": [
+        0.1937,
+        0.0967,
+        0.1
+      ],
+      "force": 17.626
+    },
+    {
+      "t": 3.513,
+      "pos": [
+        0.2078,
+        0.0839,
+        0.1
+      ],
+      "force": 18.759
+    },
+    {
+      "t": 3.621,
+      "pos": [
+        0.212,
+        0.0781,
+        0.1
+      ],
+      "force": 19.124
+    },
+    {
+      "t": 3.792,
+      "pos": [
+        0.2128,
+        0.0756,
+        0.1
+      ],
+      "force": 11.524
+    },
+    {
+      "t": 3.963,
+      "pos": [
+        0.2159,
+        0.0754,
+        0.1
+      ],
+      "force": 7.865
+    },
+    {
+      "t": 4.148,
+      "pos": [
+        0.2172,
+        0.0756,
+        0.1
+      ],
+      "force": 5.044
+    },
+    {
+      "t": 4.349,
+      "pos": [
+        0.2157,
+        0.0784,
+        0.1
+      ],
+      "force": 3.387
+    },
+    {
+      "t": 4.521,
+      "pos": [
+        0.2144,
+        0.0802,
+        0.1
+      ],
+      "force": 9.294
+    },
+    {
+      "t": 4.706,
+      "pos": [
+        0.2141,
+        0.0838,
+        0.1
+      ],
+      "force": 13.35
+    },
+    {
+      "t": 4.892,
+      "pos": [
+        0.2141,
+        0.0844,
+        0.1
+      ],
+      "force": 16.14
+    },
+    {
+      "t": 5.08,
+      "pos": [
+        0.2147,
+        0.0855,
+        0.1
+      ],
+      "force": 17.497
+    },
+    {
+      "t": 5.264,
+      "pos": [
+        0.2132,
+        0.0894,
+        0.1
+      ],
+      "force": 18.798
+    },
+    {
+      "t": 5.452,
+      "pos": [
+        0.2117,
+        0.0924,
+        0.1
+      ],
+      "force": 18.747
+    },
+    {
+      "t": 5.637,
+      "pos": [
+        0.2228,
+        0.084,
+        0.1
+      ],
+      "force": 19.913
+    },
+    {
+      "t": 5.809,
+      "pos": [
+        0.2438,
+        0.076,
+        0.1
+      ],
+      "force": 11.857
+    },
+    {
+      "t": 5.98,
+      "pos": [
+        0.2524,
+        0.0719,
+        0.1
+      ],
+      "force": 7.358
+    },
+    {
+      "t": 6.151,
+      "pos": [
+        0.2597,
+        0.0689,
+        0.1
+      ],
+      "force": 4.941
+    },
+    {
+      "t": 6.34,
+      "pos": [
+        0.2534,
+        0.069,
+        0.1
+      ],
+      "force": 3.013
+    },
+    {
+      "t": 6.525,
+      "pos": [
+        0.2492,
+        0.0683,
+        0.1
+      ],
+      "force": 2.054
+    },
+    {
+      "t": 6.713,
+      "pos": [
+        0.2551,
+        0.0646,
+        0.1
+      ],
+      "force": 6.004
+    },
+    {
+      "t": 6.899,
+      "pos": [
+        0.2882,
+        0.0516,
+        0.1
+      ],
+      "force": 12.275
+    }
+  ]
+}

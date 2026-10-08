@@ -250,7 +250,9 @@ def build_payload(session_dir):
         "force_rule": ("Measured ADC counts remain in real_sensors and analysis; "
                        "peak_force_N is null because no Newton calibration exists" if measured else
                        "DEMO only: clamp((unitless force_emg_raw - 80)/720, 0, 1)*20; backend N field is display-only, not measured Newton"),
-        "phase_rule": "Visible left/right labels share one nonoverlapping phase, e.g. LEFT_GRAB.RIGHT_OPEN",
+        "phase_rule": ("Visible left/right labels share one nonoverlapping phase, e.g. LEFT_GRAB.RIGHT_OPEN"
+                       if any("LEFT_" in phase["phase"] for phase in payload["action_phases"])
+                       else "Only visible right-hand actions form nonoverlapping RIGHT_ phases"),
         "similarity_rule": "DEMO: 100/(1+weighted mean per-hand normalized DTW cost); no comparison=0, expert baseline=100",
         "muda_rule": "DEMO sum of deduplicated unconfirmed review-candidate durations; missing action contributes 0; not confirmed waste",
         "trajectory_rule": ("No robot trajectory is exported for measured input without coordinate calibration"
