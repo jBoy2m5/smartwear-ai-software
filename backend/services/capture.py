@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import uuid
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -28,6 +29,20 @@ class CaptureManager:
         self._active_id: str | None = None
         self._python: str | None = None
         self._python_mode: str | None = None
+        self._health_lock = threading.Lock()
+        self._health_cache = None
+        self._health_checked = 0.
+
+    def devices(self, refresh=False):
+        from ai.hardware.config import HardwareConfig
+        from backend.services.device_health import diagnose
+        with self._health_lock:
+            active = self.has_active_capture()
+            if (refresh or self._health_cache is None or time.monotonic()-self._health_checked > 5
+                    or self._health_cache['capture_active'] != active):
+                self._health_cache = diagnose(HardwareConfig.from_environment(), active)
+                self._health_checked = time.monotonic()
+            return self._health_cache
 
     def has_active_capture(self) -> bool:
         with self._lock:

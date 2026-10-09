@@ -1,0 +1,13 @@
+{
+  "schema_version": "smartwear.backend_analysis_measured.v1",
+  "session_id": "MEASURED_hardware_20261007_150222_805884_vbnd6kdk",
+  "backend_url": "http://127.0.0.1:8000",
+  "analysis_sha256": "3282078faab8f5daf36840a18f3bec5f8ce3462b33eae06f9d1fc0cfbbd11c8c",
+  "expert_images_sha256": {
+    "segment_0000_left_OPEN_frame_000003.png": "e9ba9d329453228599d2f37e5e6ed84d23447720ee8f6b286871128fd863cd61",
+    "segment_0002_left_REACH_frame_000008.png": "0ffd8e74ab79ef229fed41d75007f42ad06e2260b1cbc3e88b0b32cf9875bf8e",
+    "segment_0004_left_OPEN_frame_000009.png": "c451b97aea9220551fffcdbd0782b9930d8ca984365ef9476cae1708db7e1fb5",
+    "segment_0005_left_GRAB_frame_000019.png": "ec7c7579b1e36b09eea111cffb80e9f3090434b6f6c37db37689a3877ad0f0d0"
+  },
+  "analysis_url": "/api/v1/sessions/MEASURED_hardware_20261007_150222_805884_vbnd6kdk/analysis-result"
+}

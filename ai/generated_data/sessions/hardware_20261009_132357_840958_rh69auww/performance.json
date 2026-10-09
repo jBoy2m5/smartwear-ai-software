@@ -1,0 +1,27 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 48.796,
+    "capture_started": 72.709,
+    "recording_ended": 14808.066,
+    "capture_stopped": 17364.487
+  },
+  "elapsed_s": 17.365,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {},
+  "camera_stats": {
+    "stream_errors": 3,
+    "last_stream_error": "<urlopen error timed out>",
+    "boot_id": null,
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 826,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 842
+  },
+  "inferred_frames": 0
+}

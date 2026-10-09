@@ -1,0 +1,188 @@
+{
+  "session_id": "MEASURED_hardware_20261007_160814_256716_auf8dvx1",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0007_right_GRAB_frame_000140.png",
+    "segment_0026_right_REACH_frame_000261.png",
+    "segment_0029_right_GRAB_frame_000275.png",
+    "segment_0038_left_REACH_frame_000316.png",
+    "segment_0061_left_GRAB_frame_000651.png",
+    "segment_0063_left_ASSEMBLY_frame_000663.png",
+    "segment_0064_left_GRAB_frame_000664.png",
+    "segment_0067_left_REACH_frame_000754.png",
+    "segment_0068_left_OPEN_frame_000764.png",
+    "segment_0069_left_REACH_frame_000777.png",
+    "segment_0071_right_OPEN_frame_000788.png",
+    "segment_0072_left_OPEN_frame_000791.png",
+    "segment_0074_left_GRAB_frame_000804.png",
+    "segment_0075_right_GRAB_frame_000805.png",
+    "segment_0076_left_ASSEMBLY_frame_000966.png",
+    "segment_0077_right_ASSEMBLY_frame_000966.png",
+    "segment_0078_left_GRAB_frame_001126.png",
+    "segment_0079_right_GRAB_frame_001125.png",
+    "segment_0109_left_GRAB_frame_001824.png",
+    "segment_0110_left_ASSEMBLY_frame_001865.png",
+    "segment_0113_left_GRAB_frame_002910.png",
+    "segment_0114_left_ASSEMBLY_frame_002919.png",
+    "segment_0115_left_GRAB_frame_002929.png",
+    "segment_0116_left_ASSEMBLY_frame_002939.png",
+    "segment_0117_left_GRAB_frame_002941.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 7.71,
+      "end_time": 8.104,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 16.659,
+      "end_time": 16.715,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 17.446,
+      "end_time": 17.896,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 20.204,
+      "end_time": 20.26,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 39.676,
+      "end_time": 40.126,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 40.521,
+      "end_time": 40.633,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 40.633,
+      "end_time": 40.802,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 45.698,
+      "end_time": 45.923,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 45.923,
+      "end_time": 46.992,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 46.992,
+      "end_time": 47.668,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH.RIGHT_OPEN",
+      "start_time": 47.668,
+      "end_time": 47.949,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_OPEN",
+      "start_time": 47.949,
+      "end_time": 48.906,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 48.906,
+      "end_time": 49.018,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 49.018,
+      "end_time": 49.074,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB.RIGHT_GRAB",
+      "start_time": 49.074,
+      "end_time": 50.031,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY.RIGHT_ASSEMBLY",
+      "start_time": 50.031,
+      "end_time": 72.205,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB.RIGHT_GRAB",
+      "start_time": 72.205,
+      "end_time": 72.317,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 72.317,
+      "end_time": 72.374,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 113.006,
+      "end_time": 113.851,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 113.851,
+      "end_time": 119.704,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 176.657,
+      "end_time": 177.557,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 177.557,
+      "end_time": 177.614,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 177.614,
+      "end_time": 178.683,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 178.683,
+      "end_time": 178.796,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 178.796,
+      "end_time": 178.908,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 41.59,
+    "muda_detected_seconds": 52.948
+  },
+  "robot_trajectory_points": []
+}

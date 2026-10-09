@@ -1,0 +1,41 @@
+{
+  "session_id": "MEASURED_hardware_20261007_155458_181262_ytqfdj2l",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0003_right_GRAB_frame_000262.png",
+    "segment_0012_right_GRAB_frame_000781.png",
+    "segment_0015_left_REACH_frame_001233.png",
+    "segment_0018_left_GRAB_frame_002005.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 14.801,
+      "end_time": 15.645,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 44.685,
+      "end_time": 45.529,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 72.88,
+      "end_time": 72.992,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 126.006,
+      "end_time": 126.851,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 45.12,
+    "muda_detected_seconds": 0.0
+  },
+  "robot_trajectory_points": []
+}

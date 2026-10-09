@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, CircleStop, Play, RotateCw } from 'lucide-react';
-import { backendUrl, getCapturePreview, getCaptureStatus, startCapture, stopCapture, listProcedures, listReferences } from '../backendApi';
+import { LearningExperimentPanel } from './LearningExperimentPanel';
+import { backendUrl, getCapturePreview, getCaptureStatus, getDeviceHealth, startCapture, stopCapture, listProcedures, listReferences } from '../backendApi';
 import type { Procedure, ExpertReference, CaptureContext } from '../backendApi';
-import type { CapturePreview, CaptureStatus } from '../backendApi';
+import type { CapturePreview, CaptureStatus, DeviceHealth } from '../backendApi';
 
 const ACTIVE = new Set(['starting', 'recording', 'stopping', 'processing', 'publishing']);
+const PREVIEW = new Set(['starting', 'recording', 'stopping']);
 const FINGERS = [[0, 1, 2, 3, 4], [0, 5, 6, 7, 8], [0, 9, 10, 11, 12],
   [0, 13, 14, 15, 16], [0, 17, 18, 19, 20]];
 type DisplayFrame = CapturePreview & { url: string };
@@ -14,6 +16,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayFrame, setDisplayFrame] = useState<DisplayFrame | null>(null);
+  const [health, setHealth] = useState<DeviceHealth | null>(null);
+  const [healthError, setHealthError] = useState('');
+  const [clock, setClock] = useState(0);
+  const previewSeenAt = useRef(0);
   const notified = useRef<string | null>(null);
   const imageUrls = useRef<string[]>([]);
   const jobId = job?.job_id;
@@ -27,6 +33,28 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const [reference, setReference] = useState('');
   const [trialStage, setTrialStage] = useState<'before_learning' | 'after_learning' | 'practice'>('before_learning');
   const task = procedures.find(p => `${p.task_id}:${p.version}` === taskKey);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let timer: number | undefined;
+    const update = async () => {
+      try {
+        if (!document.hidden) {
+          const current = await getDeviceHealth(controller.signal);
+          if (!controller.signal.aborted) { setHealth(current); setHealthError(''); }
+        }
+      } catch (reason) { if (!controller.signal.aborted) { setHealth(null); setHealthError(String(reason)); } }
+      finally { if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), 5000); }
+    };
+    void update();
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 'recording') return;
+    const timer = window.setInterval(() => setClock(performance.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [stage]);
 
   useEffect(() => { void listProcedures().then(setProcedures).catch(reason => setError(String(reason))); }, []);
   useEffect(() => {
@@ -56,17 +84,24 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Không đọc được trạng thái camera');
       }
     };
-    const timer = window.setInterval(() => void update(), 700);
-    return () => { controller.abort(); window.clearInterval(timer); };
+    let timer: number | undefined;
+    const poll = async () => {
+      await update();
+      if (!controller.signal.aborted) timer = window.setTimeout(() => void poll(), document.hidden ? 2000 : 700);
+    };
+    void poll();
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
   }, [jobId, stage]);
 
   useEffect(() => {
-    if (!jobId || !stage || !ACTIVE.has(stage)) return;
+    if (!jobId || !stage || !PREVIEW.has(stage)) return;
     const controller = new AbortController();
     let timer: number | undefined;
     let lastFrame = -1;
     const update = async () => {
       try {
+        if (document.hidden) return;
+        const requested = performance.now();
         const preview = await getCapturePreview(jobId, controller.signal);
         if (preview.frame_index !== lastFrame) {
           const url = backendUrl(`/api/v1/capture/${jobId}/frame?index=${preview.frame_index}`);
@@ -79,11 +114,12 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           imageUrls.current.push(imageUrl);
           if (imageUrls.current.length > 3) URL.revokeObjectURL(imageUrls.current.shift()!);
           setDisplayFrame({ ...preview, url: imageUrl });
+          previewSeenAt.current = requested;
         }
       } catch {
         // No preview exists until the camera has captured its first frame.
       } finally {
-        if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), 50);
+        if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), document.hidden ? 1000 : 100);
       }
     };
     void update();
@@ -139,6 +175,9 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const working = job && ACTIVE.has(job.stage);
   const width = displayFrame?.camera.frame_width ?? 640;
   const height = displayFrame?.camera.frame_height ?? 480;
+  const frameAge = displayFrame ? (displayFrame.frame_age_ms ?? displayFrame.preview_age_ms ?? 0)
+    + Math.max(0, clock-previewSeenAt.current) : null;
+  const stale = recording && (frameAge === null || frameAge > 2000);
   const hands = (['left', 'right'] as const).map(side => {
     const landmarks = displayFrame?.[`${side}_landmarks`] ?? [];
     const action = displayFrame?.[`${side}_action`];
@@ -146,7 +185,8 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     return { side, landmarks, points, wrist: points.get(0),
       title: side === 'left' ? 'Tay trái' : 'Tay phải',
       color: side === 'left' ? '#fbbf24' : '#22d3ee',
-      label: !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
+      label: job?.stage === 'failed' ? 'PHIÊN ĐÃ DỪNG' : stale ? 'CHƯA CÓ ẢNH MỚI'
+        : !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
         : action.tracking_status === 'missing' ? 'KHÔNG THẤY TAY' : action.label };
   });
 
@@ -182,7 +222,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
             : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
               : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · nhận diện riêng tay trái và tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working)}
+        <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working) || !health?.can_start}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
           <Play size={17} />Quay ESP32 + vòng tay</button>
         <button type="button" onClick={() => void begin('demo')} disabled={busy || Boolean(working)}
@@ -210,15 +250,26 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
             </g>)}
           </svg>
         </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
-        {recording && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
+        {recording && !stale && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
+        {stale && <span className="absolute bottom-3 rounded bg-amber-950 px-3 py-1 text-xs text-amber-100">Chưa có ảnh mới — kiểm tra kết nối camera</span>}
       </div>
       <div className="flex flex-col justify-center rounded-lg border border-slate-700 bg-slate-900/60 p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-cyberGreen">
           {working && <RotateCw className="animate-spin" size={17} />}
           {job ? ({ starting: 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
-            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : 'Sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa bàn tay vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
+            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : !health ? 'Đang kiểm tra thiết bị'
+              : health.can_start ? 'Có thể bắt đầu kết nối camera' : 'Thiết bị chưa sẵn sàng'}</div>
+        <p className="mt-2 text-sm text-gray-300">{job?.message ?? health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.'}</p>
+        <div className="mt-3 space-y-1 rounded border border-slate-700 p-2 text-xs">
+          <p>SmartCap: {health?.camera.message ?? 'Chưa kiểm tra'}</p>
+          <p>MQTT: {health?.mqtt.message ?? 'Chưa kiểm tra'} · NTP: {health ? health.ntp.ok ? 'phản hồi' : 'không phản hồi' : 'chưa kiểm tra'}</p>
+          {health?.camera.board && <p>Bo đã chạy {(health.camera.board.uptime_ms/1000).toFixed(0)} s · lần reset: {health.camera.board.reset_reason} · Wi-Fi {health.camera.board.wifi_rssi} dBm</p>}
+          {healthError && <p className="text-amber-200">Không đọc được trạng thái thiết bị: {healthError}</p>}
+          <button disabled={Boolean(working)} className="underline disabled:opacity-40" onClick={() => {
+            void getDeviceHealth(undefined, true).then(value => { setHealth(value); setHealthError(''); }).catch(reason => setHealthError(String(reason)));
+          }}>Kiểm tra lại thiết bị</button>
+        </div>
         {displayFrame && <div className="mt-3 grid grid-cols-2 gap-2">
           {hands.map(hand => <div key={hand.side} className="rounded border border-slate-700 bg-slate-950/60 p-2">
             <div className="text-sm font-bold" style={{ color: hand.color }}>{hand.title}</div>
@@ -226,10 +277,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
             {hand.wrist && <div className="mt-1 font-mono text-xs text-gray-400">X {hand.wrist.x.toFixed(3)} · Y {hand.wrist.y.toFixed(3)}</div>}
           </div>)}
         </div>}
-        {displayFrame?.wrist_status && <p className={`mt-3 text-sm ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
+        {displayFrame?.wrist_status && recording && !stale && <p className={`mt-3 text-sm ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
           SmartWrist (tay phải): {displayFrame.wrist_status === 'receiving' ? 'đang nhận dữ liệu' : 'chưa có dữ liệu'}
         </p>}
-        {displayFrame?.live_alignment && <div className="mt-3 text-sm text-gray-300">
+        {displayFrame?.live_alignment && recording && !stale && <div className="mt-3 text-sm text-gray-300">
           <p>Ghép camera/vòng tay: {displayFrame.live_alignment.sensor_status === 'matched'
             ? `lệch ${displayFrame.live_alignment.delta_ms} ms` : 'thiếu mẫu phù hợp'}</p>
           {displayFrame.wrist_sample && <p className="mt-1 font-mono text-xs">
@@ -240,11 +291,13 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
               : `IMU: acc ${displayFrame.wrist_sample.acc.map(value => value.toFixed(2)).join(' · ')} / gyro ${displayFrame.wrist_sample.gyro?.map(value => value.toFixed(2)).join(' · ')}`}
           </p>}
         </div>}
+        {displayFrame?.performance && recording && !stale && <p className="mt-2 text-xs text-gray-400">AI p95 {displayFrame.performance.stages.inference?.p95_ms.toFixed(1) ?? '—'} ms · tuổi ảnh {frameAge?.toFixed(0)} ms</p>}
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}
         <p className="mt-4 text-xs text-gray-500">Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.</p>
       </div>
     </div>
+    <LearningExperimentPanel />
   </section>;
 }

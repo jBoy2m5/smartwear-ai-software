@@ -1,0 +1,67 @@
+{
+  "schema_version": "smartwear.capture/1.0",
+  "source_kind": "measured",
+  "source_session_name": "hardware_20261009_111435_295780_stodp8sk",
+  "context": {
+    "role": "demo",
+    "trial_stage": "technical",
+    "purpose": "performance_benchmark"
+  },
+  "pipeline_version": "e5caf0469bf3b470face2dae097c88ae9cad738e",
+  "capture_script_sha256": "34dfbec3ba7a8fc99b5a2ff737b04817a65b7d4261efe934a58740846bac5402",
+  "model_sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+  "camera": {
+    "mirror_for_inference": true,
+    "rotation_degrees": 0,
+    "firmware_version": "unknown; not reported by device"
+  },
+  "events": [
+    {
+      "name": "capture_started",
+      "host_monotonic_ns": 489639953000000
+    },
+    {
+      "name": "capture_stopped",
+      "host_monotonic_ns": 489660765000000
+    }
+  ],
+  "clock_domain": "device_NTP_epoch_with_recorder_receive_monotonic",
+  "clock_accuracy": "unknown",
+  "artifacts": [
+    {
+      "path": "camera.avi",
+      "size_bytes": 999924,
+      "sha256": "5e50273ddf20e8b529a74a4151508204488ed79de5cfaff872a131866b9dec27"
+    },
+    {
+      "path": "camera.jsonl",
+      "size_bytes": 281359,
+      "sha256": "eb7ffabee44afc2d0c13a0b6fd3445a2d5feb84e99a4d8e4ac07110324d49c4e"
+    },
+    {
+      "path": "camera.video.json",
+      "size_bytes": 520,
+      "sha256": "45d3a271daa75cbcbee76821fca4d16377771d871b565cfd9cb5c55c6f166110"
+    },
+    {
+      "path": "camera_packets.jsonl",
+      "size_bytes": 77543,
+      "sha256": "7d3c29ec3350772eefb4e9c4af71dcc8de158d2aa5994008bb38bf93e51258cd"
+    },
+    {
+      "path": "camera_raw.mjpeg",
+      "size_bytes": 1251521,
+      "sha256": "7f7219274b35e6ce5e200dbd6e4f6c68a7257993edab3172d97a52f866c14a27"
+    },
+    {
+      "path": "hardware_capture.json",
+      "size_bytes": 863,
+      "sha256": "111374a660143f2ee80066eea142c4ebbda3718cd965577f4da8dc324bb41b5a"
+    },
+    {
+      "path": "wrist_raw.jsonl",
+      "size_bytes": 566172,
+      "sha256": "077434d94d9b293d3917d83320688f6cfd5008f1886c2386af3b8e8b039c1724"
+    }
+  ]
+}

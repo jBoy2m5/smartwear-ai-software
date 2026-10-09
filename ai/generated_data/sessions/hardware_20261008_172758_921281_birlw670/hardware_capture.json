@@ -1,0 +1,28 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "failed",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 10,
+  "error": "Camera reader failed: Camera sequence or clock reset; start a new session",
+  "camera_stats": {
+    "stream_disconnects": 1,
+    "received_jpeg": 4,
+    "stream_errors": 2,
+    "http_503": 1,
+    "last_stream_error": "HTTP Error 503: Service Unavailable",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "connected": true,
+    "queue_size": 0,
+    "newest_sample_age_ms": null
+  },
+  "inferred_frames": 4
+}

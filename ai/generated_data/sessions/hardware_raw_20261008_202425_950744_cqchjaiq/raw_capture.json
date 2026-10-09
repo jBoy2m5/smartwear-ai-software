@@ -1,0 +1,33 @@
+{
+  "schema_version": "smartwear.raw_capture.v1",
+  "status": "incomplete_inputs",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "duration_requested_s": 10,
+  "camera_stats": {
+    "stream_errors": 2,
+    "http_503": 1,
+    "last_stream_error": "[WinError 10054] An existing connection was forcibly closed by the remote host",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 571,
+    "seq_gaps": 31,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 124
+  },
+  "capture_elapsed_s": 10.25,
+  "camera_received_fps": 0.0,
+  "wrist_received_hz": 55.707,
+  "source_sha256": {
+    "camera_raw.mjpeg": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "camera_packets.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wrist_raw.jsonl": "926c747a89f050e5d4ec2b1dd8a215ed945c9eb537d860f8194d9ec45205c701"
+  }
+}

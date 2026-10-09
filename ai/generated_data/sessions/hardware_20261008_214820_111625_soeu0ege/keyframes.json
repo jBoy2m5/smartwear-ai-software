@@ -1,0 +1,256 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261008_214820_111625_soeu0ege\\camera.jsonl",
+  "camera_sha256": "22ab2aa74f5b26d9b079b155074cd6a19645cb9b84fcb691ef545b9c946bd3c8",
+  "multimodal_sha256": "ef7c54260e73e879cf3ba7a45ff45012f81bab16139fbc3bdeb3df9e1776346c",
+  "segments_sha256": "ab0a481d10fd404801f98d7772db6cc8adfbdc03e8d3b4c2037755a4107b49ef",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 2870,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 56,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 56,
+      "end_ms": 225,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 3,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 225,
+      "end_ms": 7541,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 4,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 2870,
+      "end_ms": 2927,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 5,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 2927,
+      "end_ms": 7485,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 6,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 7485,
+      "end_ms": 7541,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 7,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 7541,
+      "end_ms": 7597,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 8,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 7541,
+      "end_ms": 7597,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 9,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 7597,
+      "end_ms": 7654,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 10,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 7597,
+      "end_ms": 13957,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 11,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 7654,
+      "end_ms": 7710,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 12,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 7710,
+      "end_ms": 7766,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 13,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 7766,
+      "end_ms": 7879,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 14,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 7879,
+      "end_ms": 7935,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 15,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 7935,
+      "end_ms": 13901,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 16,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 13901,
+      "end_ms": 13957,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 17,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 13957,
+      "end_ms": 16321,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 18,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 13957,
+      "end_ms": 14013,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 19,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 14013,
+      "end_ms": 16264,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 20,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 16264,
+      "end_ms": 16377,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 21,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 16321,
+      "end_ms": 16377,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 22,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 16377,
+      "end_ms": 16602,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 23,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 16377,
+      "end_ms": 16602,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261008_214820_111625_soeu0ege\\camera.avi",
+  "video_sha256": "4e7ac8fdbf146c6d4a1436418379b188b8928822c5c505bed8946e7f3b39a388",
+  "extracted_count": 0,
+  "skipped_count": 24
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": "smartwear.capture/1.0",
+  "source_kind": "measured",
+  "source_session_name": "hardware_20261008_173445_733196_qwf7pem1",
+  "context": {},
+  "pipeline_version": "e5caf0469bf3b470face2dae097c88ae9cad738e",
+  "capture_script_sha256": "34dfbec3ba7a8fc99b5a2ff737b04817a65b7d4261efe934a58740846bac5402",
+  "model_sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+  "camera": {
+    "mirror_for_inference": true,
+    "rotation_degrees": 0,
+    "firmware_version": "unknown; not reported by device"
+  },
+  "events": [
+    {
+      "name": "capture_started",
+      "host_monotonic_ns": 426050359000000
+    },
+    {
+      "name": "capture_stopped",
+      "host_monotonic_ns": 426075812000000
+    }
+  ],
+  "clock_domain": "device_NTP_epoch_with_recorder_receive_monotonic",
+  "clock_accuracy": "unknown",
+  "artifacts": [
+    {
+      "path": "camera.avi",
+      "size_bytes": 1517386,
+      "sha256": "b992289def46b446f87338ed6ff35845603657a713b459ed3c931c02f41071a4"
+    },
+    {
+      "path": "camera.jsonl",
+      "size_bytes": 389961,
+      "sha256": "3634b08eb4719f28c8c207a94827310de81eb80895e4cabd901508cd59808547"
+    },
+    {
+      "path": "camera.video.json",
+      "size_bytes": 520,
+      "sha256": "cae3e4e7dd8e94de89163b70c44c7a61dd22b9ce776267306ed3b27e8ec97c01"
+    },
+    {
+      "path": "camera_packets.jsonl",
+      "size_bytes": 104896,
+      "sha256": "e342f6c1ef09938d974a9e383e010c51288fdda5374a229767d46ee3daf56a85"
+    },
+    {
+      "path": "camera_raw.mjpeg",
+      "size_bytes": 2088913,
+      "sha256": "cb4ec27a08fa9cc5cb875404faa385c8141431daa27c16b3299df56f079308b4"
+    },
+    {
+      "path": "hardware_capture.json",
+      "size_bytes": 836,
+      "sha256": "f49d3d9a92e30872bdaf385be6193c653fb85b9dfbbc8fc6d68d935bd8ec88fd"
+    },
+    {
+      "path": "wrist_raw.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

@@ -187,9 +187,10 @@ quyền riêng tư trước khi chia sẻ file.
 
 ## Cách xác định tay
 
-Camera lật gương để người dùng xem như soi gương. Nhãn Left/Right MediaPipe
-trả về trong cấu hình này bị ngược so với tay thật; `camera_test.py` đổi nhãn
-ngay lúc đọc kết quả mô hình. Trường `model_handedness` giữ nhãn gốc, còn
+Camera lật gương trước khi đưa ảnh vào MediaPipe. Nhãn Left/Right của MediaPipe
+đã giả định ảnh đầu vào lật gương, nên `camera_test.py` giữ nguyên nhãn mô hình
+cho phiên mới (`handedness_convention=anatomical_from_mirrored_camera_v2`).
+Trường `model_handedness` giữ nhãn gốc, còn
 `handedness` là tay thật; `hand_actions.left/right` và toàn bộ dữ liệu cảm biến,
 đoạn, ảnh, so sánh đều dựa vào tay thật. Không dùng vị trí trong danh sách hoặc
 bên trái/bên phải màn hình. Thứ tự phát hiện đảo vẫn giữ lịch sử theo tay.

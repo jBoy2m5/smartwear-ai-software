@@ -24,7 +24,40 @@ class CameraReceiver:
         self.error = None
         self.last_sequence = None
         self.last_epoch = None
+        self.last_jpeg = None
         self.last_stream_error = None
+        self.last_boot_id = None
+
+    def _accept_frame(self, frame):
+        """Ignore an exact replay on reconnect, but never join two camera boots."""
+        if self.last_sequence is not None:
+            if self.last_boot_id and frame.boot_id and self.last_boot_id != frame.boot_id:
+                detail = f'SmartCap khởi động lại: boot {self.last_boot_id} -> {frame.boot_id}; nguyên nhân bo báo: {frame.reset_reason or "unknown"}. Bắt đầu phiên mới sau khi kiểm tra nguồn và camera.'
+                with self.lock:
+                    self.last_stream_error = detail
+                    self.counters['clock_or_sequence_resets'] += 1
+                raise RuntimeError(detail)
+            if (frame.sequence == self.last_sequence and
+                    frame.epoch_ms == self.last_epoch and frame.jpeg == self.last_jpeg):
+                with self.lock:
+                    self.counters["duplicate_frames"] += 1
+                return False
+            if frame.sequence <= self.last_sequence or frame.epoch_ms <= self.last_epoch:
+                reason = ("sequence quay về đầu" if frame.sequence <= self.last_sequence
+                          else "đồng hồ camera lùi")
+                detail = (f"SmartCap {reason} khi đang quay "
+                          f"(seq {self.last_sequence} -> {frame.sequence}, "
+                          f"time {self.last_epoch} -> {frame.epoch_ms}). "
+                          "Bo có thể đã khởi động lại. Kiểm tra nguồn/cáp USB, "
+                          "rồi bắt đầu phiên mới; không mở Serial Monitor khi đang quay.")
+                with self.lock:
+                    self.last_stream_error = detail
+                    self.counters["clock_or_sequence_resets"] += 1
+                raise RuntimeError(detail)
+        self.last_sequence, self.last_epoch, self.last_jpeg = (
+            frame.sequence, frame.epoch_ms, frame.jpeg)
+        self.last_boot_id = frame.boot_id or self.last_boot_id
+        return True
 
     def _record(self, stream, index, frame, received_epoch_ms, received_monotonic_ns=None):
         if received_monotonic_ns is None:
@@ -35,6 +68,7 @@ class CameraReceiver:
         index.write(json.dumps({"seq": frame.sequence, "epoch_ms": frame.epoch_ms,
                                 "received_epoch_ms": received_epoch_ms,
                                 "received_monotonic_ns": received_monotonic_ns,
+                                "boot_id": frame.boot_id, "reset_reason": frame.reset_reason,
                                 "offset": offset, "length": len(frame.jpeg),
                                 "sha256": hashlib.sha256(frame.jpeg).hexdigest()}) + "\n")
         index.flush()
@@ -52,11 +86,8 @@ class CameraReceiver:
                                 if self.stop_event.is_set():
                                     break
                                 received = time.time_ns() // 1_000_000
-                                if (self.last_sequence is not None and
-                                        (frame.sequence <= self.last_sequence
-                                         or frame.epoch_ms <= self.last_epoch)):
-                                    raise RuntimeError("Camera sequence or clock reset; start a new session")
-                                self.last_sequence, self.last_epoch = frame.sequence, frame.epoch_ms
+                                if not self._accept_frame(frame):
+                                    continue
                                 self._record(raw, index, frame, received, time.monotonic_ns())
                                 item = (frame, received)
                                 try:
@@ -115,6 +146,7 @@ class CameraReceiver:
             result = dict(self.counters)
             if self.last_stream_error is not None:
                 result["last_stream_error"] = self.last_stream_error
+            result['boot_id'] = self.last_boot_id
         result["queue_size"] = self.frames.qsize()
         return result
 

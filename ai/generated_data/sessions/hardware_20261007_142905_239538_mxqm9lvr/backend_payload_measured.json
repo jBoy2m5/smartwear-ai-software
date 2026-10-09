@@ -1,0 +1,280 @@
+{
+  "session_id": "MEASURED_hardware_20261007_142905_239538_mxqm9lvr",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0005_right_REACH_frame_000038.png",
+    "segment_0006_right_OPEN_frame_000042.png",
+    "segment_0007_right_REACH_frame_000057.png",
+    "segment_0011_right_GRAB_frame_000074.png",
+    "segment_0016_right_REACH_frame_000106.png",
+    "segment_0024_right_REACH_frame_000160.png",
+    "segment_0027_right_REACH_frame_000171.png",
+    "segment_0035_right_REACH_frame_000200.png",
+    "segment_0044_left_REACH_frame_000315.png",
+    "segment_0047_left_OPEN_frame_000321.png",
+    "segment_0048_left_REACH_frame_000323.png",
+    "segment_0051_left_REACH_frame_000335.png",
+    "segment_0054_left_REACH_frame_000353.png",
+    "segment_0057_left_REACH_frame_000363.png",
+    "segment_0060_left_OPEN_frame_000403.png",
+    "segment_0061_left_REACH_frame_000405.png",
+    "segment_0062_left_OPEN_frame_000408.png",
+    "segment_0063_left_REACH_frame_000415.png",
+    "segment_0072_right_REACH_frame_000510.png",
+    "segment_0073_right_OPEN_frame_000521.png",
+    "segment_0074_right_REACH_frame_000529.png",
+    "segment_0079_right_REACH_frame_000568.png",
+    "segment_0086_right_REACH_frame_000621.png",
+    "segment_0087_right_OPEN_frame_000637.png",
+    "segment_0088_right_REACH_frame_000649.png",
+    "segment_0089_right_OPEN_frame_000651.png",
+    "segment_0090_right_REACH_frame_000669.png",
+    "segment_0098_left_REACH_frame_000714.png",
+    "segment_0103_left_REACH_frame_000721.png",
+    "segment_0108_left_REACH_frame_000732.png",
+    "segment_0117_left_REACH_frame_000741.png",
+    "segment_0124_right_REACH_frame_000748.png",
+    "segment_0127_left_REACH_frame_000754.png",
+    "segment_0130_left_REACH_frame_000785.png",
+    "segment_0133_left_REACH_frame_000797.png",
+    "segment_0136_left_REACH_frame_000826.png",
+    "segment_0139_left_REACH_frame_000845.png",
+    "segment_0142_left_REACH_frame_000864.png",
+    "segment_0147_left_REACH_frame_000878.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 2.138,
+      "end_time": 2.42,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 2.42,
+      "end_time": 2.589,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 2.589,
+      "end_time": 4.052,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 4.221,
+      "end_time": 4.39,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 5.684,
+      "end_time": 6.528,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 9.117,
+      "end_time": 9.229,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 9.511,
+      "end_time": 10.074,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 10.524,
+      "end_time": 12.269,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 18.009,
+      "end_time": 18.178,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 18.403,
+      "end_time": 18.459,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 18.459,
+      "end_time": 18.628,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 18.797,
+      "end_time": 19.641,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 19.979,
+      "end_time": 20.541,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 20.823,
+      "end_time": 20.879,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 23.13,
+      "end_time": 23.186,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 23.186,
+      "end_time": 23.355,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 23.355,
+      "end_time": 23.58,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 23.58,
+      "end_time": 24.143,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 28.645,
+      "end_time": 29.771,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 29.771,
+      "end_time": 29.827,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 29.827,
+      "end_time": 30.728,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 32.022,
+      "end_time": 32.866,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 35.117,
+      "end_time": 35.736,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 35.736,
+      "end_time": 36.918,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 36.918,
+      "end_time": 37.087,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 37.087,
+      "end_time": 37.2,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 37.2,
+      "end_time": 39.057,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 40.689,
+      "end_time": 40.801,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 40.97,
+      "end_time": 41.308,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 41.533,
+      "end_time": 41.927,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 42.209,
+      "end_time": 42.321,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 42.602,
+      "end_time": 42.659,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 42.771,
+      "end_time": 43.165,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 44.46,
+      "end_time": 45.079,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 45.36,
+      "end_time": 45.529,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 46.767,
+      "end_time": 47.443,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 48.118,
+      "end_time": 48.23,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 49.187,
+      "end_time": 49.243,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 41.45,
+    "muda_detected_seconds": 0.0
+  },
+  "robot_trajectory_points": []
+}

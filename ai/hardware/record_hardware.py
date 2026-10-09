@@ -20,6 +20,7 @@ from hardware.camera_receiver import CameraReceiver  # noqa: E402
 from hardware.mqtt_wrist import WristReceiver  # noqa: E402
 from hardware.config import HardwareConfig  # noqa: E402
 from hardware.live_alignment import multimodal_frame  # noqa: E402
+from hardware.performance import Performance  # noqa: E402
 from video_recording import RecordingVideo  # noqa: E402
 
 CAPTURE_SCRIPT_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -65,17 +66,28 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
     last_inferred_count = 0
     last_wrist_count = 0
     inferred = 0
+    performance = Performance()
+    last_metrics = 0.
+    live_metrics = {}
     print(f"Hardware session: {session}", flush=True)
     wrist_error = None
+    landmarker = None
     try:
+        landmarker = mp.tasks.vision.HandLandmarker.create_from_options(options)
+        # Initialize inference before collecting real camera frames.
+        landmarker.detect_for_video(mp.Image(image_format=mp.ImageFormat.SRGB,
+            data=np.zeros((240, 320, 3), dtype=np.uint8)), 0)
+        performance.event('model_ready')
         try:
             wrist.start()
         except ConnectionError as exc:
             wrist_error = str(exc)
             print(f"SmartWrist unavailable; camera preview will continue: {exc}", flush=True)
         receiver.start()
-        with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker, \
-                camera_file.open("x", encoding="utf-8", newline="\n") as stream:
+        started = last_report = time.monotonic()
+        capture_started_monotonic = time.monotonic_ns()
+        performance.event('capture_started')
+        with camera_file.open("x", encoding="utf-8", newline="\n") as stream:
             detector = TwoHandActionDetector()
             while time.monotonic() - started < duration_s:
                 if stop_requested is not None and stop_requested():
@@ -88,22 +100,32 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                         raise TimeoutError("ESP32 camera did not supply a valid JPEG within 15 s")
                     continue
                 packet, received_epoch_ms = item
+                performance.event('first_jpeg_consumed')
+                frame_started = time.perf_counter()
+                performance.add('host_receive_to_consume', max(0, time.time_ns()/1_000_000-received_epoch_ms))
                 if t0 is None:
                     t0 = packet.epoch_ms
                 timestamp = packet.epoch_ms - t0
+                stage_started = time.perf_counter()
                 frame = cv2.imdecode(np.frombuffer(packet.jpeg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                performance.add('jpeg_decode', (time.perf_counter()-stage_started)*1000)
                 if frame is None:
                     with receiver.lock:
                         receiver.counters["decode_errors"] += 1
                     continue
+                stage_started = time.perf_counter()
                 sample = wrist.buffer.nearest(packet.epoch_ms, alignment_window_ms)
+                performance.add('alignment_wait', (time.perf_counter()-stage_started)*1000)
                 aligned = multimodal_frame(packet, frame, sample)
                 if on_multimodal is not None:
                     on_multimodal(aligned)
                 frame = cv2.flip(frame, 1)
                 image = mp.Image(image_format=mp.ImageFormat.SRGB,
                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                result = landmarker.detect_for_video(image, timestamp)
+                stage_started = time.perf_counter()
+                result = landmarker.detect_for_video(image, timestamp + 1)
+                performance.add('inference', (time.perf_counter()-stage_started)*1000)
+                performance.event('first_inference')
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
                                        detector)
                 wrist_state = wrist.snapshot()
@@ -115,15 +137,25 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                                           "delta_ms": aligned["delta_ms"],
                                           "wrist_seq": sample["seq"] if sample else None}
                 data["wrist_sample"] = aligned["wrist"]
+                stage_started = time.perf_counter()
                 data.update(source_epoch_ms=packet.epoch_ms,
                             source_frame_seq=packet.sequence,
                             received_epoch_ms=received_epoch_ms,
                             video_frame_index=video.write(frame))
                 stream.write(json.dumps(data, ensure_ascii=False, allow_nan=False) + "\n")
                 stream.flush()
+                performance.add('video_and_observation_write', (time.perf_counter()-stage_started)*1000)
                 inferred += 1
                 if on_frame is not None:
+                    now_metrics = time.monotonic()
+                    if now_metrics-last_metrics >= .5:
+                        live_metrics = performance.snapshot()
+                        last_metrics = now_metrics
+                    data['performance'] = live_metrics
+                    stage_started = time.perf_counter()
                     on_frame(cv2, frame, data)
+                    performance.add('preview_submit', (time.perf_counter()-stage_started)*1000)
+                performance.add('frame_processing', (time.perf_counter()-frame_started)*1000)
                 if show_window:
                     draw_frame(cv2, frame, data)
                     cv2.imshow("SmartWear ESP32 - Left / Right Hands", frame)
@@ -150,14 +182,26 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
         marker.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
         raise
     finally:
+        recording_elapsed = max(.001, time.monotonic()-started)
+        performance.event('recording_ended')
         cleanup_error = None
-        for close in (receiver.stop, wrist.stop, video.close):
+        # Stop acquisition before the model teardown, which can take hundreds of ms.
+        # Otherwise raw collection continues filling the inference queue after the loop ends.
+        closers = [receiver.stop, wrist.stop, video.close]
+        if landmarker is not None:
+            closers.append(landmarker.close)
+        for close in closers:
             try:
                 close()
             except Exception as exc:
                 if cleanup_error is None:
                     cleanup_error = exc
         capture_stopped_monotonic = time.monotonic_ns()
+        performance.event('capture_stopped')
+        performance_document = performance.snapshot()
+        performance_document.update(camera_stats=receiver.snapshot(), wrist_stats=wrist.snapshot(),
+                                    inferred_frames=inferred)
+        (session / 'performance.json').write_text(json.dumps(performance_document, indent=2), encoding='utf-8')
         if show_window:
             cv2.destroyAllWindows()
         if cleanup_error is not None and sys.exc_info()[0] is None:
@@ -173,14 +217,16 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
     config.update(status="complete", first_camera_epoch_ms=t0,
                   camera_stats=receiver.snapshot(), wrist_stats=wrist.snapshot(),
                   inferred_frames=inferred, elapsed_s=round(elapsed, 3))
+    config['recording_elapsed_s'] = round(recording_elapsed, 3)
+    config['cleanup_elapsed_s'] = round(max(0, elapsed-recording_elapsed), 3)
     config["wrist_status"] = ("received" if config["wrist_stats"].get("received", 0)
                               else "missing")
     if wrist_error:
         config["wrist_error"] = wrist_error
     config["average_received_fps"] = round(
-        config["camera_stats"].get("received_jpeg", 0) / elapsed, 3)
-    config["average_inference_fps"] = round(inferred / elapsed, 3)
-    config["average_wrist_hz"] = round(config["wrist_stats"].get("received", 0) / elapsed, 3)
+        config["camera_stats"].get("received_jpeg", 0) / recording_elapsed, 3)
+    config["average_inference_fps"] = round(inferred / recording_elapsed, 3)
+    config["average_wrist_hz"] = round(config["wrist_stats"].get("received", 0) / recording_elapsed, 3)
     temporary = marker.with_suffix(".tmp")
     temporary.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, marker)

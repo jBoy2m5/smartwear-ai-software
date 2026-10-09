@@ -1,0 +1,7 @@
+{
+  "schema_version": "smartwear.backend_recording_measured.v1",
+  "session_id": "MEASURED_hardware_20261008_214248_578349__hjh2rxn",
+  "backend_url": "http://127.0.0.1:8000",
+  "video_sha256": "dd809d07f0ae9ddc323349e6f6c33577fc602645915d0024daede668ae42fa98",
+  "recording_url": "/api/v1/sessions/MEASURED_hardware_20261008_214248_578349__hjh2rxn/recording"
+}

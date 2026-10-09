@@ -84,6 +84,25 @@ class SchemaTests(unittest.TestCase):
 class BackendIntegrationTests(unittest.TestCase):
     """Exercise HTTP, persistence, artifact, and WebSocket workflows."""
 
+    def test_devices_route_precedes_job_id_and_preview_reports_stale_age(self):
+        import time
+        with patch.object(self.app.state.capture_manager, 'devices', return_value={'can_start': False}):
+            response = self.client.get('/api/v1/capture/devices')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['can_start'])
+        job_id = '0'*32
+        directory = self.app.state.capture_manager.root / job_id
+        directory.mkdir()
+        import json
+        (directory/'preview_00000001.json').write_text(json.dumps({'frame_index':1,
+            'published_epoch_ms':time.time_ns()//1_000_000-3000,
+            'frame_received_epoch_ms':time.time_ns()//1_000_000-4000}), encoding='utf-8')
+        (directory/'preview_00000001.jpg').write_bytes(b'jpeg')
+        response = self.client.get(f'/api/v1/capture/{job_id}/preview')
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(response.json()['frame_age_ms'], 4000)
+        self.assertGreaterEqual(response.json()['preview_age_ms'], 3000)
+
     def setUp(self) -> None:
         self.test_root = Path(tempfile.mkdtemp(dir=BACKEND_ROOT, prefix=".test_"))
         self.settings = Settings(

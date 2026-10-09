@@ -141,6 +141,17 @@ class DeploymentTests(unittest.TestCase):
         self.assertTrue(success)
         handoffs = []
         finalization_times = []
+        closed = []
+        import mediapipe as mp
+        create_landmarker = mp.tasks.vision.HandLandmarker.create_from_options
+        def model(options):
+            detector = create_landmarker(options)
+            close = detector.close
+            def tracked_close():
+                closed.append('model')
+                close()
+            detector.close = tracked_close
+            return detector
         def git_version(*args, **kwargs):
             finalization_times.append(time.monotonic_ns())
             return SimpleNamespace(stdout='fixture-commit')
@@ -148,7 +159,10 @@ class DeploymentTests(unittest.TestCase):
                 patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
                 patch("hardware.record_hardware.CameraReceiver") as camera, \
                 patch("hardware.record_hardware.WristReceiver") as wrist, \
+                patch.object(mp.tasks.vision.HandLandmarker, 'create_from_options', side_effect=model), \
                 patch("hardware.record_hardware.subprocess.run", side_effect=git_version):
+            camera.return_value.stop.side_effect = lambda: closed.append('camera')
+            wrist.return_value.stop.side_effect = lambda: closed.append('wrist')
             camera.return_value.snapshot.return_value = {"received_jpeg": 3}
             camera.return_value.get.side_effect = [
                 (CameraFrame(jpeg.tobytes(), BASE + index * 40, index), BASE + index * 40 + 2)
@@ -168,6 +182,10 @@ class DeploymentTests(unittest.TestCase):
             events={event['name']:event['host_monotonic_ns'] for event in manifest['events']}
             self.assertLess(events['capture_started'],events['capture_stopped'])
             self.assertLessEqual(events['capture_stopped'],finalization_times[0])
+            self.assertEqual(closed, ['camera', 'wrist', 'model'])
+            timings = json.loads((output.parent/'performance.json').read_text())
+            self.assertLess(timings['events_ms']['model_ready'],timings['events_ms']['capture_started'])
+            self.assertEqual(timings['stages']['inference']['count'], 3)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,38 @@
+{
+  "schema_version": "smartwear.backend_publish_measured.v1",
+  "session_id": "MEASURED_hardware_20261007_150625_216050_uk5sxhc9",
+  "backend_url": "http://127.0.0.1:8000",
+  "payload_sha256": "1048fc732ee0bb6812f9fd4aafade93022ddeb45d4d9abc721c38650c9438103",
+  "uploaded_keyframes": [
+    "segment_0003_left_REACH_frame_000138.png",
+    "segment_0004_left_GRAB_frame_000142.png",
+    "segment_0005_left_RELEASE_frame_000147.png",
+    "segment_0008_right_GRAB_frame_000152.png",
+    "segment_0011_left_OPEN_frame_000176.png",
+    "segment_0012_left_REACH_frame_000190.png",
+    "segment_0013_left_OPEN_frame_000205.png",
+    "segment_0014_left_REACH_frame_000210.png",
+    "segment_0017_left_GRAB_frame_000326.png",
+    "segment_0018_left_ASSEMBLY_frame_000335.png",
+    "segment_0019_left_GRAB_frame_000338.png",
+    "segment_0024_left_GRAB_frame_000796.png",
+    "segment_0025_left_ASSEMBLY_frame_000804.png",
+    "segment_0036_right_REACH_frame_001063.png",
+    "segment_0043_left_REACH_frame_001069.png",
+    "segment_0046_right_REACH_frame_001072.png",
+    "segment_0051_right_REACH_frame_001079.png",
+    "segment_0054_left_GRAB_frame_001222.png",
+    "segment_0055_left_ASSEMBLY_frame_001242.png",
+    "segment_0056_left_GRAB_frame_001257.png",
+    "segment_0059_left_GRAB_frame_001315.png"
+  ],
+  "backend_response": {
+    "session_id": "MEASURED_hardware_20261007_150625_216050_uk5sxhc9",
+    "created": true,
+    "export_status": "COMPLETED",
+    "message": "Session stored and output artifacts generated",
+    "sop_download_url": "/api/v1/sessions/MEASURED_hardware_20261007_150625_216050_uk5sxhc9/download-sop",
+    "robot_json_url": null,
+    "robot_export_url": null
+  }
+}

@@ -1,24 +1,23 @@
 {
   "config": {
-    "camera_url": "http://192.168.0.111:81/stream",
-    "mqtt_host": "192.168.0.107",
+    "camera_url": "http://192.168.137.111:81/stream",
+    "mqtt_host": "192.168.137.1",
     "mqtt_port": 1883,
     "topic": "wearable/user01/wrist/data",
     "alignment_window_ms": 10
   },
-  "checked_epoch_ms": 1791210614888,
+  "checked_epoch_ms": 1791527183094,
   "checks": {
     "camera_tcp": {
-      "ok": false,
-      "error": "timed out"
+      "ok": true
     },
     "mqtt_tcp": {
-      "ok": false,
-      "error": "timed out"
+      "ok": true
     },
     "ntp": {
-      "ok": false,
-      "error": "timed out"
+      "ok": true,
+      "stratum": 10,
+      "server_epoch": 1791527183.094454
     },
     "dependencies": {
       "cv2": true,

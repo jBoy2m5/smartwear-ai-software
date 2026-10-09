@@ -1,0 +1,53 @@
+{
+  "schema_version": "smartwear.action_segments.v2",
+  "source_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261007_142254_436256_i1uwuwl2\\multimodal.jsonl",
+  "source_sha256": "b41bbd1e81f3c33d66d9f1f05f0ef3349ff46d218711ba5cd94c4c26767147fb",
+  "method": "consecutive_camera_labels_per_hand",
+  "action_source": "camera_landmarks_heuristic",
+  "uses_simulated_sensors": false,
+  "max_gap_ms": 500,
+  "frame_count": 1063,
+  "segment_count": 2,
+  "first_timestamp_ms": 0,
+  "last_timestamp_ms": 59993,
+  "duration_note": "Label-change boundaries use the next frame time. Gap/end boundaries stop at the last observation; true action end is unknown.",
+  "data_gaps": [],
+  "segments": [
+    {
+      "segment_id": 0,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 1062,
+      "frame_count": 1063,
+      "start_ms": 0,
+      "last_observed_ms": 59993,
+      "end_ms": 59993,
+      "duration_ms": 59993,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "left",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 1,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 1062,
+      "frame_count": 1063,
+      "start_ms": 0,
+      "last_observed_ms": 59993,
+      "end_ms": 59993,
+      "duration_ms": 59993,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "right",
+      "tracking_status": "missing"
+    }
+  ],
+  "hand_identity": "camera_recorded_handedness",
+  "segment_counts_by_hand": {
+    "left": 1,
+    "right": 1
+  },
+  "duration_scope": "Per hand; simultaneous left/right durations must not be added"
+}

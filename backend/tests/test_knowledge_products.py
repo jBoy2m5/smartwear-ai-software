@@ -46,6 +46,34 @@ def write_fixture(path, *, raw_jpeg=True, start_ms=0):
 
 
 class KnowledgeTests(unittest.TestCase):
+    def test_learning_report_requires_pinned_source_hashes_and_preserves_reviews(self):
+        from backend.schemas.knowledge import Step
+        guide = self.service.save_session(self.sid, self.value())
+        value = self.value(guide['revision'])
+        value.review_status='approved'; value.outcome='passed'; value.reviewer='observer'
+        value.review_rationale='Checked video'; value.clarity_confirmed=True
+        value.steps=[Step.model_validate({**s,'why':'Reviewed rationale','start_s':i*.25,'end_s':(i+1)*.25}) for i,s in enumerate(guide['steps'])]
+        guide = self.service.save_session(self.sid,value)
+        self.sessions.get_session=lambda sid:SimpleNamespace(worker_type='EXPERT' if sid==self.sid else 'TRAINEE',key_frames=[])
+        for stage in ('before_learning','after_learning'):
+            sid='MEASURED_'+stage
+            write_fixture(source_archive_path(self.settings.keyframe_dir,sid))
+            context=CaptureContext(role='worker',task_id='LOG_KIT',procedure_version='1',
+                participant_id='learner_01',consent_confirmed=True,reference_session_id=self.sid,trial_stage=stage)
+            value=SessionKnowledge(context=context,source_session_name=stage,reference_revision=guide['revision'],
+                steps=[s.model_copy() for s in value.steps],review_status='approved',outcome='passed',reviewer='observer',
+                review_rationale='Checked product',clarity_confirmed=True,prompt_count=0,confirmed_error_count=0,
+                conditions_note='Same fixture',sop_viewed_confirmed=stage=='after_learning')
+            self.service.save_session(sid,value)
+        report=self.service.learning_experiment('MEASURED_before_learning','MEASURED_after_learning')
+        self.assertTrue(report['evidence_ready'])
+        self.assertEqual(len(report['source_evidence']),3)
+        source_archive_path(self.settings.keyframe_dir,'MEASURED_after_learning').write_bytes(b'changed')
+        report=self.service.learning_experiment('MEASURED_before_learning','MEASURED_after_learning')
+        self.assertFalse(report['evidence_ready'])
+        self.assertIsNone(report['deltas'])
+        self.assertEqual(self.service.latest('session','MEASURED_after_learning')['review_status'],'approved')
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
         self.settings=Settings(environment='test',static_dir=self.root/'static',keyframe_dir=self.root/'static/images')

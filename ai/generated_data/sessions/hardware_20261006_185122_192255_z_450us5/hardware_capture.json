@@ -1,0 +1,24 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "failed",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 10,
+  "error": "ESP32 camera did not supply a valid JPEG within 15 s",
+  "camera_stats": {
+    "stream_errors": 2,
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "connected": true,
+    "queue_size": 0,
+    "newest_sample_age_ms": null
+  },
+  "inferred_frames": 0
+}

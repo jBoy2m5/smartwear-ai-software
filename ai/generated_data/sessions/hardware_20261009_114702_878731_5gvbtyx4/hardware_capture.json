@@ -1,0 +1,31 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "failed",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 10,
+  "error": "Camera reader failed: SmartCap khởi động lại: boot 7129c7370757537c -> 0026761577e4861a; nguyên nhân bo báo: interrupt_watchdog. Bắt đầu phiên mới sau khi kiểm tra nguồn và camera.",
+  "camera_stats": {
+    "received_jpeg": 620,
+    "dropped_for_inference": 19,
+    "stream_errors": 1,
+    "http_503": 3,
+    "clock_or_sequence_resets": 1,
+    "last_stream_error": "SmartCap khởi động lại: boot 7129c7370757537c -> 0026761577e4861a; nguyên nhân bo báo: interrupt_watchdog. Bắt đầu phiên mới sau khi kiểm tra nguồn và camera.",
+    "boot_id": "7129c7370757537c",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 2663,
+    "connected": true,
+    "queue_size": 0,
+    "newest_sample_age_ms": 43
+  },
+  "inferred_frames": 601
+}

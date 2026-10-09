@@ -1,0 +1,35 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "complete",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 10,
+  "first_camera_epoch_ms": 1791520776228,
+  "camera_stats": {
+    "received_jpeg": 324,
+    "dropped_for_inference": 5,
+    "boot_id": "59b877edcafbce7b",
+    "queue_size": 6
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 1032,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 163
+  },
+  "inferred_frames": 313,
+  "elapsed_s": 20.766,
+  "recording_elapsed_s": 20.641,
+  "cleanup_elapsed_s": 0.125,
+  "wrist_status": "received",
+  "average_received_fps": 15.697,
+  "average_inference_fps": 15.164,
+  "average_wrist_hz": 49.998
+}

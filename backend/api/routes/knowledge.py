@@ -42,6 +42,14 @@ def create_procedure(value:Procedure,request:Request):
 def references(request:Request,task_id:str|None=None,version:str|None=None):
     return service(request).references(task_id,version)
 
+@router.get('/learning-trials')
+def learning_trials(request: Request):
+    return service(request).learning_trials()
+
+@router.get('/learning-experiment')
+def learning_experiment(request: Request, before_session_id: str, after_session_id: str):
+    return service(request).learning_experiment(before_session_id, after_session_id)
+
 @router.get('/sessions/{session_id}')
 def knowledge(session_id:str,request:Request):return service(request).latest('session',session_id)
 

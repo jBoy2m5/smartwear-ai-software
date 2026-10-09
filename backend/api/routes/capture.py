@@ -14,6 +14,11 @@ router = APIRouter(prefix="/capture", tags=["Capture"],
 JobId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 
+@router.get("/devices")
+def device_health(request: Request, refresh: bool = False) -> dict:
+    return request.app.state.capture_manager.devices(refresh)
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware",
                   context: CaptureContext | None = Body(default=None)) -> dict:
@@ -57,6 +62,11 @@ def preview_observation(job_id: JobId, request: Request) -> JSONResponse:
             document = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        import time
+        published = document.get('published_epoch_ms')
+        document['preview_age_ms'] = max(0, time.time_ns() // 1_000_000 - published) if published else None
+        received = document.get('frame_received_epoch_ms')
+        document['frame_age_ms'] = max(0, time.time_ns() // 1_000_000 - received) if received else document['preview_age_ms']
         return JSONResponse(document, headers={"Cache-Control": "no-store, max-age=0"})
     raise HTTPException(status_code=404, detail="Camera chưa có hình")
 

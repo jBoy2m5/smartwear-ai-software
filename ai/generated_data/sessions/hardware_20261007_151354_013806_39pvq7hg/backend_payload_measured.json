@@ -1,0 +1,639 @@
+{
+  "session_id": "MEASURED_hardware_20261007_151354_013806_39pvq7hg",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0002_left_GRAB_frame_000022.png",
+    "segment_0003_left_RELEASE_frame_000033.png",
+    "segment_0005_left_GRAB_frame_000049.png",
+    "segment_0006_left_ASSEMBLY_frame_000057.png",
+    "segment_0007_left_RELEASE_frame_000063.png",
+    "segment_0008_left_OPEN_frame_000069.png",
+    "segment_0009_left_GRAB_frame_000077.png",
+    "segment_0010_left_ASSEMBLY_frame_000083.png",
+    "segment_0011_left_RELEASE_frame_000087.png",
+    "segment_0012_left_OPEN_frame_000093.png",
+    "segment_0013_left_REACH_frame_000096.png",
+    "segment_0014_left_OPEN_frame_000103.png",
+    "segment_0015_left_GRAB_frame_000107.png",
+    "segment_0017_left_ASSEMBLY_frame_000118.png",
+    "segment_0018_left_GRAB_frame_000121.png",
+    "segment_0019_left_RELEASE_frame_000126.png",
+    "segment_0020_left_REACH_frame_000131.png",
+    "segment_0026_left_OPEN_frame_000142.png",
+    "segment_0032_left_OPEN_frame_000178.png",
+    "segment_0033_left_REACH_frame_000180.png",
+    "segment_0034_left_OPEN_frame_000181.png",
+    "segment_0035_left_REACH_frame_000182.png",
+    "segment_0036_left_OPEN_frame_000183.png",
+    "segment_0037_left_REACH_frame_000190.png",
+    "segment_0038_left_OPEN_frame_000201.png",
+    "segment_0039_left_REACH_frame_000207.png",
+    "segment_0040_left_OPEN_frame_000208.png",
+    "segment_0041_left_REACH_frame_000209.png",
+    "segment_0042_left_OPEN_frame_000211.png",
+    "segment_0043_left_REACH_frame_000212.png",
+    "segment_0044_left_GRAB_frame_000220.png",
+    "segment_0045_left_RELEASE_frame_000230.png",
+    "segment_0046_left_OPEN_frame_000235.png",
+    "segment_0047_left_GRAB_frame_000240.png",
+    "segment_0048_left_RELEASE_frame_000250.png",
+    "segment_0049_left_OPEN_frame_000257.png",
+    "segment_0054_left_GRAB_frame_000266.png",
+    "segment_0055_left_ASSEMBLY_frame_000272.png",
+    "segment_0056_left_GRAB_frame_000274.png",
+    "segment_0057_left_ASSEMBLY_frame_000275.png",
+    "segment_0058_left_GRAB_frame_000279.png",
+    "segment_0073_right_REACH_frame_000399.png",
+    "segment_0074_right_OPEN_frame_000407.png",
+    "segment_0075_right_REACH_frame_000410.png",
+    "segment_0076_right_OPEN_frame_000412.png",
+    "segment_0077_right_REACH_frame_000414.png",
+    "segment_0078_right_OPEN_frame_000416.png",
+    "segment_0079_right_REACH_frame_000417.png",
+    "segment_0080_right_OPEN_frame_000423.png",
+    "segment_0083_right_REACH_frame_000460.png",
+    "segment_0084_right_OPEN_frame_000463.png",
+    "segment_0085_right_REACH_frame_000465.png",
+    "segment_0088_left_REACH_frame_000515.png",
+    "segment_0089_left_OPEN_frame_000526.png",
+    "segment_0090_left_REACH_frame_000539.png",
+    "segment_0091_left_OPEN_frame_000545.png",
+    "segment_0092_left_REACH_frame_000547.png",
+    "segment_0093_left_OPEN_frame_000550.png",
+    "segment_0094_left_REACH_frame_000553.png",
+    "segment_0095_left_OPEN_frame_000556.png",
+    "segment_0096_left_REACH_frame_000559.png",
+    "segment_0097_left_OPEN_frame_000560.png",
+    "segment_0098_left_REACH_frame_000568.png",
+    "segment_0115_right_REACH_frame_000642.png",
+    "segment_0120_right_REACH_frame_000653.png",
+    "segment_0125_right_REACH_frame_000663.png",
+    "segment_0131_left_OPEN_frame_000672.png",
+    "segment_0132_right_OPEN_frame_000672.png",
+    "segment_0133_right_REACH_frame_000674.png",
+    "segment_0138_left_OPEN_frame_000680.png",
+    "segment_0139_right_REACH_frame_000680.png",
+    "segment_0144_left_OPEN_frame_000687.png",
+    "segment_0145_right_REACH_frame_000697.png",
+    "segment_0146_left_REACH_frame_000689.png",
+    "segment_0147_left_OPEN_frame_000698.png",
+    "segment_0164_left_OPEN_frame_000723.png",
+    "segment_0169_left_GRAB_frame_000753.png",
+    "segment_0172_right_GRAB_frame_000762.png",
+    "segment_0175_right_ASSEMBLY_frame_000770.png",
+    "segment_0176_right_GRAB_frame_000776.png",
+    "segment_0183_right_REACH_frame_000793.png",
+    "segment_0188_right_OPEN_frame_000813.png",
+    "segment_0189_right_REACH_frame_000817.png",
+    "segment_0190_right_OPEN_frame_000822.png",
+    "segment_0191_right_REACH_frame_000829.png",
+    "segment_0192_right_OPEN_frame_000839.png",
+    "segment_0193_right_REACH_frame_000844.png",
+    "segment_0194_right_GRAB_frame_000845.png",
+    "segment_0203_right_REACH_frame_000879.png",
+    "segment_0206_left_OPEN_frame_000883.png",
+    "segment_0207_left_REACH_frame_000884.png",
+    "segment_0212_right_OPEN_frame_000893.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 1.351,
+      "end_time": 1.913,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 1.913,
+      "end_time": 2.532,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 2.701,
+      "end_time": 3.602,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 3.602,
+      "end_time": 3.939,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 3.939,
+      "end_time": 4.671,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 4.671,
+      "end_time": 5.065,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 5.065,
+      "end_time": 5.909,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 5.909,
+      "end_time": 5.965,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 5.965,
+      "end_time": 6.641,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 6.641,
+      "end_time": 6.697,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 6.697,
+      "end_time": 7.203,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 7.203,
+      "end_time": 7.822,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 7.822,
+      "end_time": 8.216,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 8.779,
+      "end_time": 9.173,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 9.173,
+      "end_time": 9.229,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 9.229,
+      "end_time": 9.905,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 9.905,
+      "end_time": 9.961,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 10.693,
+      "end_time": 11.087,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 13.169,
+      "end_time": 13.338,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 13.338,
+      "end_time": 13.45,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 13.45,
+      "end_time": 13.506,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 13.506,
+      "end_time": 13.563,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 13.563,
+      "end_time": 13.675,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 13.675,
+      "end_time": 14.801,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 14.801,
+      "end_time": 15.476,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 15.476,
+      "end_time": 15.589,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 15.589,
+      "end_time": 15.646,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 15.646,
+      "end_time": 15.758,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 15.758,
+      "end_time": 15.87,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 15.87,
+      "end_time": 16.095,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 16.095,
+      "end_time": 16.939,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 16.939,
+      "end_time": 17.615,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 17.615,
+      "end_time": 17.84,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 17.84,
+      "end_time": 18.74,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 18.74,
+      "end_time": 19.416,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 19.416,
+      "end_time": 19.641,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 20.204,
+      "end_time": 21.104,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 21.104,
+      "end_time": 21.329,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 21.329,
+      "end_time": 21.385,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 21.385,
+      "end_time": 21.442,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 21.442,
+      "end_time": 22.005,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 28.476,
+      "end_time": 29.039,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 29.039,
+      "end_time": 29.377,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 29.377,
+      "end_time": 29.433,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 29.433,
+      "end_time": 29.715,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 29.715,
+      "end_time": 29.94,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 29.94,
+      "end_time": 30.052,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 30.052,
+      "end_time": 30.165,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 30.165,
+      "end_time": 31.403,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 33.091,
+      "end_time": 33.204,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 33.204,
+      "end_time": 33.373,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 33.373,
+      "end_time": 33.485,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 36.074,
+      "end_time": 36.524,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 36.524,
+      "end_time": 37.763,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 37.763,
+      "end_time": 38.494,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 38.494,
+      "end_time": 38.663,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 38.663,
+      "end_time": 38.775,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 38.775,
+      "end_time": 39.169,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 39.169,
+      "end_time": 39.338,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 39.338,
+      "end_time": 39.676,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 39.676,
+      "end_time": 39.788,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 39.788,
+      "end_time": 40.014,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 40.014,
+      "end_time": 40.97,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 44.685,
+      "end_time": 45.416,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 45.754,
+      "end_time": 46.204,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 46.429,
+      "end_time": 47.048,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_OPEN",
+      "start_time": 47.273,
+      "end_time": 47.499,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_REACH",
+      "start_time": 47.499,
+      "end_time": 47.667,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_REACH",
+      "start_time": 47.836,
+      "end_time": 48.286,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_REACH",
+      "start_time": 48.512,
+      "end_time": 48.624,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH.RIGHT_REACH",
+      "start_time": 48.624,
+      "end_time": 48.68,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN.RIGHT_REACH",
+      "start_time": 48.68,
+      "end_time": 49.975,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 50.988,
+      "end_time": 51.494,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 53.52,
+      "end_time": 53.914,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 54.083,
+      "end_time": 54.927,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_ASSEMBLY",
+      "start_time": 54.927,
+      "end_time": 55.49,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 55.49,
+      "end_time": 55.884,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 57.01,
+      "end_time": 57.066,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 58.529,
+      "end_time": 58.585,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 58.585,
+      "end_time": 59.036,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 59.036,
+      "end_time": 59.486,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 59.486,
+      "end_time": 60.442,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 60.442,
+      "end_time": 61.118,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 61.118,
+      "end_time": 61.174,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 61.174,
+      "end_time": 61.287,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 63.313,
+      "end_time": 63.481,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 63.707,
+      "end_time": 63.763,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 63.763,
+      "end_time": 63.819,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_OPEN",
+      "start_time": 64.494,
+      "end_time": 64.607,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 37.0,
+    "muda_detected_seconds": 5.806
+  },
+  "robot_trajectory_points": []
+}

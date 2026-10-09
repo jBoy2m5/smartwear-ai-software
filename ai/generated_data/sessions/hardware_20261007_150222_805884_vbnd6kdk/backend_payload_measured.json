@@ -1,0 +1,83 @@
+{
+  "session_id": "MEASURED_hardware_20261007_150222_805884_vbnd6kdk",
+  "worker_type": "TRAINEE",
+  "key_frames": [
+    "segment_0005_left_OPEN_frame_000046.png",
+    "segment_0006_left_REACH_frame_000047.png",
+    "segment_0008_left_OPEN_frame_000065.png",
+    "segment_0009_left_REACH_frame_000066.png",
+    "segment_0010_left_OPEN_frame_000067.png",
+    "segment_0011_left_REACH_frame_000069.png",
+    "segment_0012_left_OPEN_frame_000070.png",
+    "segment_0013_left_GRAB_frame_000079.png",
+    "segment_0014_left_ASSEMBLY_frame_000097.png",
+    "segment_0015_left_GRAB_frame_000109.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 5.627,
+      "end_time": 5.684,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 5.684,
+      "end_time": 5.797,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 6.809,
+      "end_time": 6.866,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 6.866,
+      "end_time": 7.035,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 7.035,
+      "end_time": 7.147,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 7.147,
+      "end_time": 7.428,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 7.428,
+      "end_time": 7.541,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 7.541,
+      "end_time": 8.385,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 8.385,
+      "end_time": 9.961,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 9.961,
+      "end_time": 10.186,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 46.09,
+    "muda_detected_seconds": 1.576
+  },
+  "robot_trajectory_points": []
+}

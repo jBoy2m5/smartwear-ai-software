@@ -70,6 +70,10 @@ export interface CaptureStatus {
 }
 
 export interface CapturePreview {
+  preview_age_ms?: number | null;
+  frame_age_ms?: number | null;
+  preview_encode_ms?: number | null;
+  performance?: { stages: Record<string, { mean_ms: number; p95_ms: number }>; events_ms: Record<string, number> } | null;
   frame_index: number;
   timestamp_ms: number;
   camera: { frame_width: number; frame_height: number };
@@ -81,6 +85,16 @@ export interface CapturePreview {
   live_alignment?: { sensor_status: 'matched' | 'missing'; delta_ms: number | null };
   wrist_sample?: { seq: number; acc: number[] | null; gyro: number[] | null; force: number[];
     imu_status?: 'ok' | 'unavailable'; imu_address?: number | null } | null;
+}
+
+export interface DeviceHealth {
+  checked_epoch_ms: number; can_start: boolean; capture_active: boolean;
+  camera: { state: 'ready' | 'starting' | 'in_use' | 'tcp_only' | 'unreachable'; message: string;
+    board: { boot_id: string; reset_reason: string; uptime_ms: number; wifi_rssi: number } | null };
+  mqtt: { ok: boolean; message: string }; ntp: { ok: boolean };
+}
+export function getDeviceHealth(signal?: AbortSignal, refresh = false) {
+  return getJson<DeviceHealth>(`/api/v1/capture/devices?refresh=${refresh}`, signal);
 }
 
 export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware', context?: CaptureContext): Promise<CaptureStatus> {
@@ -106,9 +120,22 @@ export interface SessionKnowledge {
   steps: TaskStep[]; review_status: 'draft' | 'approved' | 'retired'; reviewer: string;
   review_rationale: string; clarity_confirmed: boolean; outcome: 'unknown' | 'passed' | 'failed';
   prompt_count: number | null; confirmed_errors: string; retention_policy: string;
+  confirmed_error_count?: number | null; conditions_note?: string; sop_viewed_confirmed?: boolean;
+  source_archive_sha256?: string | null;
   license_status: 'unknown' | 'project_internal' | 'approved_for_training'; updated_at?: string;
 }
 export interface ExpertReference extends SessionKnowledge { session_id: string }
+export function listLearningTrials() { return getJson<ExpertReference[]>('/api/v1/knowledge/learning-trials'); }
+export interface LearningReport {
+  evidence_ready: boolean; reasons: string[]; participant_id: string; limitations: string[];
+  before: { session_id: string; duration_s: number | null; outcome: string; prompt_count: number | null; confirmed_error_count: number | null };
+  after: LearningReport['before'];
+  deltas: { duration_delta_s: number; duration_reduction_pct: number; prompt_delta: number; error_delta: number } | null;
+  source_evidence: Array<{ session_id: string; archive_sha256: string; source_url: string }>;
+}
+export function getLearningReport(before: string, after: string) {
+  return getJson<LearningReport>(`/api/v1/knowledge/learning-experiment?before_session_id=${encodeURIComponent(before)}&after_session_id=${encodeURIComponent(after)}`);
+}
 export function listProcedures() { return getJson<Procedure[]>('/api/v1/knowledge/procedures'); }
 export function listReferences(task: string, version: string) {
   return getJson<ExpertReference[]>(`/api/v1/knowledge/references?task_id=${encodeURIComponent(task)}&version=${encodeURIComponent(version)}`);

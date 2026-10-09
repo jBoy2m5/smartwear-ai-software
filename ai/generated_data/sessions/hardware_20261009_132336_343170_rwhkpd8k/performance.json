@@ -1,0 +1,89 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 674.206,
+    "capture_started": 707.733,
+    "first_jpeg_consumed": 756.399,
+    "first_inference": 768.575,
+    "recording_ended": 17671.272,
+    "capture_stopped": 18296.952
+  },
+  "elapsed_s": 18.297,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 195,
+      "mean_ms": 90.801,
+      "max_ms": 339.032,
+      "p50_ms": 44.701,
+      "p95_ms": 297.637,
+      "percentile_samples": 195
+    },
+    "jpeg_decode": {
+      "count": 195,
+      "mean_ms": 0.591,
+      "max_ms": 2.629,
+      "p50_ms": 0.576,
+      "p95_ms": 1.02,
+      "percentile_samples": 195
+    },
+    "alignment_wait": {
+      "count": 195,
+      "mean_ms": 3.566,
+      "max_ms": 61.361,
+      "p50_ms": 0.06,
+      "p95_ms": 32.052,
+      "percentile_samples": 195
+    },
+    "inference": {
+      "count": 195,
+      "mean_ms": 43.41,
+      "max_ms": 116.587,
+      "p50_ms": 38.894,
+      "p95_ms": 81.834,
+      "percentile_samples": 195
+    },
+    "video_and_observation_write": {
+      "count": 195,
+      "mean_ms": 2.847,
+      "max_ms": 343.156,
+      "p50_ms": 1.088,
+      "p95_ms": 1.707,
+      "percentile_samples": 195
+    },
+    "preview_submit": {
+      "count": 195,
+      "mean_ms": 0.054,
+      "max_ms": 0.985,
+      "p50_ms": 0.014,
+      "p95_ms": 0.171,
+      "percentile_samples": 195
+    },
+    "frame_processing": {
+      "count": 195,
+      "mean_ms": 50.956,
+      "max_ms": 356.402,
+      "p50_ms": 43.758,
+      "p95_ms": 92.294,
+      "percentile_samples": 195
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 199,
+    "dropped_for_inference": 4,
+    "stream_errors": 1,
+    "clock_or_sequence_resets": 1,
+    "last_stream_error": "SmartCap kh\u1edfi \u0111\u1ed9ng l\u1ea1i: boot e4f276bcf3cfec44 -> 8671057834671be2; nguy\u00ean nh\u00e2n bo b\u00e1o: panic. B\u1eaft \u0111\u1ea7u phi\u00ean m\u1edbi sau khi ki\u1ec3m tra ngu\u1ed3n v\u00e0 camera.",
+    "boot_id": "e4f276bcf3cfec44",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 848,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 676
+  },
+  "inferred_frames": 195
+}

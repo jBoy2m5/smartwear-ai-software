@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from email.message import Message
 from urllib.request import urlopen
+import re
 
 
 MAX_HEADER_LINE = 4096
@@ -15,6 +16,8 @@ class CameraFrame:
     jpeg: bytes
     epoch_ms: int
     sequence: int
+    boot_id: str | None = None
+    reset_reason: str | None = None
 
 
 def _line(stream):
@@ -90,7 +93,13 @@ def read_parts(stream, content_type):
         jpeg = _exact(stream, length)
         if not jpeg.startswith(b"\xff\xd8") or not jpeg.endswith(b"\xff\xd9"):
             raise ValueError("Incomplete or invalid JPEG markers")
-        yield CameraFrame(jpeg, epoch, sequence)
+        boot_id = headers.get('x-boot-id')
+        reset_reason = headers.get('x-reset-reason')
+        if boot_id is not None and not re.fullmatch(r'[0-9a-f]{16}', boot_id):
+            raise ValueError('Invalid SmartCap boot ID')
+        if reset_reason is not None and not re.fullmatch(r'[a-z_]{1,40}', reset_reason):
+            raise ValueError('Invalid SmartCap reset reason')
+        yield CameraFrame(jpeg, epoch, sequence, boot_id, reset_reason)
 
 
 def open_camera_stream(url, timeout=5):

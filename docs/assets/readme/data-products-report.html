@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SmartWear — Kết quả kiểm gói dữ liệu</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101923;color:#e8edf4;font:18px/1.5 "Segoe UI",Arial,sans-serif;padding:44px}main{max-width:1300px;margin:auto}.badge{display:inline-block;border:1px solid #35755c;background:#163e32;color:#79edb1;border-radius:8px;padding:6px 14px;font-weight:600;font-size:15px}h1{font-size:38px;line-height:1.2;margin:18px 0 12px}p{color:#bac7d8}code{font-family:Consolas,monospace;font-size:16px;overflow-wrap:anywhere}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:30px 0}.card,.panel{border:1px solid #344456;border-radius:14px;background:#1c2939;padding:22px}.value{font-size:38px;color:#77edb4;font-weight:700}.label{font-size:15px;color:#bdccdc}.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:20px}h2{font-size:21px;margin:0 0 14px}table{width:100%;border-collapse:collapse;font-size:16px}td{padding:11px 0;border-bottom:1px solid #334354}td:last-child{text-align:right;font-family:Consolas,monospace}.flags{color:#ffd686;font-family:Consolas,monospace;font-size:19px;line-height:1.9}.note{margin:22px 0 0;padding:16px;border-left:4px solid #ddb665;background:#27303b;color:#e0d3bb;font-size:16px}footer{margin-top:28px;color:#9baec3;font-size:15px}a{color:#96caff}
+</style>
+<main>
+<span class="badge">VALIDATED · BẰNG CHỨNG LỊCH SỬ 07/10/2026</span>
+<h1>Kết quả kiểm gói dữ liệu quan sát</h1>
+<p>Ảnh báo cáo dựng từ JSON kiểm chứng đã lưu trong repository. Đây là dữ liệu một lượt export; không phải màn hình dashboard live.</p>
+<code>Session: MEASURED_hardware_20261007_150625_216050_uk5sxhc9<br>Episode: 3fcfd3e0cc9f8742</code>
+<div class="cards">
+<div class="card"><div class="value">1.555</div><div class="label">Khung hình</div></div>
+<div class="card"><div class="value">12 / 13</div><div class="label">Artifact / mục checksum đã kiểm</div></div>
+<div class="card"><div class="value">34,57 MB</div><div class="label">ZIP · 34.569.458 bytes</div></div>
+<div class="card"><div class="value">48,703 s</div><div class="label">Thời gian tạo gói · một lượt</div></div>
+</div>
+<div class="grid">
+<section class="panel"><h2>MCAP — số message đã đọc lại</h2><table>
+<tr><td>/smartwear/wrist/fsr_raw</td><td>4.610</td></tr>
+<tr><td>/smartwear/wrist/imu</td><td>4.610</td></tr>
+<tr><td>/smartwear/camera/frame</td><td>1.555</td></tr>
+<tr><td>/smartwear/hand/observations</td><td>1.555</td></tr>
+</table><p style="font-size:15px;margin-bottom:0">Message IMU gồm trạng thái validity; có message không đồng nghĩa cảm biến có số đo hợp lệ.</p></section>
+<section class="panel"><h2>Readiness được giữ đúng nguồn</h2><div class="flags">learner_ready = false<br>robot_ready = false</div><p>Phiên legacy chưa có SOP/reference được duyệt. Chưa có action robot và hiệu chuẩn đủ điều kiện huấn luyện điều khiển.</p><span class="badge">OBSERVATION-ONLY</span></section>
+</div>
+<div class="note">Checksum/read-back đạt xác nhận tính toàn vẹn của gói. Kết quả này không chứng minh người học cải thiện hoặc robot đã học được thao tác.</div>
+<footer>Nguồn: <a href="../../layer1-layer3/data-products-validation-resumed.json">docs/layer1-layer3/data-products-validation-resumed.json</a> · Báo cáo: DATA_PRODUCTS_REVIEW_20261007.md</footer>
+</main>
+</html>

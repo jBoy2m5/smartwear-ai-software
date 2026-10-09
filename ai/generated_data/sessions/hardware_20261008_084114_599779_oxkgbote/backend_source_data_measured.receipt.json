@@ -1,0 +1,7 @@
+{
+  "schema_version": "smartwear.backend_source_data_measured.v1",
+  "session_id": "MEASURED_hardware_20261008_084114_599779_oxkgbote",
+  "backend_url": "http://127.0.0.1:8000",
+  "archive_sha256": "ef32746734a03532d830b4df9ca8d64fda357c6acb41aa4d87432e10d9e51974",
+  "source_data_url": "/api/v1/sessions/MEASURED_hardware_20261008_084114_599779_oxkgbote/source-data"
+}

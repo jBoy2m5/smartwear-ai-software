@@ -46,7 +46,7 @@ def make_frame_data(result, timestamp_ms, width, height, detector, tracked_side=
             "hand_index": index,
             "handedness": side,
             "model_handedness": model_side,
-            "handedness_convention": "anatomical_from_mirrored_camera",
+            "handedness_convention": "anatomical_from_mirrored_camera_v2",
             "handedness_score": round(categories[0].score, 4) if categories else None,
             "landmarks": point_records(landmarks),
             "world_landmarks": point_records(world),

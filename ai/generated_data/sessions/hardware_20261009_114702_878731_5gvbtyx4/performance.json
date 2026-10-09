@@ -1,0 +1,90 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 47.398,
+    "capture_started": 60.792,
+    "first_jpeg_consumed": 173.407,
+    "first_inference": 192.142,
+    "recording_ended": 53253.555,
+    "capture_stopped": 53796.564
+  },
+  "elapsed_s": 53.797,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 601,
+      "mean_ms": 97.702,
+      "max_ms": 475.607,
+      "p50_ms": 51.315,
+      "p95_ms": 328.79,
+      "percentile_samples": 601
+    },
+    "jpeg_decode": {
+      "count": 601,
+      "mean_ms": 0.764,
+      "max_ms": 10.021,
+      "p50_ms": 0.604,
+      "p95_ms": 1.65,
+      "percentile_samples": 601
+    },
+    "alignment_wait": {
+      "count": 601,
+      "mean_ms": 0.079,
+      "max_ms": 3.574,
+      "p50_ms": 0.064,
+      "p95_ms": 0.103,
+      "percentile_samples": 601
+    },
+    "inference": {
+      "count": 601,
+      "mean_ms": 49.911,
+      "max_ms": 137.829,
+      "p50_ms": 42.516,
+      "p95_ms": 93.936,
+      "percentile_samples": 601
+    },
+    "video_and_observation_write": {
+      "count": 601,
+      "mean_ms": 1.166,
+      "max_ms": 3.973,
+      "p50_ms": 1.116,
+      "p95_ms": 1.657,
+      "percentile_samples": 601
+    },
+    "preview_submit": {
+      "count": 601,
+      "mean_ms": 0.051,
+      "max_ms": 1.115,
+      "p50_ms": 0.015,
+      "p95_ms": 0.122,
+      "percentile_samples": 601
+    },
+    "frame_processing": {
+      "count": 601,
+      "mean_ms": 52.496,
+      "max_ms": 142.431,
+      "p50_ms": 45.405,
+      "p95_ms": 96.839,
+      "percentile_samples": 601
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 620,
+    "dropped_for_inference": 19,
+    "stream_errors": 1,
+    "http_503": 3,
+    "clock_or_sequence_resets": 1,
+    "last_stream_error": "SmartCap kh\u1edfi \u0111\u1ed9ng l\u1ea1i: boot 7129c7370757537c -> 0026761577e4861a; nguy\u00ean nh\u00e2n bo b\u00e1o: interrupt_watchdog. B\u1eaft \u0111\u1ea7u phi\u00ean m\u1edbi sau khi ki\u1ec3m tra ngu\u1ed3n v\u00e0 camera.",
+    "boot_id": "7129c7370757537c",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 2663,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 586
+  },
+  "inferred_frames": 601
+}

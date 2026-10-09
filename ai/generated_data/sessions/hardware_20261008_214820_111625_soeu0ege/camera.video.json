@@ -1,0 +1,14 @@
+{
+  "schema_version": "smartwear.recording_video.v1",
+  "video_file": "camera.avi",
+  "video_sha256": "4e7ac8fdbf146c6d4a1436418379b188b8928822c5c505bed8946e7f3b39a388",
+  "camera_sha256": "22ab2aa74f5b26d9b079b155074cd6a19645cb9b84fcb691ef545b9c946bd3c8",
+  "frame_count": 295,
+  "frame_width": 320,
+  "frame_height": 240,
+  "codec": "MJPG",
+  "encoding_fps": 30.0,
+  "mirrored": true,
+  "has_overlay": false,
+  "timing": "video_frame_index maps to each raw timestamp; playback FPS is not capture timing"
+}

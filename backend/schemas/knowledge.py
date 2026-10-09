@@ -78,5 +78,9 @@ class SessionKnowledge(BaseModel):
     outcome: Literal['unknown', 'passed', 'failed'] = 'unknown'
     prompt_count: int | None = Field(default=None, ge=0)
     confirmed_errors: str = Field(default='', max_length=4000)
+    confirmed_error_count: int | None = Field(default=None, ge=0)
+    conditions_note: str = Field(default='', max_length=2000)
+    sop_viewed_confirmed: bool = False
+    source_archive_sha256: str | None = Field(default=None, pattern=r'^[0-9a-f]{64}$')
     retention_policy: str = Field(default='local_project_review_required', max_length=200)
     license_status: Literal['unknown', 'project_internal', 'approved_for_training'] = 'unknown'

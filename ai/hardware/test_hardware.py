@@ -21,7 +21,7 @@ from camera_test import make_frame_data  # noqa: E402
 from analysis.compare_sensors import load_sensor_stream  # noqa: E402
 from hardware.align import align_session  # noqa: E402
 from hardware.camera_receiver import CameraReceiver  # noqa: E402
-from hardware.mjpeg import read_parts  # noqa: E402
+from hardware.mjpeg import CameraFrame, read_parts  # noqa: E402
 from hardware.mqtt_wrist import WristReceiver, validate_wrist_payload  # noqa: E402
 from integration.backend_bridge import build_payload  # noqa: E402
 from process_recording import process_recording  # noqa: E402
@@ -48,7 +48,7 @@ class HardwareTests(unittest.TestCase):
                                          handedness=[category(model_side)])
                 frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
                 self.assertEqual(len(frame["hands"]), 1)
-                side = "right" if model_side == "Left" else "left"
+                side = model_side.lower()
                 other = "left" if side == "right" else "right"
                 self.assertEqual(frame["hands"][0]["handedness"].lower(), side)
                 self.assertEqual(frame["hand_actions"][side]["tracking_status"], "detected")
@@ -60,9 +60,11 @@ class HardwareTests(unittest.TestCase):
                                  hand_world_landmarks=[points, points],
                                  handedness=[category("Right"), category("Left")])
         frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
-        self.assertEqual([hand["handedness"] for hand in frame["hands"]], ["Left", "Right"])
-        self.assertEqual(frame["hand_actions"]["left"]["hand_index"], 0)
-        self.assertEqual(frame["hand_actions"]["right"]["hand_index"], 1)
+        self.assertEqual([hand["handedness"] for hand in frame["hands"]], ["Right", "Left"])
+        self.assertEqual(frame["hand_actions"]["left"]["hand_index"], 1)
+        self.assertEqual(frame["hand_actions"]["right"]["hand_index"], 0)
+        self.assertTrue(all(hand["handedness_convention"] ==
+                            "anatomical_from_mirrored_camera_v2" for hand in frame["hands"]))
 
     def test_partial_wrist_requires_explicit_null_imu(self):
         payload = {"t_ms": BASE, "seq": 1, "acc": None, "gyro": None,
@@ -109,7 +111,7 @@ class HardwareTests(unittest.TestCase):
                 data["video_frame_index"] = index
                 publish_preview(directory, b"test JPEG", data)
                 preview = json.loads((directory / f"preview_{index:08d}.json").read_text())
-                for side, model_side in (("left", "Right"), ("right", "Left")):
+                for side, model_side in (("left", "Left"), ("right", "Right")):
                     if index == 2:
                         self.assertEqual(preview[f"{side}_action"]["tracking_status"], "ambiguous")
                         self.assertEqual(preview[f"{side}_landmarks"], [])
@@ -162,6 +164,19 @@ class HardwareTests(unittest.TestCase):
             self.assertEqual((Path(temporary) / "camera_raw.mjpeg").read_bytes(), jpeg)
             self.assertEqual(receiver.snapshot()["http_503"], 1)
             self.assertIn("last_stream_error", receiver.snapshot())
+
+    def test_camera_reconnect_skips_exact_replay_but_reports_real_reset(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            receiver = CameraReceiver(Path(temporary), "http://camera")
+            first = CameraFrame(b"jpeg-a", BASE, 8)
+            self.assertTrue(receiver._accept_frame(first))
+            self.assertFalse(receiver._accept_frame(first))
+            self.assertEqual(receiver.snapshot()["duplicate_frames"], 1)
+            self.assertTrue(receiver._accept_frame(CameraFrame(b"jpeg-b", BASE + 60, 9)))
+            with self.assertRaisesRegex(RuntimeError, r"seq 9 -> 0"):
+                receiver._accept_frame(CameraFrame(b"jpeg-c", BASE + 1000, 0))
+            self.assertEqual(receiver.snapshot()["clock_or_sequence_resets"], 1)
+            self.assertIn("nguồn/cáp USB", receiver.snapshot()["last_stream_error"])
 
     def test_wrist_validation_rejects_malformed_and_nonfinite(self):
         valid = {"t_ms": BASE, "seq": 1, "acc": [0, 0, 1],

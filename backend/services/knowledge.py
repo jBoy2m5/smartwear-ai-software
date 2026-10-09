@@ -48,6 +48,51 @@ class KnowledgeService:
                 raise ResourceNotFoundError(f'{kind}: {key} not found')
             return copy.deepcopy(row.document)
 
+    def learning_trials(self):
+        with self.database.transaction() as db:
+            rows = db.scalars(select(KnowledgeRevision).where(KnowledgeRevision.kind == 'session')
+                              .order_by(KnowledgeRevision.revision.desc())).all()
+            latest = {}
+            for row in rows:
+                latest.setdefault(row.key, row.document)
+        return [{'session_id': key, **value} for key, value in latest.items()
+                if value['context']['role'] == 'worker' and value['context'].get('trial_stage') in ('before_learning', 'after_learning')]
+
+    def learning_experiment(self, before_id, after_id):
+        import hashlib
+        from backend.services.learning_experiment import compare_trials
+        before, after = self.latest('session', before_id), self.latest('session', after_id)
+        result = compare_trials(before_id, before, after_id, after)
+        evidence = []
+        reference_id = before['context'].get('reference_session_id')
+        reference = {}
+        if reference_id and before.get('reference_revision'):
+            reference = self.latest('session', reference_id, before['reference_revision'])
+            if reference.get('review_status') != 'approved' or reference['context'].get('role') != 'expert':
+                result['reasons'].append('Bản mẫu hướng dẫn được pin chưa duyệt hợp lệ.')
+        for sid in dict.fromkeys([before_id, after_id] + ([reference_id] if reference_id else [])):
+            self.sessions.get_session(sid)
+            path = source_archive_path(self.settings.keyframe_dir, sid)
+            if not path.is_file():
+                result['reasons'].append(f'{sid}: không tìm thấy archive bằng chứng.')
+                continue
+            digest = hashlib.sha256()
+            with path.open('rb') as stream:
+                for chunk in iter(lambda: stream.read(1024*1024), b''):
+                    digest.update(chunk)
+            reviewed = before if sid == before_id else after if sid == after_id else reference
+            if digest.hexdigest() != reviewed.get('source_archive_sha256'):
+                result['reasons'].append(f'{sid}: archive chưa được pin hash trong bản duyệt hoặc đã thay đổi; cần người đánh giá kiểm tra.')
+            evidence.append({'session_id': sid, 'archive_sha256': digest.hexdigest(),
+                             'archive_bytes': path.stat().st_size,
+                             'source_url': f'/api/v1/sessions/{sid}/source-data'})
+        if result['reasons']:
+            result['evidence_ready'] = False
+            result['deltas'] = None
+        result['source_evidence'] = evidence
+        result['generated_at'] = datetime.now(timezone.utc).isoformat()
+        return result
+
     def append(self, kind, key, document, expected=0):
         with self.database.transaction() as db:
             previous = db.scalars(select(KnowledgeRevision).where(
@@ -110,6 +155,7 @@ class KnowledgeService:
         return value
 
     def save_session(self, session_id, knowledge):
+        from backend.services.episode_products import sha
         detail = self.sessions.get_session(session_id)
         data = knowledge.model_dump()
         expected_role = 'EXPERT' if knowledge.context.role == 'expert' else 'TRAINEE'
@@ -122,6 +168,8 @@ class KnowledgeService:
         if expected_id != session_id:
             raise ValueError('Source session identity does not match')
         info = inspect_source(source_archive_path(self.settings.keyframe_dir, session_id))
+        archive_hash = sha(source_archive_path(self.settings.keyframe_dir, session_id))
+        data['source_archive_sha256'] = archive_hash
         source_role = info.get('capture_manifest.json', {}).get('context', {})
         if source_role and any(value != data['context'].get(key) for key, value in source_role.items()):
             raise ValueError('Context does not match the recorded manifest')
@@ -137,6 +185,8 @@ class KnowledgeService:
             previous = self.latest('session', session_id)
         except ResourceNotFoundError:
             previous = None
+        if previous and previous.get('source_archive_sha256') and previous['source_archive_sha256'] != archive_hash:
+            raise ValueError('Reviewed source archive changed; preserve the original and create a new session')
         if previous and (CaptureContext.model_validate(previous['context']).model_dump() != data['context'] or previous['source_session_name'] != data['source_session_name']
                          or previous.get('reference_revision') != data['reference_revision']):
             raise ValueError('Capture context is immutable')

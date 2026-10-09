@@ -1,0 +1,22 @@
+{
+  "schema_version": "smartwear.backend_analysis_measured.v1",
+  "session_id": "MEASURED_hardware_20261007_151354_013806_39pvq7hg",
+  "backend_url": "http://127.0.0.1:8000",
+  "analysis_sha256": "776dfb4b089b45f1b0abcb689a8653ba6367fc7fbc290a7aafbaa65972d5f797",
+  "expert_images_sha256": {
+    "segment_0000_left_OPEN_frame_000003.png": "e9ba9d329453228599d2f37e5e6ed84d23447720ee8f6b286871128fd863cd61",
+    "segment_0001_right_REACH_frame_000003.png": "e9ba9d329453228599d2f37e5e6ed84d23447720ee8f6b286871128fd863cd61",
+    "segment_0002_left_REACH_frame_000008.png": "0ffd8e74ab79ef229fed41d75007f42ad06e2260b1cbc3e88b0b32cf9875bf8e",
+    "segment_0003_right_OPEN_frame_000009.png": "c451b97aea9220551fffcdbd0782b9930d8ca984365ef9476cae1708db7e1fb5",
+    "segment_0004_left_OPEN_frame_000009.png": "c451b97aea9220551fffcdbd0782b9930d8ca984365ef9476cae1708db7e1fb5",
+    "segment_0005_left_GRAB_frame_000019.png": "ec7c7579b1e36b09eea111cffb80e9f3090434b6f6c37db37689a3877ad0f0d0",
+    "segment_0006_right_REACH_frame_000011.png": "f10441c177092650c978736322377c79eb6db24d81c0af6581b09b6e537d3744",
+    "segment_0007_right_GRAB_frame_000023.png": "a890d0a772741330ab8fa320a2b96392e1c617460ebb33b4ed3d31a1301f3aca",
+    "segment_0009_right_ASSEMBLY_frame_000033.png": "65d2c4cb548004c4f57537aa5b7d1e4e0dac67e84416d356d082d71ebcf412b2",
+    "segment_0010_right_GRAB_frame_000034.png": "b19de4911104c3e9a72d80f1fd47a63acf028caa326fffcbfe87a7b521acdd65",
+    "segment_0011_right_ASSEMBLY_frame_000035.png": "260c9a035307c73ed26d81ca6c7deff42ab1ef8b2e7165f2939e0e602e4c9da6",
+    "segment_0012_right_GRAB_frame_000039.png": "77adfdb6f8b5efb6595c5c2868e6559882e0122ba2f3acb24ae485993905a8a1",
+    "segment_0013_right_RELEASE_frame_000044.png": "bdc4632b4f46f2f2d3c1f2a1f445b0e0685e0549caa7bf693e17b16e9bff67bd"
+  },
+  "analysis_url": "/api/v1/sessions/MEASURED_hardware_20261007_151354_013806_39pvq7hg/analysis-result"
+}

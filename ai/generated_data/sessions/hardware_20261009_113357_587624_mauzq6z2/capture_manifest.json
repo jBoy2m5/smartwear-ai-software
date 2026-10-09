@@ -1,0 +1,72 @@
+{
+  "schema_version": "smartwear.capture/1.0",
+  "source_kind": "measured",
+  "source_session_name": "hardware_20261009_113357_587624_mauzq6z2",
+  "context": {
+    "role": "demo",
+    "trial_stage": "technical",
+    "purpose": "performance_benchmark"
+  },
+  "pipeline_version": "e5caf0469bf3b470face2dae097c88ae9cad738e",
+  "capture_script_sha256": "141e4e57e0c0349fafce3e9bce5dfc0c676abc1be1a942f9ffdda37d084161ed",
+  "model_sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+  "camera": {
+    "mirror_for_inference": true,
+    "rotation_degrees": 0,
+    "firmware_version": "unknown; not reported by device"
+  },
+  "events": [
+    {
+      "name": "capture_started",
+      "host_monotonic_ns": 490802343000000
+    },
+    {
+      "name": "capture_stopped",
+      "host_monotonic_ns": 490824562000000
+    }
+  ],
+  "clock_domain": "device_NTP_epoch_with_recorder_receive_monotonic",
+  "clock_accuracy": "unknown",
+  "artifacts": [
+    {
+      "path": "camera.avi",
+      "size_bytes": 563648,
+      "sha256": "ce99485784f4aaf9cea19afa030db95b01e21e825b27c9643e96826ed4fdcf53"
+    },
+    {
+      "path": "camera.jsonl",
+      "size_bytes": 166905,
+      "sha256": "3dcaf1339d1b6101b1c808b6bbd3f3325d458f0dff26de69abb48c3ea4bce90d"
+    },
+    {
+      "path": "camera.video.json",
+      "size_bytes": 520,
+      "sha256": "32695e89e9a5193a3d1485e83cd48b7bcfefde89e2c2629df01d4b0234b8cafa"
+    },
+    {
+      "path": "camera_packets.jsonl",
+      "size_bytes": 57565,
+      "sha256": "3201029c64b870ff2c449ff65b6dbbf531c35142cb58ecb1148369d806454aa3"
+    },
+    {
+      "path": "camera_raw.mjpeg",
+      "size_bytes": 709203,
+      "sha256": "ddaa01034bb28d33823c5ccdf32e33bc691805b5ef7fd6b4b5517783e77a159a"
+    },
+    {
+      "path": "hardware_capture.json",
+      "size_bytes": 863,
+      "sha256": "a95087eb95335d96159f8b1aa9d9a20c4dda12d0e4430f041139b29689762fe5"
+    },
+    {
+      "path": "performance.json",
+      "size_bytes": 1907,
+      "sha256": "623aec3a1baa90d72e0109cd9dcb9a18ee7da7aba8ffe294b16ce39b64dc64c2"
+    },
+    {
+      "path": "wrist_raw.jsonl",
+      "size_bytes": 606651,
+      "sha256": "b428bf1461e3ba1329525d5aa2c112582d6e9ef4107521f77088f9754a4ca202"
+    }
+  ]
+}

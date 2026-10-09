@@ -1,0 +1,20 @@
+{
+  "schema_version": "smartwear.backend_publish_measured.v1",
+  "session_id": "MEASURED_hardware_20261009_135606_130989_pkt4q0on",
+  "backend_url": "http://127.0.0.1:8000",
+  "payload_sha256": "720e9db4fa46905659d4cdb0fcfa350c68e3c0a57b2351fae2baf5b2a08455a0",
+  "uploaded_keyframes": [
+    "segment_0003_left_REACH_frame_000100.png",
+    "segment_0006_left_OPEN_frame_000129.png",
+    "segment_0007_left_REACH_frame_000130.png"
+  ],
+  "backend_response": {
+    "session_id": "MEASURED_hardware_20261009_135606_130989_pkt4q0on",
+    "created": true,
+    "export_status": "COMPLETED",
+    "message": "Session stored and output artifacts generated",
+    "sop_download_url": "/api/v1/sessions/MEASURED_hardware_20261009_135606_130989_pkt4q0on/download-sop",
+    "robot_json_url": null,
+    "robot_export_url": null
+  }
+}
