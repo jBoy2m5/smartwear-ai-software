@@ -44,6 +44,9 @@ class SopGenerator:
 
     def _write_html(self, destination: Path, payload: SessionInput) -> None:
         """Render an accessible standalone HTML SOP atomically."""
+        upload = payload.session_id.startswith('VIDEO_')
+        similarity = 'Unavailable (no reference)' if upload else f'{payload.dtw_metrics.similarity_score:.2f}%'
+        muda = 'Not assessed (no reference)' if upload else f'{payload.dtw_metrics.muda_detected_seconds:.3f} s'
         phase_rows = "".join(
             "<tr>"
             f"<td>{index + 1}</td><td>{escape(phase.phase)}</td>"
@@ -68,12 +71,13 @@ class SopGenerator:
 </head>
 <body>
   <h1>Standard Operating Procedure</h1>
+  {'<p>Draft uploaded-video observation report. No sensor data, reference comparison, or approved procedure.</p>' if upload else ''}
   <p><strong>Session:</strong> {escape(payload.session_id)}</p>
   <p><strong>Worker type:</strong> {escape(payload.worker_type.value)}</p>
   <h2>Performance summary</h2>
   <table><tbody>
-    <tr><th>Similarity score</th><td>{payload.dtw_metrics.similarity_score:.2f}%</td></tr>
-    <tr><th>Detected muda</th><td>{payload.dtw_metrics.muda_detected_seconds:.3f} s</td></tr>
+    <tr><th>Similarity score</th><td>{similarity}</td></tr>
+    <tr><th>Detected muda</th><td>{muda}</td></tr>
     <tr><th>Trajectory samples</th><td>{len(payload.robot_trajectory_points)}</td></tr>
   </tbody></table>
   <h2>Action sequence</h2>
@@ -122,11 +126,12 @@ class SopGenerator:
             Paragraph(f"Session: {payload.session_id}", styles["Heading2"]),
             Paragraph(f"Worker type: {payload.worker_type.value}", styles["BodyText"]),
             Spacer(1, 4 * mm),
+            *([Paragraph("Draft uploaded-video observation report. No sensors, reference comparison or approved procedure.", styles["BodyText"]), Spacer(1, 4 * mm)] if payload.session_id.startswith('VIDEO_') else []),
             Paragraph("Performance summary", styles["Heading2"]),
             Table(
                 [
-                    ["Similarity score", f"{payload.dtw_metrics.similarity_score:.2f}%"],
-                    ["Detected muda", f"{payload.dtw_metrics.muda_detected_seconds:.3f} s"],
+                    ["Similarity score", "Unavailable (no reference)" if payload.session_id.startswith('VIDEO_') else f"{payload.dtw_metrics.similarity_score:.2f}%"],
+                    ["Detected muda", "Not assessed (no reference)" if payload.session_id.startswith('VIDEO_') else f"{payload.dtw_metrics.muda_detected_seconds:.3f} s"],
                     ["Trajectory samples", str(len(payload.robot_trajectory_points))],
                 ],
                 colWidths=[60 * mm, 100 * mm],

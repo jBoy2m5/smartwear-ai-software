@@ -29,7 +29,7 @@ export function ImageViewer({ detail, focus, setFocus }: {
       <span className="rounded border border-slate-600 px-2 py-1 text-xs text-gray-400">KEYFRAME · KHÔNG PHẢI CAMERA LIVE</span>
     </div>
     <div className="flex flex-col gap-3 p-4 sm:flex-row">
-      <ImageFrame url={imageUrl(detail, 'expert', focus.expertPath)} label="Mẫu" />
+      {!detail.session_id.startsWith('VIDEO_') && <ImageFrame url={imageUrl(detail, 'expert', focus.expertPath)} label="Mẫu" />}
       <ImageFrame url={imageUrl(detail, 'worker', focus.workerPath)} label="Phiên của bạn" />
     </div>
     <details className="border-t border-slate-700/60 px-4 py-3 text-sm">
@@ -77,6 +77,6 @@ export function SessionCharts({ detail }: { detail: SessionDetail }) {
             <Line type="monotone" dataKey="x" stroke="#22D3EE" dot={false} isAnimationActive={false} />
             <Line type="monotone" dataKey="y" stroke="#fbbf24" dot={false} isAnimationActive={false} />
           </LineChart></ResponsiveContainer></div></div>
-    </div> : <p className="rounded-lg bg-slate-800 p-5 text-sm text-gray-400">Phiên này chưa có điểm đường đi để vẽ.</p>}
+    </div> : <p className="rounded-lg bg-slate-800 p-5 text-sm text-gray-400">{detail.session_id.startsWith('VIDEO_') ? 'Video không kèm cảm biến; không tạo biểu đồ lực hoặc đường đi robot giả.' : 'Phiên này chưa có điểm đường đi để vẽ.'}</p>}
   </section>;
 }

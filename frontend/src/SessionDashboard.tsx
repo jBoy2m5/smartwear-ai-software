@@ -151,26 +151,26 @@ export default function SessionDashboard() {
           {selected && <>
             <section className="rounded-xl border border-cyberGreen/25 bg-densoNavy/55 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('MEASURED_') ? 'CẢM BIẾN THẬT · ADC' : selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
+                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('VIDEO_') ? 'VIDEO TẢI LÊN · KHÔNG CÓ CẢM BIẾN' : selected.session_id.startsWith('MEASURED_') ? 'CẢM BIẾN THẬT · ADC' : selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
                   <span className="text-xs text-gray-400">{selected.worker_type} · {dateTime(selected.created_at)}</span></div>
                 <h2 className="mt-2 break-all font-heading text-lg font-bold">{selected.session_id}</h2>
                 <p className="mt-1 text-sm text-gray-300">Mẫu so sánh: <strong>{selected.analysis_result?.selected_reference?.title ?? selected.analysis_result?.expert_session ?? 'Chưa có'}</strong></p>
               </div><span className="rounded border border-slate-600 px-3 py-1 text-xs text-gray-300">Xuất file: {selected.export_status}</span></div>
             </section>
             <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-              <MetricCard label="Điểm so khớp DEMO" value={number(selected.dtw_metrics.similarity_score, 1)} note="Điểm hiển thị từ DTW; không phải phần trăm làm đúng." />
+              <MetricCard label="Điểm so khớp" value={selected.session_id.startsWith('VIDEO_') ? '—' : number(selected.dtw_metrics.similarity_score, 1)} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không tính DTW.' : 'Điểm hiển thị từ DTW; không phải phần trăm làm đúng.'} />
               <MetricCard label="Đoạn cần xem lại" value={String(candidates.length)} note="Nghi vấn từ AI; chưa kết luận thao tác sai." danger={candidates.length > 0} />
-              <MetricCard label="Tổng thời lượng nghi vấn" value={`${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note="Tổng DEMO; hai tay có thể chồng thời gian." danger={candidates.length > 0} />
-              <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh phiên quay · ${selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
+              <MetricCard label="Tổng thời lượng nghi vấn" value={selected.session_id.startsWith('VIDEO_') ? '—' : `${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không đánh giá MUDA.' : 'Tổng DEMO; hai tay có thể chồng thời gian.'} danger={candidates.length > 0} />
+              <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh · ${selected.session_id.startsWith('VIDEO_') ? 'đã nhận diện và phân đoạn video' : selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
             </div>
             <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
               <ImageViewer detail={selected} focus={focus?.sessionId === selected.session_id ? focus : defaultFocus(selected)} setFocus={setFocus} />
               <SessionCharts detail={selected} />
             </div>
-            <MudaPanel detail={selected} setFocus={setFocus} />
+            {!selected.session_id.startsWith('VIDEO_') && <MudaPanel detail={selected} setFocus={setFocus} />}
             <div className="grid items-start gap-4 2xl:grid-cols-2"><Phases detail={selected} /><DtwPanel detail={selected} setFocus={setFocus} /></div>
             <SensorPanel detail={selected} />
-            <KnowledgePanel detail={selected} />
+            {!selected.session_id.startsWith('VIDEO_') && <KnowledgePanel detail={selected} />}
             <Exports detail={selected} />
           </>}
         </main>

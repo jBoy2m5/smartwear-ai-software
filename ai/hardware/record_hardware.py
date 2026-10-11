@@ -85,6 +85,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
             print(f"SmartWrist unavailable; camera preview will continue: {exc}", flush=True)
         receiver.start()
         started = last_report = time.monotonic()
+        last_jpeg_at = started
         capture_started_monotonic = time.monotonic_ns()
         performance.event('capture_started')
         with camera_file.open("x", encoding="utf-8", newline="\n") as stream:
@@ -94,11 +95,17 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                     break
                 item = receiver.get(timeout=0.5)
                 if item is None:
-                    if t0 is None and time.monotonic() - started > 15:
+                    if time.monotonic() - last_jpeg_at > 15:
                         print(f"Camera connection diagnostics: {receiver.snapshot()}",
                               file=sys.stderr, flush=True)
-                        raise TimeoutError("ESP32 camera did not supply a valid JPEG within 15 s")
+                        if t0 is None:
+                            raise TimeoutError("ESP32 camera did not supply a valid JPEG within 15 s")
+                        raise TimeoutError(
+                            "SmartCap không gửi ảnh mới trong 15 giây dù bộ thu đã thử nối lại. "
+                            "Kiểm tra nguồn/cáp USB và hotspot, rồi bắt đầu phiên mới. "
+                            "Dữ liệu đã ghi vẫn được giữ trên máy.")
                     continue
+                last_jpeg_at = time.monotonic()
                 packet, received_epoch_ms = item
                 performance.event('first_jpeg_consumed')
                 frame_started = time.perf_counter()

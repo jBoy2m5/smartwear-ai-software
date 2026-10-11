@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CircleStop, Play, RotateCw } from 'lucide-react';
+import { Camera, CircleStop, Play, RotateCw, Upload } from 'lucide-react';
 import { LearningExperimentPanel } from './LearningExperimentPanel';
-import { backendUrl, getCapturePreview, getCaptureStatus, getDeviceHealth, startCapture, stopCapture, listProcedures, listReferences } from '../backendApi';
+import { backendUrl, getCapturePreview, getCaptureStatus, getDeviceHealth, startCapture, stopCapture, listProcedures, listReferences, uploadVideo } from '../backendApi';
 import type { Procedure, ExpertReference, CaptureContext } from '../backendApi';
 import type { CapturePreview, CaptureStatus, DeviceHealth } from '../backendApi';
 
@@ -29,12 +29,24 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const [role, setRole] = useState<'expert' | 'worker' | 'demo'>('expert');
   const [participant, setParticipant] = useState('');
   const [consent, setConsent] = useState(false);
+  const [source, setSource] = useState<'upload' | 'hardware'>('upload');
+  const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [uploadConsent, setUploadConsent] = useState(false);
   const [references, setReferences] = useState<ExpertReference[]>([]);
   const [reference, setReference] = useState('');
   const [trialStage, setTrialStage] = useState<'before_learning' | 'after_learning' | 'practice'>('before_learning');
   const task = procedures.find(p => `${p.task_id}:${p.version}` === taskKey);
 
   useEffect(() => {
+    if (!file) { setFileUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    if (source === 'upload') return;
     const controller = new AbortController();
     let timer: number | undefined;
     const update = async () => {
@@ -48,7 +60,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     };
     void update();
     return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
-  }, [stage]);
+  }, [stage, source]);
 
   useEffect(() => {
     if (stage !== 'recording') return;
@@ -67,7 +79,9 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   useEffect(() => {
     const saved = window.sessionStorage.getItem('smartwear_capture_job');
     if (saved && /^[0-9a-f]{32}$/.test(saved)) {
-      void getCaptureStatus(saved).then(setJob).catch(() => {
+      void getCaptureStatus(saved).then(current => {
+        setJob(current); setSource(current.capture_mode === 'upload' ? 'upload' : 'hardware');
+      }).catch(() => {
         window.sessionStorage.removeItem('smartwear_capture_job');
       });
     }
@@ -94,7 +108,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   }, [jobId, stage]);
 
   useEffect(() => {
-    if (!jobId || !stage || !PREVIEW.has(stage)) return;
+    if (!jobId || !stage || !(PREVIEW.has(stage) || (job?.capture_mode === 'upload' && stage === 'processing'))) return;
     const controller = new AbortController();
     let timer: number | undefined;
     let lastFrame = -1;
@@ -124,7 +138,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     };
     void update();
     return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
-  }, [jobId, stage]);
+  }, [jobId, stage, job?.capture_mode]);
 
   useEffect(() => () => {
     imageUrls.current.forEach(url => URL.revokeObjectURL(url));
@@ -171,6 +185,21 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     } finally { setBusy(false); }
   };
 
+  const beginUpload = async () => {
+    setBusy(true); setError(null); setDisplayFrame(null);
+    try {
+      if (!file) throw new Error('Chọn một video trước khi phân tích.');
+      if (!uploadConsent) throw new Error('Xác nhận quyền sử dụng video trước khi tải lên.');
+      if (file.size > 50 * 1024 * 1024) throw new Error('Video tối đa 50 MiB.');
+      const created = await uploadVideo(file, uploadConsent);
+      notified.current = null;
+      window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
+      setJob(created);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Không tải được video');
+    } finally { setBusy(false); }
+  };
+
   const recording = job?.stage === 'recording';
   const working = job && ACTIVE.has(job.stage);
   const width = displayFrame?.camera.frame_width ?? 640;
@@ -191,7 +220,18 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   });
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
-    <div className="grid gap-3 border-b border-slate-700 p-4 md:grid-cols-2">
+    <div className="flex flex-wrap gap-2 border-b border-slate-700 p-4">
+      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('upload'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'upload' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Upload size={17} className="mr-2 inline" />Tải video lên · không cần thiết bị</button>
+      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('hardware'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'hardware' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Camera size={17} className="mr-2 inline" />Quay trực tiếp</button>
+    </div>
+    {source === 'upload' ? <div className="space-y-3 border-b border-slate-700 p-4">
+      <label className="block text-sm font-semibold">Video thao tác
+        <input type="file" accept=".mp4,.mov,.avi,.webm" disabled={busy || Boolean(working)} onChange={event => { setFile(event.target.files?.[0] ?? null); setJob(null); setDisplayFrame(null); setError(null); }} className="mt-2 block w-full rounded bg-slate-900 p-3 text-sm" />
+      </label>
+      <p className="text-xs text-gray-400">MP4/MOV/AVI/WebM · tối đa 50 MiB, 3 phút, Full HD. AI phân tích tối đa 10 ảnh/giây; video gốc được giữ trong ZIP nguồn. Nên chọn MP4 H.264 để xem ngay trên trình duyệt.</p>
+      <label className="block text-sm"><input type="checkbox" checked={uploadConsent} disabled={busy || Boolean(working)} onChange={event => setUploadConsent(event.target.checked)} /> Tôi có quyền sử dụng video và đồng ý tải lên để xử lý.</label>
+      <p className="text-sm text-cyan-200">Nhận diện tay, phân đoạn và keyframe từ video. Không có lực/IMU, mẫu so sánh hay điểm đánh giá làm đúng.</p>
+    </div> : <div className="grid gap-3 border-b border-slate-700 p-4 md:grid-cols-2">
       <label className="text-sm">Mục đích phiên
         <select value={role} disabled={Boolean(working)} onChange={event => setRole(event.target.value as typeof role)} className="mt-1 w-full rounded bg-slate-900 p-2">
           <option value="expert">Ghi mẫu người hướng dẫn / chuyên gia</option><option value="worker">Người học — so với mẫu đã duyệt</option><option value="demo">Thử pipeline với mẫu DEMO (không phải expert thật)</option>
@@ -213,24 +253,25 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
       {role === 'worker' && <label className="text-sm">Lượt thực nghiệm<select value={trialStage} disabled={Boolean(working)} onChange={event => setTrialStage(event.target.value as typeof trialStage)} className="mt-1 w-full rounded bg-slate-900 p-2"><option value="before_learning">Trước khi học SOP</option><option value="after_learning">Sau khi học SOP</option><option value="practice">Luyện tập</option></select></label>}
       <label className="text-sm"><input type="checkbox" checked={consent} disabled={Boolean(working)} onChange={event => setConsent(event.target.checked)} /> Người thao tác đồng ý ghi hình cho bài thực hành này.</label>
       {task && <p className="text-xs text-gray-400">Tiêu chí bài mẫu: {task.success_criteria} · SOP chỉ là nháp trước khi người hướng dẫn duyệt.</p>}
-    </div>
+    </div>}
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
-        <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>
-          <p className="text-xs text-gray-400">{job?.capture_mode === 'demo'
+        <div><h2 className="font-heading text-lg font-bold">{source === 'upload' ? 'Phân tích video tải lên' : 'Quay và phân tích ngay trên trang'}</h2>
+          <p className="text-xs text-gray-400">{source === 'upload' ? 'Nguồn video tải lên · cảm biến không có dữ liệu' : job?.capture_mode === 'demo'
             ? 'Nguồn phiên này: webcam máy AI + cảm biến DEMO; không dùng phần cứng'
             : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
               : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · nhận diện riêng tay trái và tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working) || !health?.can_start}
+        {source === 'upload' ? <button type="button" onClick={() => void beginUpload()} disabled={busy || Boolean(working) || !file || !uploadConsent}
+          className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:opacity-40"><Upload size={17} />{busy ? 'Đang tải video...' : 'Tải lên và phân tích'}</button> : <><button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working) || !health?.can_start}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
           <Play size={17} />Quay ESP32 + vòng tay</button>
         <button type="button" onClick={() => void begin('demo')} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-4 py-2 font-bold text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
-          <Camera size={17} />Quay webcam (DEMO)</button>
-        <button type="button" onClick={() => void end()} disabled={busy || !job || !['starting', 'recording'].includes(job.stage)}
+          <Camera size={17} />Quay webcam (DEMO)</button></>}
+        <button type="button" onClick={() => void end()} disabled={busy || !job || !(['starting', 'recording'].includes(job.stage) || (job.capture_mode === 'upload' && job.stage === 'processing'))}
           className="inline-flex items-center gap-2 rounded-lg border border-alertRed/60 bg-alertRed/15 px-4 py-2 font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-40">
-          <CircleStop size={17} />Kết thúc</button>
+          <CircleStop size={17} />{source === 'upload' ? 'Hủy phân tích' : 'Kết thúc'}</button>
       </div>
     </div>
     <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)]">
@@ -249,19 +290,20 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
                 fontSize="13" fontWeight="bold">{hand.title}</text>}
             </g>)}
           </svg>
-        </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
+        </div> : source === 'upload' && fileUrl ? <video src={fileUrl} controls className="h-full w-full object-contain" /> : <div className="px-4 text-center text-sm text-gray-400">{source === 'upload' ? 'Chọn video để xem trước và chạy phân tích.' : job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
+        {job?.capture_mode === 'upload' && displayFrame && <span className="absolute right-3 top-3 rounded bg-slate-800 px-2 py-1 text-xs font-bold text-cyan-200">VIDEO TẢI LÊN · {(displayFrame.timestamp_ms/1000).toFixed(1)} s</span>}
         {recording && !stale && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
         {stale && <span className="absolute bottom-3 rounded bg-amber-950 px-3 py-1 text-xs text-amber-100">Chưa có ảnh mới — kiểm tra kết nối camera</span>}
       </div>
       <div className="flex flex-col justify-center rounded-lg border border-slate-700 bg-slate-900/60 p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-cyberGreen">
           {working && <RotateCw className="animate-spin" size={17} />}
-          {job ? ({ starting: 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
+          {job ? ({ starting: source === 'upload' ? 'Đang chuẩn bị video' : 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
-            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : !health ? 'Đang kiểm tra thiết bị'
+            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : source === 'upload' ? 'Phân tích không cần phần cứng' : !health ? 'Đang kiểm tra thiết bị'
               : health.can_start ? 'Có thể bắt đầu kết nối camera' : 'Thiết bị chưa sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.'}</p>
-        <div className="mt-3 space-y-1 rounded border border-slate-700 p-2 text-xs">
+        <p className="mt-2 text-sm text-gray-300">{job?.message ?? (source === 'upload' ? 'Tải video thao tác lên để nhận diện hai tay và phân đoạn hành động.' : health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.')}</p>
+        {source === 'upload' ? <div className="mt-3 rounded border border-slate-700 p-3 text-sm text-amber-200">Lực/FSR, IMU và đồng bộ thiết bị: không có dữ liệu. Nhãn AI cần người xem xác nhận.</div> : <div className="mt-3 space-y-1 rounded border border-slate-700 p-2 text-xs">
           <p>SmartCap: {health?.camera.message ?? 'Chưa kiểm tra'}</p>
           <p>MQTT: {health?.mqtt.message ?? 'Chưa kiểm tra'} · NTP: {health ? health.ntp.ok ? 'phản hồi' : 'không phản hồi' : 'chưa kiểm tra'}</p>
           {health?.camera.board && <p>Bo đã chạy {(health.camera.board.uptime_ms/1000).toFixed(0)} s · lần reset: {health.camera.board.reset_reason} · Wi-Fi {health.camera.board.wifi_rssi} dBm</p>}
@@ -269,7 +311,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           <button disabled={Boolean(working)} className="underline disabled:opacity-40" onClick={() => {
             void getDeviceHealth(undefined, true).then(value => { setHealth(value); setHealthError(''); }).catch(reason => setHealthError(String(reason)));
           }}>Kiểm tra lại thiết bị</button>
-        </div>
+        </div>}
         {displayFrame && <div className="mt-3 grid grid-cols-2 gap-2">
           {hands.map(hand => <div key={hand.side} className="rounded border border-slate-700 bg-slate-950/60 p-2">
             <div className="text-sm font-bold" style={{ color: hand.color }}>{hand.title}</div>
@@ -295,7 +337,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}
-        <p className="mt-4 text-xs text-gray-500">Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.</p>
+        <p className="mt-4 text-xs text-gray-500">{source === 'upload' ? 'Video được phân tích trên máy chạy backend. Báo cáo là bản nháp; chưa đánh giá hiệu quả học việc hay điều khiển robot.' : 'Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.'}</p>
       </div>
     </div>
     <LearningExperimentPanel />

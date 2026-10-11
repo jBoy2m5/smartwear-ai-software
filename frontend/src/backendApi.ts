@@ -66,7 +66,7 @@ export interface CaptureStatus {
   message: string;
   session_id: string | null;
   updated_at?: string;
-  capture_mode?: 'hardware' | 'demo';
+  capture_mode?: 'hardware' | 'demo' | 'upload';
 }
 
 export interface CapturePreview {
@@ -99,6 +99,17 @@ export function getDeviceHealth(signal?: AbortSignal, refresh = false) {
 
 export function startCapture(captureMode: 'hardware' | 'demo' = 'hardware', context?: CaptureContext): Promise<CaptureStatus> {
   return requestJson<CaptureStatus>(`/api/v1/capture/?capture_mode=${captureMode}`, 'POST', undefined, context);
+}
+
+export async function uploadVideo(file: File, consent: boolean): Promise<CaptureStatus> {
+  const response = await fetch(backendUrl(`/api/v1/capture/upload?filename=${encodeURIComponent(file.name)}&consent=${consent}`)!, {
+    method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream', Accept: 'application/json' }, body: file,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { detail?: string };
+    throw new Error(body.detail ?? `Backend HTTP ${response.status}`);
+  }
+  return response.json() as Promise<CaptureStatus>;
 }
 
 export interface TaskStep {

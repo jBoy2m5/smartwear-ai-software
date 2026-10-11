@@ -2,6 +2,8 @@
 #include <esp_camera.h>
 #include <esp_http_server.h>
 #include <esp_system.h>
+#include <esp_heap_caps.h>
+#include <memory>
 #include <lwip/sockets.h>
 
 static uint32_t sequence = 0;
@@ -40,7 +42,7 @@ static esp_err_t cameraStatus(httpd_req_t *request) {
       "{\"schema\":\"smartwear.cap.status/1\",\"boot_id\":\"%s\","
       "\"reset_reason\":\"%s\",\"uptime_ms\":%lu,\"wifi_rssi\":%d,"
       "\"camera_ready\":%s,\"camera_init_error\":%d,\"ntp_ready\":%s,"
-      "\"sequence\":%lu,\"heap_bytes\":%u,\"firmware\":\"cap-diagnostics-v1\"}",
+      "\"sequence\":%lu,\"heap_bytes\":%u,\"firmware\":\"cap-single-send-v5\"}",
       bootId, resetReason(), (unsigned long)millis(), WiFi.RSSI(),
       cameraReady ? "true" : "false", int(cameraInitError),
       sourceEpochMs(esp_timer_get_time(), epoch) ? "true" : "false",
@@ -114,12 +116,23 @@ static esp_err_t streamCamera(httpd_req_t *request) {
         "X-Boot-Id: %s\r\nX-Reset-Reason: %s\r\n\r\n",
         unsigned(fb->len), (long long)epoch, (unsigned long)sequence++, bootId,
         resetReason());
-    esp_err_t result = httpd_resp_send_chunk(request, header, length);
-    if (result == ESP_OK)
-      result = httpd_resp_send_chunk(request, (const char *)fb->buf, fb->len);
+    // Send each multipart frame in one HTTP chunk. Return the camera buffer
+    // before waiting for TCP so transport cannot hold up camera acquisition.
+    const size_t payloadLength = size_t(length) + fb->len + 2;
+    std::unique_ptr<uint8_t, decltype(&free)> payload(
+        static_cast<uint8_t *>(heap_caps_malloc(payloadLength,
+                                               MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+        &free);
+    if (!payload) {
+      esp_camera_fb_return(fb);
+      return ESP_ERR_NO_MEM;
+    }
+    memcpy(payload.get(), header, length);
+    memcpy(payload.get() + length, fb->buf, fb->len);
+    memcpy(payload.get() + length + fb->len, "\r\n", 2);
     esp_camera_fb_return(fb);
-    if (result == ESP_OK)
-      result = httpd_resp_send_chunk(request, "\r\n", 2);
+    const esp_err_t result = httpd_resp_send_chunk(
+        request, reinterpret_cast<const char *>(payload.get()), payloadLength);
     if (result != ESP_OK)
       return result;
     vTaskDelay(1);
@@ -139,11 +152,6 @@ void setup() {
                 unsigned(ESP.getFreeHeap()),
                 psramFound() ? "ready" : "missing");
   Serial.flush();
-  if (!psramFound()) {
-    Serial.println("PSRAM required for double-buffered QVGA capture");
-    while (true)
-      delay(1000);
-  }
   // Start WiFi before enabling camera DMA/VSYNC traffic during network init.
   startNetwork(IPAddress(192, 168, 137, 111), "smartwear-cap");
   const uint32_t connectionStarted = millis();
@@ -177,11 +185,12 @@ void setup() {
   config.ledc_channel = LEDC_CHANNEL_0;
   config.pixel_format = PIXFORMAT_JPEG;
   config.frame_size = FRAMESIZE_QVGA;
-  config.jpeg_quality = 15;
-  config.fb_count = 3;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.grab_mode = CAMERA_GRAB_LATEST;
-  Serial.println("Initializing OV2640 QVGA camera (no head IMU)");
+  config.jpeg_quality = 20;
+  // Use the single internal-RAM buffer configuration verified on this board.
+  config.fb_count = 1;
+  config.fb_location = CAMERA_FB_IN_DRAM;
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  Serial.println("Initializing OV2640 QVGA camera: one internal-RAM buffer, batched HTTP");
   Serial.flush();
   const esp_err_t cameraResult = esp_camera_init(&config);
   cameraInitError = cameraResult;

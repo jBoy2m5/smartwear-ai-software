@@ -1,6 +1,7 @@
 """Camera-free regression checks for real-input parsing and no-DEMO alignment."""
 
 import io
+import http.client
 import json
 import math
 import sys
@@ -177,6 +178,67 @@ class HardwareTests(unittest.TestCase):
                 receiver._accept_frame(CameraFrame(b"jpeg-c", BASE + 1000, 0))
             self.assertEqual(receiver.snapshot()["clock_or_sequence_resets"], 1)
             self.assertIn("nguồn/cáp USB", receiver.snapshot()["last_stream_error"])
+
+    def test_camera_recovers_truncated_http_chunks_without_saving_partial_jpeg(self):
+        jpeg = b"\xff\xd8original-jpeg\xff\xd9"
+
+        def part(seq, boot_id="0123456789abcdef"):
+            return (f"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {len(jpeg)}\r\n"
+                    f"X-Timestamp-Ms: {BASE + seq * 33}\r\nX-Frame-Seq: {seq}\r\n"
+                    f"X-Boot-Id: {boot_id}\r\n\r\n".encode() + jpeg + b"\r\n")
+
+        def response(chunks, complete):
+            wire = (b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+                    b"Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n")
+            for declared_length, payload in chunks:
+                wire += f"{declared_length:x}\r\n".encode() + payload
+                if len(payload) == declared_length:
+                    wire += b"\r\n"
+            if complete:
+                wire += b"0\r\n\r\n"
+            result = http.client.HTTPResponse(SimpleNamespace(
+                makefile=lambda *_: io.BufferedReader(io.BytesIO(wire))))
+            result.begin()
+            return result
+
+        second = part(1)
+        for cut in (4, 35, second.index(jpeg) + 3):
+            for reboot in (False, True):
+                with self.subTest(cut=cut, reboot=reboot), tempfile.TemporaryDirectory() as temporary:
+                    receiver = CameraReceiver(Path(temporary), "http://camera")
+                    first = response([(len(part(0)), part(0)), (len(second), second[:cut])], False)
+                    resumed = part(1, "fedcba9876543210" if reboot else "0123456789abcdef")
+                    recovered = response([(len(resumed), resumed)], True)
+                    original_record = receiver._record
+                    recorded = 0
+
+                    def record(*args):
+                        nonlocal recorded
+                        original_record(*args)
+                        recorded += 1
+                        if recorded == 2:
+                            receiver.stop_event.set()
+
+                    with patch("hardware.camera_receiver.open_camera_stream",
+                               side_effect=[first, recovered]) as opened, \
+                            patch.object(receiver, "_record", side_effect=record):
+                        receiver._receive()
+                    self.assertEqual(opened.call_count, 2, repr(receiver.error))
+                    self.assertEqual(receiver.snapshot()["stream_errors"], 1)
+                    rows = [json.loads(line) for line in
+                            (Path(temporary) / "camera_packets.jsonl").read_text().splitlines()]
+                    if reboot:
+                        self.assertIsInstance(receiver.error, RuntimeError)
+                        self.assertIn("khởi động lại", str(receiver.error))
+                        self.assertEqual([row["seq"] for row in rows], [0])
+                        self.assertEqual(receiver.snapshot()["clock_or_sequence_resets"], 1)
+                    else:
+                        self.assertIsNone(receiver.error)
+                        self.assertEqual([row["seq"] for row in rows], [0, 1])
+                        self.assertIn("IncompleteRead", receiver.snapshot()["last_stream_error"])
+                    self.assertEqual((Path(temporary) / "camera_raw.mjpeg").read_bytes(),
+                                     jpeg * len(rows))
+                    self.assertTrue(all(row["sha256"] == sha256(jpeg).hexdigest() for row in rows))
 
     def test_wrist_validation_rejects_malformed_and_nonfinite(self):
         valid = {"t_ms": BASE, "seq": 1, "acc": [0, 0, 1],

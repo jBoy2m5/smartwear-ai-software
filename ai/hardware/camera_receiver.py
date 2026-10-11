@@ -1,6 +1,7 @@
 """One bounded MJPEG consumer, with original JPEG bytes saved before inference."""
 
 import hashlib
+import http.client
 import json
 import queue
 import threading
@@ -113,7 +114,12 @@ class CameraReceiver:
                             raise
                         with self.lock:
                             self.counters["http_503"] += 1
-                    except (EOFError, OSError, ValueError, urllib.error.URLError) as exc:
+                    except (EOFError, OSError, ValueError, urllib.error.URLError,
+                            http.client.HTTPException) as exc:
+                        # A chunked HTTP response can end in the middle of a
+                        # multipart header/JPEG and raise IncompleteRead rather
+                        # than EOFError. Discard that unfinished part and reopen
+                        # the stream; _accept_frame still rejects a camera reset.
                         with self.lock:
                             self.counters["stream_errors"] += 1
                             self.last_stream_error = str(exc)

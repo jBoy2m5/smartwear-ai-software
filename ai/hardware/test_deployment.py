@@ -187,6 +187,44 @@ class DeploymentTests(unittest.TestCase):
             self.assertLess(timings['events_ms']['model_ready'],timings['events_ms']['capture_started'])
             self.assertEqual(timings['stages']['inference']['count'], 3)
 
+    def test_capture_marks_stalled_camera_failed_after_first_frame(self):
+        import cv2
+        import numpy as np
+        from hardware.record_hardware import record_hardware
+        success, jpeg = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))
+        self.assertTrue(success)
+        clock = 0.0
+        reads = 0
+
+        def receive(timeout):
+            nonlocal clock, reads
+            reads += 1
+            if reads == 1:
+                clock = 0.1
+                return CameraFrame(jpeg.tobytes(), BASE, 1), BASE + 2
+            clock += 16
+            return None
+
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
+                patch("hardware.record_hardware.CameraReceiver") as camera, \
+                patch("hardware.record_hardware.WristReceiver") as wrist, \
+                patch("hardware.record_hardware.time.monotonic", side_effect=lambda: clock):
+            camera.return_value.get.side_effect = receive
+            camera.return_value.snapshot.return_value = {"received_jpeg": 1, "stream_errors": 2}
+            wrist.return_value.snapshot.return_value = {"received": 0}
+            wrist.return_value.buffer.nearest.return_value = None
+            with self.assertRaisesRegex(TimeoutError, "15 giây"):
+                record_hardware(show_window=False, duration_s=60)
+            marker = next(Path(temporary).glob("*/hardware_capture.json"))
+            document = json.loads(marker.read_text(encoding="utf-8"))
+            self.assertEqual(document["status"], "failed")
+            self.assertEqual(document["inferred_frames"], 1)
+            self.assertEqual(document["camera_stats"]["stream_errors"], 2)
+            self.assertEqual(len((marker.parent / "camera.jsonl").read_text().splitlines()), 1)
+            camera.return_value.stop.assert_called_once()
+            wrist.return_value.stop.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

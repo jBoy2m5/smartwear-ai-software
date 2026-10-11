@@ -336,7 +336,9 @@ Mở **http://127.0.0.1:8000/** hoặc **http://192.168.137.1:8000/** trên cùn
 
 ### Webcam DEMO và phát triển giao diện
 
-Backend đã chạy: chọn **Quay webcam (DEMO)** và role DEMO. API `capture_mode=demo` dùng webcam máy chủ và sensor mô phỏng, không mở ESP32/wrist. Expert/worker có context yêu cầu hardware đo thật. Hai nguồn chọn rõ, không tự fallback.
+Backend đã chạy: có thể chọn **Tải video lên · không cần thiết bị** để chạy AI trên video MP4/MOV/AVI/WebM, tối đa 50 MiB/3 phút/Full HD, không cần dữ liệu mẫu hoặc phần cứng. Phiên `VIDEO_` giữ cảm biến null, không tự chọn reference DEMO; xem [hướng dẫn upload](docs/VIDEO_UPLOAD.md).
+
+Trong tab **Quay trực tiếp**, chọn **Quay webcam (DEMO)** và role DEMO. API `capture_mode=demo` dùng webcam máy chủ và sensor mô phỏng, không mở ESP32/wrist. Expert/worker có context yêu cầu hardware đo thật. Các nguồn chọn rõ, không tự fallback.
 
 Lập trình frontend, giữ backend 8000 rồi chạy:
 

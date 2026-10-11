@@ -77,7 +77,7 @@ class SessionService:
         try:
             if self.sop_generator is not None:
                 self.sop_generator.generate(payload)
-            measured = payload.session_id.startswith("MEASURED_")
+            measured = payload.session_id.startswith(("MEASURED_", "VIDEO_"))
             if self.robot_exporter is not None and not measured:
                 self.robot_exporter.export(payload)
         except Exception as exc:
@@ -212,6 +212,8 @@ class SessionService:
     ) -> Path:
         """Resolve an existing generated robot export."""
         self._require_session(session_id)
+        if session_id.startswith("VIDEO_"):
+            raise ArtifactNotFoundError("Uploaded video has no calibrated robot actions")
         names = {
             "json": f"robot_dataset_{session_id}.json",
             "db3": f"rosbag_{session_id}.db3",
@@ -365,12 +367,12 @@ class SessionService:
             ),
             robot_json_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=json"
-                if artifact_ready and not entity.session_id.startswith("MEASURED_")
+                if artifact_ready and not entity.session_id.startswith(("MEASURED_", "VIDEO_"))
                 else None
             ),
             robot_export_url=(
                 f"{self.settings.api_prefix}/sessions/{entity.session_id}/export-rosbag?format=rosbag"
-                if artifact_ready and not entity.session_id.startswith("MEASURED_")
+                if artifact_ready and not entity.session_id.startswith(("MEASURED_", "VIDEO_"))
                 else None
             ),
             analysis_result=analysis,

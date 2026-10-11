@@ -1,13 +1,17 @@
 """Dashboard controls and raw-frame previews from the AI workstation camera."""
 
 import json
+import tempfile
+from pathlib import Path as FilePath
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request, status
 from backend.schemas.knowledge import CaptureContext
 from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 from backend.api.auth import require_api_key
+from backend.services.capture import MAX_UPLOAD_BYTES, VIDEO_SUFFIXES
 
 router = APIRouter(prefix="/capture", tags=["Capture"],
                    dependencies=[Depends(require_api_key)])
@@ -31,6 +35,47 @@ def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = 
         return request.app.state.capture_manager.start(capture_mode)
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
+async def upload_video(request: Request, filename: str, consent: bool = False) -> dict:
+    """Stream one bounded video to disk; decoder validation runs in the AI job."""
+    if not consent:
+        raise HTTPException(status_code=422, detail="Xác nhận quyền sử dụng và xử lý video trước khi tải lên.")
+    if FilePath(filename).suffix.lower() not in VIDEO_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Chỉ nhận MP4, MOV, AVI hoặc WebM.")
+    length = request.headers.get("content-length")
+    if length:
+        try:
+            declared = int(length)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Content-Length không hợp lệ") from exc
+        if declared < 0 or declared > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Video tối đa 50 MiB.")
+    manager = request.app.state.capture_manager
+    if manager.has_active_capture():
+        raise HTTPException(status_code=409, detail="Chờ phiên đang chạy hoàn tất trước khi tải video.")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=manager.root, suffix=".upload", delete=False) as stream:
+            temporary = FilePath(stream.name)
+            count = 0
+            async for chunk in request.stream():
+                count += len(chunk)
+                if count > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="Video tối đa 50 MiB.")
+                stream.write(chunk)
+        if not count:
+            raise HTTPException(status_code=422, detail="Video rỗng.")
+        try:
+            return await run_in_threadpool(manager.start_upload, temporary, filename)
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=503, detail="Không khởi động được AI; kiểm tra cấu hình Python và quyền ghi file.") from exc
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 @router.get("/{job_id}")
