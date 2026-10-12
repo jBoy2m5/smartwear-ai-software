@@ -21,7 +21,6 @@ class Settings(BaseModel):
 
     app_name: str = "SmartWear AI Backend"
     environment: Literal["development", "test", "production"] = "development"
-    judge_mode: bool = False
     api_prefix: str = "/api/v1"
     database_url: str = f"sqlite:///{(BACKEND_ROOT / 'data' / 'smartwear.db').as_posix()}"
     static_dir: Path = BACKEND_ROOT / "static"
@@ -66,7 +65,6 @@ class Settings(BaseModel):
         mapping = {
             "SMARTWEAR_APP_NAME": "app_name",
             "SMARTWEAR_ENVIRONMENT": "environment",
-            "SMARTWEAR_JUDGE_MODE": "judge_mode",
             "SMARTWEAR_API_PREFIX": "api_prefix",
             "SMARTWEAR_DATABASE_URL": "database_url",
             "SMARTWEAR_STATIC_DIR": "static_dir",

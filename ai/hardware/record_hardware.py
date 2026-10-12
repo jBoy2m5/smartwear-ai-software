@@ -1,4 +1,4 @@
-"""Record the right hand from ESP32 MJPEG and the right SmartWrist."""
+"""Record both hands from ESP32 MJPEG and the instrumented right SmartWrist."""
 
 import argparse
 import json
@@ -134,7 +134,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                 performance.add('inference', (time.perf_counter()-stage_started)*1000)
                 performance.event('first_inference')
                 data = make_frame_data(result, timestamp, frame.shape[1], frame.shape[0],
-                                       detector, tracked_side="right")
+                                       detector)
                 wrist_state = wrist.snapshot()
                 data["wrist_status"] = (
                     "receiving" if wrist_state.get("received", 0) > 0
@@ -165,7 +165,7 @@ def record_hardware(camera_url="http://192.168.137.111:81/stream",
                 performance.add('frame_processing', (time.perf_counter()-frame_started)*1000)
                 if show_window:
                     draw_frame(cv2, frame, data)
-                    cv2.imshow("SmartWear ESP32 - Right Hand", frame)
+                    cv2.imshow("SmartWear ESP32 - Left / Right Hands", frame)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
                 now = time.monotonic()

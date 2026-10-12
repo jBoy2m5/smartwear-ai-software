@@ -39,7 +39,7 @@ export function MudaPanel({ detail, setFocus }: {
         {item.extra_ms != null && <p className="mt-2 text-xs text-gray-400">{item.reason === 'shorter_visible_action' ? 'Ngắn hơn mẫu' : 'Dài hơn mẫu'}: {seconds(Math.abs(item.extra_ms))}</p>}
       </button>)}
     </div>}
-    <p className="mt-3 text-xs text-gray-500">Đoạn ngắn hơn mẫu vẫn cần xem lại nhưng không cộng vào thời gian tăng thêm. {displayHands(detail).length > 1 ? 'Các thời lượng hai tay có thể chồng nhau; ' : ''}Đây không phải số giây lãng phí đã xác nhận.</p>
+    <p className="mt-3 text-xs text-gray-500">Đoạn ngắn hơn mẫu vẫn cần xem lại nhưng không cộng vào thời gian tăng thêm. Các thời lượng hai tay có thể chồng nhau; đây không phải số giây lãng phí đã xác nhận.</p>
   </section>;
 }
 
@@ -164,8 +164,8 @@ export function Exports({ detail }: { detail: SessionDetail }) {
     <div className="mt-4 flex flex-wrap gap-2">
       <ExportLink href={detail.sop_download_url} Icon={FileText}>SOP PDF</ExportLink>
       <ExportLink href={detail.sop_download_url ? `${detail.sop_download_url}?format=html` : null} Icon={FileText}>SOP HTML</ExportLink>
-      {!detail.session_id.startsWith('VIDEO_') && <ExportLink href={detail.robot_json_url} Icon={FileJson2}>Robot JSON · DEMO</ExportLink>}
-      {!detail.session_id.startsWith('VIDEO_') && <ExportLink href={detail.robot_export_url} Icon={Download}>ROSbag · DEMO</ExportLink>}
+      <ExportLink href={detail.robot_json_url} Icon={FileJson2}>Robot JSON · DEMO</ExportLink>
+      <ExportLink href={detail.robot_export_url} Icon={Download}>ROSbag · DEMO</ExportLink>
       <ExportLink href={detail.recording_url} Icon={Download}>{detail.session_id.startsWith('VIDEO_') ? 'Video phân tích AVI' : 'Video gốc AVI'}</ExportLink>
       <ExportLink href={detail.source_data_url} Icon={Download}>Dữ liệu AI gốc ZIP</ExportLink>
       {detail.analysis_result && <ExportLink href={`/api/v1/sessions/${encodeURIComponent(detail.session_id)}/analysis-result`} Icon={FileJson2}>AI analysis JSON</ExportLink>}

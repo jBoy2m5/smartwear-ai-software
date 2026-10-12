@@ -27,7 +27,6 @@ class CaptureManager:
     def __init__(self, settings: Settings):
         self.root = settings.static_dir.parent / "data" / "capture_jobs"
         self.root.mkdir(parents=True, exist_ok=True)
-        self.judge_mode = settings.judge_mode
         self._lock = threading.Lock()
         self._process: subprocess.Popen | None = None
         self._active_id: str | None = None
@@ -36,42 +35,6 @@ class CaptureManager:
         self._health_lock = threading.Lock()
         self._health_cache = None
         self._health_checked = 0.
-        if self.judge_mode:
-            self._recover_interrupted_jobs()
-
-    def _recover_interrupted_jobs(self) -> None:
-        """An old upload worker cannot still be running after container restart."""
-        for path in self.root.glob("*/status.json"):
-            try:
-                document = json.loads(path.read_text(encoding="utf-8"))
-                if document.get("stage") not in {"starting", "recording", "stopping", "processing", "publishing"}:
-                    continue
-                document.update(stage="failed", session_id=None,
-                                message="Phân tích bị gián đoạn khi ứng dụng khởi động lại; video nguồn vẫn được giữ.")
-                replacement = path.with_suffix(".recovery.tmp")
-                replacement.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
-                replacement.replace(path)
-            except (OSError, ValueError, json.JSONDecodeError):
-                # A damaged status file must not prevent other saved jobs from loading.
-                continue
-
-    def shutdown(self) -> None:
-        """Ask the active child to stop before the HTTP server exits."""
-        with self._lock:
-            process, job_id = self._process, self._active_id
-            if process is None or process.poll() is not None:
-                return
-            if job_id is not None:
-                (self.root / job_id / "stop.flag").touch(exist_ok=True)
-        try:
-            process.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=5)
 
     def devices(self, refresh=False):
         from ai.hardware.config import HardwareConfig
@@ -135,8 +98,6 @@ class CaptureManager:
                 'Kiểm tra nguồn, kết nối hotspot và trạng thái khởi động camera.') from exc
 
     def start(self, capture_mode: str = "hardware", context: dict | None = None) -> dict:
-        if self.judge_mode:
-            raise RuntimeError("Chế độ chấm chỉ nhận video tải lên; không mở camera hoặc phần cứng.")
         if capture_mode not in ("hardware", "demo"):
             raise RuntimeError("Chế độ quay không hợp lệ")
         with self._lock:

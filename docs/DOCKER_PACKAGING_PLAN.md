@@ -1,10 +1,6 @@
 # Kế hoạch đóng gói Docker để bàn giao ban tổ chức
 
-Ngày lập: 11/10/2026. Cập nhật: 12/10/2026. Đã build image, kiểm thử luồng upload video trong container và tạo gói bàn giao tại `release/SmartWear-Judge-1.0.0/`.
-
-Kiểm thử đã đạt: giao diện và `/ready` trên volume mới, danh sách phiên trống, upload video không có tay, AI xử lý và tạo ZIP nguồn, dữ liệu còn sau khi restart container. Thử thêm video AVI có tay phải từ máy phát triển: container tạo 2 hành động và 2 keyframe, phiên vẫn còn sau restart. TAR 475.079.168 byte; checksum các file bàn giao khớp. Image đã được kiểm tra không chứa phiên quay cục bộ, database cũ hoặc file cấu hình bí mật trong `/app`.
-
-Chưa xác nhận: video MP4 H.264 và các codec khác trong container, các tình huống lỗi của bảng kiểm thử bên dưới, chạy trên máy chấm riêng không có Internet, số đo tài nguyên và quyền phân phối model. Không xem các mục này là đã đạt cho đến khi kiểm tra riêng.
+Ngày lập: 11/10/2026. Trạng thái: kế hoạch triển khai; chưa phải gói Docker đã kiểm thử và phát hành.
 
 ## 1. Phương án đề xuất
 
