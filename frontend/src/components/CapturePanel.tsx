@@ -7,6 +7,7 @@ import type { CapturePreview, CaptureStatus, DeviceHealth } from '../backendApi'
 
 const ACTIVE = new Set(['starting', 'recording', 'stopping', 'processing', 'publishing']);
 const PREVIEW = new Set(['starting', 'recording', 'stopping']);
+const JUDGE_MODE = import.meta.env.VITE_JUDGE_MODE === 'true';
 const FINGERS = [[0, 1, 2, 3, 4], [0, 5, 6, 7, 8], [0, 9, 10, 11, 12],
   [0, 13, 14, 15, 16], [0, 17, 18, 19, 20]];
 type DisplayFrame = CapturePreview & { url: string };
@@ -68,7 +69,9 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     return () => window.clearInterval(timer);
   }, [stage]);
 
-  useEffect(() => { void listProcedures().then(setProcedures).catch(reason => setError(String(reason))); }, []);
+  useEffect(() => {
+    if (!JUDGE_MODE) void listProcedures().then(setProcedures).catch(reason => setError(String(reason)));
+  }, []);
   useEffect(() => {
     let active = true;
     setReference(''); setReferences([]);
@@ -80,6 +83,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     const saved = window.sessionStorage.getItem('smartwear_capture_job');
     if (saved && /^[0-9a-f]{32}$/.test(saved)) {
       void getCaptureStatus(saved).then(current => {
+        if (JUDGE_MODE && current.capture_mode !== 'upload') {
+          window.sessionStorage.removeItem('smartwear_capture_job');
+          return;
+        }
         setJob(current); setSource(current.capture_mode === 'upload' ? 'upload' : 'hardware');
       }).catch(() => {
         window.sessionStorage.removeItem('smartwear_capture_job');
@@ -220,10 +227,10 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   });
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
-    <div className="flex flex-wrap gap-2 border-b border-slate-700 p-4">
+    {!JUDGE_MODE && <div className="flex flex-wrap gap-2 border-b border-slate-700 p-4">
       <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('upload'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'upload' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Upload size={17} className="mr-2 inline" />Tải video lên · không cần thiết bị</button>
       <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('hardware'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'hardware' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Camera size={17} className="mr-2 inline" />Quay trực tiếp</button>
-    </div>
+    </div>}
     {source === 'upload' ? <div className="space-y-3 border-b border-slate-700 p-4">
       <label className="block text-sm font-semibold">Video thao tác
         <input type="file" accept=".mp4,.mov,.avi,.webm" disabled={busy || Boolean(working)} onChange={event => { setFile(event.target.files?.[0] ?? null); setJob(null); setDisplayFrame(null); setError(null); }} className="mt-2 block w-full rounded bg-slate-900 p-3 text-sm" />
@@ -340,6 +347,6 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
         <p className="mt-4 text-xs text-gray-500">{source === 'upload' ? 'Video được phân tích trên máy chạy backend. Báo cáo là bản nháp; chưa đánh giá hiệu quả học việc hay điều khiển robot.' : 'Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.'}</p>
       </div>
     </div>
-    <LearningExperimentPanel />
+    {!JUDGE_MODE && <LearningExperimentPanel />}
   </section>;
 }

@@ -164,8 +164,8 @@ export function Exports({ detail }: { detail: SessionDetail }) {
     <div className="mt-4 flex flex-wrap gap-2">
       <ExportLink href={detail.sop_download_url} Icon={FileText}>SOP PDF</ExportLink>
       <ExportLink href={detail.sop_download_url ? `${detail.sop_download_url}?format=html` : null} Icon={FileText}>SOP HTML</ExportLink>
-      <ExportLink href={detail.robot_json_url} Icon={FileJson2}>Robot JSON · DEMO</ExportLink>
-      <ExportLink href={detail.robot_export_url} Icon={Download}>ROSbag · DEMO</ExportLink>
+      {!detail.session_id.startsWith('VIDEO_') && <ExportLink href={detail.robot_json_url} Icon={FileJson2}>Robot JSON · DEMO</ExportLink>}
+      {!detail.session_id.startsWith('VIDEO_') && <ExportLink href={detail.robot_export_url} Icon={Download}>ROSbag · DEMO</ExportLink>}
       <ExportLink href={detail.recording_url} Icon={Download}>{detail.session_id.startsWith('VIDEO_') ? 'Video phân tích AVI' : 'Video gốc AVI'}</ExportLink>
       <ExportLink href={detail.source_data_url} Icon={Download}>Dữ liệu AI gốc ZIP</ExportLink>
       {detail.analysis_result && <ExportLink href={`/api/v1/sessions/${encodeURIComponent(detail.session_id)}/analysis-result`} Icon={FileJson2}>AI analysis JSON</ExportLink>}

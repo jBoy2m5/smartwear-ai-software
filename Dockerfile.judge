@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS frontend-build
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+ENV VITE_JUDGE_MODE=true
+RUN npm run build
+
+FROM python:3.12-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=utf-8 \
+    PIP_NO_CACHE_DIR=1 \
+    SMARTWEAR_ENVIRONMENT=development \
+    SMARTWEAR_JUDGE_MODE=true \
+    SMARTWEAR_AI_PYTHON=/usr/local/bin/python \
+    SMARTWEAR_CAPTURE_BACKEND_URL=http://127.0.0.1:8000 \
+    SMARTWEAR_DATABASE_URL=sqlite:////app/backend/data/smartwear.db
+
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg libgl1 libegl1 libgles2 libglib2.0-0 libgomp1 libsm6 libxext6 libxrender1 fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt /app/backend/requirements.txt
+COPY deployment/requirements-judge.txt /app/deployment/requirements-judge.txt
+RUN python -m pip install --requirement /app/deployment/requirements-judge.txt \
+    && python -c "import cv2, mediapipe, paho.mqtt.client; print('AI imports OK')"
+
+COPY backend/ /app/backend/
+COPY ai/ /app/ai/
+COPY --from=frontend-build /build/frontend/dist/ /app/frontend/dist/
+
+RUN test -s /app/ai/hand_landmarker.task \
+    && test -s /app/frontend/dist/index.html \
+    && python -c "import mediapipe as mp; options=mp.tasks.vision.HandLandmarkerOptions(base_options=mp.tasks.BaseOptions(model_asset_path='/app/ai/hand_landmarker.task'),running_mode=mp.tasks.vision.RunningMode.VIDEO,num_hands=2); mp.tasks.vision.HandLandmarker.create_from_options(options).close()" \
+    && groupadd --system smartwear \
+    && useradd --system --gid smartwear --home-dir /app smartwear \
+    && mkdir -p /app/backend/data /app/backend/static/pdf \
+       /app/backend/static/images /app/backend/static/dataset \
+    && chown -R smartwear:smartwear /app/backend/data /app/backend/static
+
+USER smartwear
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=4)"
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

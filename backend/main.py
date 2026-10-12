@@ -1,8 +1,12 @@
 """ASGI application entry point."""
 
 from contextlib import asynccontextmanager
+import importlib.util
 import logging
+import os
 from pathlib import Path
+import sys
+import tempfile
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,8 +62,11 @@ def create_app(settings: Settings | None = None, *, serve_frontend: bool = True)
         application.state.knowledge_service = KnowledgeService(database, runtime_settings,
                                                                application.state.session_service)
         application.state.knowledge_service.seed()
-        yield
-        database.dispose()
+        try:
+            yield
+        finally:
+            application.state.capture_manager.shutdown()
+            database.dispose()
 
     application = FastAPI(
         title=runtime_settings.app_name,
@@ -134,6 +141,22 @@ def create_app(settings: Settings | None = None, *, serve_frontend: bool = True)
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 content={"status": "not_ready"},
             )
+        if runtime_settings.judge_mode:
+            project = Path(__file__).resolve().parents[1]
+            worker = Path(os.environ.get("SMARTWEAR_AI_PYTHON", sys.executable))
+            required = [project / "ai" / "hand_landmarker.task",
+                        project / "ai" / "integration" / "uploaded_video.py",
+                        project / "frontend" / "dist" / "index.html"]
+            if (not worker.is_file() or not os.access(worker, os.X_OK)
+                    or any(not path.is_file() or path.stat().st_size == 0 for path in required)
+                    or any(importlib.util.find_spec(name) is None for name in ("cv2", "mediapipe"))):
+                return JSONResponse(status_code=503, content={"status": "not_ready", "reason": "ai_or_frontend_missing"})
+            for directory in (request.app.state.capture_manager.root, runtime_settings.static_dir):
+                try:
+                    with tempfile.TemporaryFile(dir=directory):
+                        pass
+                except OSError:
+                    return JSONResponse(status_code=503, content={"status": "not_ready", "reason": "data_not_writable"})
         return {"status": "ready"}
 
     frontend_dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
