@@ -135,13 +135,15 @@ export default function SessionDashboard() {
             <button type="button" onClick={() => chooseSession(item.session_id)} className="w-full p-3 pr-12 text-left">
             <div className="truncate text-xs font-bold text-gray-200" title={item.session_id}>{item.session_id.replace(/^DEMO_camera_data_/, 'DEMO · ')}</div>
             <div className="mt-2 text-xs text-gray-400">{dateTime(item.created_at)}</div>
-            <div className="mt-2 flex gap-2 text-xs"><span className="text-cyberGreen">Điểm {number(item.similarity_score, 1)}</span><span className="text-amber-300">MUDA {number(item.muda_detected_seconds, 2)} s</span></div>
+            <div className="mt-2 flex gap-2 text-xs">{item.session_id.startsWith('VIDEO_')
+              ? <span className="text-cyan-300">Video tải lên · chưa so với mẫu</span>
+              : <><span className="text-cyberGreen">Điểm {number(item.similarity_score, 1)}</span><span className="text-amber-300">MUDA {number(item.muda_detected_seconds, 2)} s</span></>}</div>
             </button>
             <button type="button" aria-label={`Xóa phiên ${item.session_id}`} title="Xóa phiên" disabled={deletingId !== null}
               onClick={() => void removeSession(item.session_id)}
               className="absolute right-2 top-2 rounded p-1.5 text-gray-400 hover:bg-red-950 hover:text-red-300 disabled:opacity-40"><Trash2 size={16} /></button>
           </div>)}</div>
-          {!loading && sessions.length === 0 && !listError && <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">Chưa có phiên. Bấm “Bắt đầu quay” ở phía trên để tạo phiên đầu tiên.</p>}
+          {!loading && sessions.length === 0 && !listError && <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">Chưa có phiên. {import.meta.env.VITE_JUDGE_MODE === 'true' ? 'Tải video lên ở phía trên để tạo phiên đầu tiên.' : 'Bấm “Bắt đầu quay” ở phía trên để tạo phiên đầu tiên.'}</p>}
         </aside>
 
         <main className="min-w-0 space-y-4">
@@ -159,7 +161,7 @@ export default function SessionDashboard() {
             </section>
             <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
               <MetricCard label="Điểm so khớp" value={selected.session_id.startsWith('VIDEO_') ? '—' : number(selected.dtw_metrics.similarity_score, 1)} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không tính DTW.' : 'Điểm hiển thị từ DTW; không phải phần trăm làm đúng.'} />
-              <MetricCard label="Đoạn cần xem lại" value={String(candidates.length)} note="Nghi vấn từ AI; chưa kết luận thao tác sai." danger={candidates.length > 0} />
+              <MetricCard label={selected.session_id.startsWith('VIDEO_') ? 'Đánh giá theo mẫu' : 'Đoạn cần xem lại'} value={selected.session_id.startsWith('VIDEO_') ? '—' : String(candidates.length)} note={selected.session_id.startsWith('VIDEO_') ? 'Chỉ có một video; chưa có mẫu để đánh giá.' : 'Nghi vấn từ AI; chưa kết luận thao tác sai.'} danger={candidates.length > 0} />
               <MetricCard label="Tổng thời lượng nghi vấn" value={selected.session_id.startsWith('VIDEO_') ? '—' : `${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không đánh giá MUDA.' : 'Tổng DEMO; hai tay có thể chồng thời gian.'} danger={candidates.length > 0} />
               <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh · ${selected.session_id.startsWith('VIDEO_') ? 'đã nhận diện và phân đoạn video' : selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
             </div>
@@ -168,7 +170,7 @@ export default function SessionDashboard() {
               <SessionCharts detail={selected} />
             </div>
             {!selected.session_id.startsWith('VIDEO_') && <MudaPanel detail={selected} setFocus={setFocus} />}
-            <div className="grid items-start gap-4 2xl:grid-cols-2"><Phases detail={selected} /><DtwPanel detail={selected} setFocus={setFocus} /></div>
+            <div className="grid items-start gap-4 2xl:grid-cols-2"><Phases detail={selected} />{!selected.session_id.startsWith('VIDEO_') && <DtwPanel detail={selected} setFocus={setFocus} />}</div>
             <SensorPanel detail={selected} />
             {!selected.session_id.startsWith('VIDEO_') && <KnowledgePanel detail={selected} />}
             <Exports detail={selected} />

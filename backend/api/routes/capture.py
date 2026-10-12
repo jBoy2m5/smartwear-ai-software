@@ -20,12 +20,16 @@ JobId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 @router.get("/devices")
 def device_health(request: Request, refresh: bool = False) -> dict:
+    if request.app.state.settings.judge_mode:
+        raise HTTPException(status_code=409, detail="Chế độ chấm không dùng thiết bị trực tiếp.")
     return request.app.state.capture_manager.devices(refresh)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware",
                   context: CaptureContext | None = Body(default=None)) -> dict:
+    if request.app.state.settings.judge_mode:
+        raise HTTPException(status_code=409, detail="Chế độ chấm chỉ nhận video tải lên.")
     try:
         if context is not None:
             if capture_mode == 'demo' and context.role != 'demo':

@@ -77,6 +77,8 @@ export interface CapturePreview {
   frame_index: number;
   timestamp_ms: number;
   camera: { frame_width: number; frame_height: number };
+  left_action?: { label: string; tracking_status: string };
+  left_landmarks?: Array<{ id: number; x: number; y: number; z: number }>;
   right_action: { label: string; tracking_status: string };
   right_landmarks: Array<{ id: number; x: number; y: number; z: number }>;
   wrist_status?: 'receiving' | 'missing';
