@@ -1,0 +1,88 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 53.105,
+    "capture_started": 71.559,
+    "first_jpeg_consumed": 139.423,
+    "first_inference": 158.261,
+    "recording_ended": 6989.623,
+    "capture_stopped": 7587.267
+  },
+  "elapsed_s": 7.587,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 25,
+      "mean_ms": 3.424,
+      "max_ms": 21.69,
+      "p50_ms": 0.678,
+      "p95_ms": 20.391,
+      "percentile_samples": 25
+    },
+    "jpeg_decode": {
+      "count": 25,
+      "mean_ms": 0.503,
+      "max_ms": 2.045,
+      "p50_ms": 0.33,
+      "p95_ms": 1.435,
+      "percentile_samples": 25
+    },
+    "alignment_wait": {
+      "count": 25,
+      "mean_ms": 0.029,
+      "max_ms": 0.07,
+      "p50_ms": 0.023,
+      "p95_ms": 0.053,
+      "percentile_samples": 25
+    },
+    "inference": {
+      "count": 25,
+      "mean_ms": 12.727,
+      "max_ms": 18.578,
+      "p50_ms": 11.088,
+      "p95_ms": 17.238,
+      "percentile_samples": 25
+    },
+    "video_and_observation_write": {
+      "count": 25,
+      "mean_ms": 0.625,
+      "max_ms": 3.577,
+      "p50_ms": 0.474,
+      "p95_ms": 0.681,
+      "percentile_samples": 25
+    },
+    "preview_submit": {
+      "count": 25,
+      "mean_ms": 0.153,
+      "max_ms": 3.209,
+      "p50_ms": 0.008,
+      "p95_ms": 0.11,
+      "percentile_samples": 25
+    },
+    "frame_processing": {
+      "count": 25,
+      "mean_ms": 14.363,
+      "max_ms": 25.687,
+      "p50_ms": 13.515,
+      "p95_ms": 20.314,
+      "percentile_samples": 25
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 25,
+    "stream_errors": 1,
+    "clock_or_sequence_resets": 1,
+    "last_stream_error": "SmartCap kh\u1edfi \u0111\u1ed9ng l\u1ea1i: boot 59b877edcafbce7b -> 7129c7370757537c; nguy\u00ean nh\u00e2n bo b\u00e1o: panic. B\u1eaft \u0111\u1ea7u phi\u00ean m\u1edbi sau khi ki\u1ec3m tra ngu\u1ed3n v\u00e0 camera.",
+    "boot_id": "59b877edcafbce7b",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 342,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 695
+  },
+  "inferred_frames": 25
+}

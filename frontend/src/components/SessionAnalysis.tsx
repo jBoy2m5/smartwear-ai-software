@@ -52,7 +52,7 @@ export function Phases({ detail }: { detail: SessionDetail }) {
     <p className="mb-3 text-xs text-gray-400">Chỉ hiển thị tay có hành động trong phiên; đoạn không nhìn rõ tay có thể không xuất hiện ở đây.</p>
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-700/70">
       <table className="w-full min-w-[670px] text-left text-sm"><thead className="sticky top-0 bg-slate-800 text-xs uppercase text-gray-400"><tr>
-        <th className="p-3">Thời gian</th>{hands.map(hand => <th key={hand} className="p-3">{handName(hand)}</th>)}<th className="p-3">Nhãn gốc</th><th className="p-3">{measured ? 'Newton chưa hiệu chuẩn' : 'Lực DEMO đỉnh'}</th>
+        <th className="p-3">Thời gian</th>{hands.map(hand => <th key={hand} className="p-3">{handName(hand)}</th>)}<th className="p-3">Nhãn gốc</th><th className="p-3">{detail.session_id.startsWith('VIDEO_') ? 'Lực: không có dữ liệu' : measured ? 'Newton chưa hiệu chuẩn' : 'Lực DEMO đỉnh'}</th>
       </tr></thead><tbody>{detail.action_phases.map((phase, index) => <tr key={`${phase.start_time}-${index}`} className="border-t border-slate-700/50 hover:bg-slate-800/60">
         <td className="whitespace-nowrap p-3 font-mono text-xs text-gray-300">{number(phase.start_time, 3)}–{number(phase.end_time, 3)} s</td>
         {hands.map(hand => <td key={hand} className={`p-3 font-semibold ${hand === 'right' ? 'text-cyberGreen' : 'text-cyan-300'}`}>
@@ -72,7 +72,7 @@ export function DtwPanel({ detail, setFocus }: {
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
     <div className="mb-4"><h2 className="font-heading text-lg font-bold">So sánh DTW từng tay</h2>
       <p className="text-xs text-gray-400">Mỗi dòng ghép một đoạn mẫu với đoạn camera ghi được. Số âm nghĩa là đoạn bạn quay ngắn hơn; khi khác nhãn, không hiểu là làm hành động đó nhanh hơn.</p></div>
-    {!analysis ? <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">Phiên này chưa có bản phân tích chi tiết từ AI.</p> :
+    {!analysis ? <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">{detail.session_id.startsWith('VIDEO_') ? 'Video đã được nhận diện và phân đoạn. Chưa có mẫu tham chiếu nên không tính DTW hoặc MUDA.' : 'Phiên này chưa có bản phân tích chi tiết từ AI.'}</p> :
       displayHands(detail).map(hand => { const track = analysis.hands?.[hand]; const pairs = track?.alignment ?? [];
         return <div key={hand} className="mb-5 last:mb-0">
           <div className="mb-2 flex flex-wrap items-center gap-3"><h3 className="font-bold text-cyan-300">{handName(hand)}</h3>
@@ -114,6 +114,10 @@ export function DtwPanel({ detail, setFocus }: {
 }
 
 export function SensorPanel({ detail }: { detail: SessionDetail }) {
+  if (detail.session_id.startsWith('VIDEO_')) return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
+    <h2 className="font-heading text-lg font-bold">Cảm biến không có dữ liệu</h2>
+    <p className="mt-2 text-sm text-amber-200">Video tải lên không kèm FSR, lực, IMU hoặc torque. Hệ thống giữ các tín hiệu này ở null và không mô phỏng số đo.</p>
+  </section>;
   const sensors = detail.analysis_result?.sensor_comparison;
   const measured = sensors?.worker_source?.source === 'measured_hardware';
   return <section className="rounded-xl border border-slate-700/60 bg-panelBg p-4">
@@ -162,11 +166,11 @@ export function Exports({ detail }: { detail: SessionDetail }) {
       <ExportLink href={detail.sop_download_url ? `${detail.sop_download_url}?format=html` : null} Icon={FileText}>SOP HTML</ExportLink>
       <ExportLink href={detail.robot_json_url} Icon={FileJson2}>Robot JSON · DEMO</ExportLink>
       <ExportLink href={detail.robot_export_url} Icon={Download}>ROSbag · DEMO</ExportLink>
-      <ExportLink href={detail.recording_url} Icon={Download}>Video gốc AVI</ExportLink>
+      <ExportLink href={detail.recording_url} Icon={Download}>{detail.session_id.startsWith('VIDEO_') ? 'Video phân tích AVI' : 'Video gốc AVI'}</ExportLink>
       <ExportLink href={detail.source_data_url} Icon={Download}>Dữ liệu AI gốc ZIP</ExportLink>
       {detail.analysis_result && <ExportLink href={`/api/v1/sessions/${encodeURIComponent(detail.session_id)}/analysis-result`} Icon={FileJson2}>AI analysis JSON</ExportLink>}
     </div>
-    <p className="mt-3 text-xs text-gray-500">{measured
+    <p className="mt-3 text-xs text-gray-500">{detail.session_id.startsWith('VIDEO_') ? 'Video gốc giữ nguyên trong ZIP nguồn. Video phân tích được lấy mẫu tối đa 10 Hz, giảm kích thước và lật ngang theo quy ước nhận diện. Không có cảm biến hoặc robot actions; báo cáo là bản nháp.' : measured
       ? 'Phiên phần cứng không xuất đường đi robot hoặc Newton khi chưa hiệu chuẩn. Ảnh camera và ADC/IMU gốc nằm trong dữ liệu nguồn.'
       : 'Đường đi robot là tọa độ DEMO từ ảnh camera, không thể dùng để điều khiển robot thật.'} Video AVI có thể cần mở bằng trình phát video trên máy.</p>
     {!detail.recording_url && <p className="mt-2 text-xs text-amber-200">Video gốc của phiên này chưa được gửi lên backend; ảnh và phân tích vẫn xem được.</p>}

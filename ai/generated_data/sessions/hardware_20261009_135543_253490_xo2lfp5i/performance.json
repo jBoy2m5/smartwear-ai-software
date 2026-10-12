@@ -1,0 +1,89 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 6306.195,
+    "capture_started": 6339.987,
+    "first_jpeg_consumed": 6422.409,
+    "first_inference": 6441.044,
+    "recording_ended": 18618.972,
+    "capture_stopped": 19452.461
+  },
+  "elapsed_s": 19.453,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 89,
+      "mean_ms": 23.042,
+      "max_ms": 313.894,
+      "p50_ms": 2.422,
+      "p95_ms": 136.526,
+      "percentile_samples": 89
+    },
+    "jpeg_decode": {
+      "count": 89,
+      "mean_ms": 0.591,
+      "max_ms": 2.435,
+      "p50_ms": 0.564,
+      "p95_ms": 1.343,
+      "percentile_samples": 89
+    },
+    "alignment_wait": {
+      "count": 89,
+      "mean_ms": 2.46,
+      "max_ms": 42.313,
+      "p50_ms": 0.057,
+      "p95_ms": 15.958,
+      "percentile_samples": 89
+    },
+    "inference": {
+      "count": 89,
+      "mean_ms": 31.066,
+      "max_ms": 72.205,
+      "p50_ms": 35.319,
+      "p95_ms": 53.242,
+      "percentile_samples": 89
+    },
+    "video_and_observation_write": {
+      "count": 89,
+      "mean_ms": 5.234,
+      "max_ms": 387.006,
+      "p50_ms": 0.971,
+      "p95_ms": 1.431,
+      "percentile_samples": 89
+    },
+    "preview_submit": {
+      "count": 89,
+      "mean_ms": 0.054,
+      "max_ms": 1.149,
+      "p50_ms": 0.013,
+      "p95_ms": 0.133,
+      "percentile_samples": 89
+    },
+    "frame_processing": {
+      "count": 89,
+      "mean_ms": 39.94,
+      "max_ms": 406.874,
+      "p50_ms": 39.358,
+      "p95_ms": 64.556,
+      "percentile_samples": 89
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 91,
+    "dropped_for_inference": 2,
+    "stream_errors": 1,
+    "http_503": 2,
+    "last_stream_error": "HTTP Error 503: Service Unavailable",
+    "boot_id": "1570f13e98cbd71a",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 616,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 879
+  },
+  "inferred_frames": 89
+}

@@ -64,7 +64,7 @@ async def ingest_session(
         session_id=payload.session_id,
         current_action=current_action,
         similarity_score=payload.dtw_metrics.similarity_score,
-        force=max(peak_forces, default=0.0),
+        force=max(peak_forces, default=None),
         warning="MUDA" if payload.dtw_metrics.muda_detected_seconds > 0 else None,
     )
     await request.app.state.connection_manager.broadcast(
@@ -97,6 +97,18 @@ def dashboard_summary(service: Service) -> DashboardSummary:
 def get_session(session_id: SessionId, service: Service) -> SessionDetail:
     """Return one complete persisted session."""
     return service.get_session(session_id)
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_session(session_id: SessionId, request: Request, service: Service) -> Response:
+    """Remove a stored session and backend artifacts after explicit client confirmation."""
+    if request.app.state.capture_manager.has_active_capture():
+        raise HTTPException(status_code=409, detail="Finish the active capture before deleting sessions")
+    try:
+        service.delete_session(session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{session_id}/download-sop", response_class=FileResponse)

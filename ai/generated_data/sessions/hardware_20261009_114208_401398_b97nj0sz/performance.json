@@ -1,0 +1,85 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 52.775,
+    "capture_started": 87.633,
+    "first_jpeg_consumed": 187.156,
+    "first_inference": 208.505,
+    "recording_ended": 20107.118,
+    "capture_stopped": 20699.77
+  },
+  "elapsed_s": 20.7,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 312,
+      "mean_ms": 10.715,
+      "max_ms": 80.657,
+      "p50_ms": 0.859,
+      "p95_ms": 47.244,
+      "percentile_samples": 312
+    },
+    "jpeg_decode": {
+      "count": 312,
+      "mean_ms": 0.719,
+      "max_ms": 3.593,
+      "p50_ms": 0.602,
+      "p95_ms": 1.874,
+      "percentile_samples": 312
+    },
+    "alignment_wait": {
+      "count": 312,
+      "mean_ms": 0.074,
+      "max_ms": 1.093,
+      "p50_ms": 0.069,
+      "p95_ms": 0.098,
+      "percentile_samples": 312
+    },
+    "inference": {
+      "count": 312,
+      "mean_ms": 35.307,
+      "max_ms": 93.767,
+      "p50_ms": 38.915,
+      "p95_ms": 50.877,
+      "percentile_samples": 312
+    },
+    "video_and_observation_write": {
+      "count": 312,
+      "mean_ms": 1.133,
+      "max_ms": 13.65,
+      "p50_ms": 1.07,
+      "p95_ms": 1.699,
+      "percentile_samples": 312
+    },
+    "preview_submit": {
+      "count": 312,
+      "mean_ms": 0.053,
+      "max_ms": 2.339,
+      "p50_ms": 0.012,
+      "p95_ms": 0.126,
+      "percentile_samples": 312
+    },
+    "frame_processing": {
+      "count": 312,
+      "mean_ms": 37.756,
+      "max_ms": 96.408,
+      "p50_ms": 41.183,
+      "p95_ms": 53.846,
+      "percentile_samples": 312
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 315,
+    "boot_id": "59b877edcafbce7b",
+    "queue_size": 3
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 1000,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 573
+  },
+  "inferred_frames": 312
+}

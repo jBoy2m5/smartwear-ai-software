@@ -1,0 +1,38 @@
+{
+  "schema_version": "smartwear.sensors_meta.v2",
+  "source": "measured_hardware",
+  "sensor_source": "SmartWrist MQTT",
+  "camera_sha256": "dc27657b1e873f14c9933a09510f007034a88eec7348b784fc14dae282b9b752",
+  "sensors_sha256": "45a38340502cac0b44f0553c5f512c234fd012d3543e7fa28d1704ca20cefaa2",
+  "raw_wrist_sha256": "bd68eb1ff514369f1a31c977c0b05d8a2fc92d813b18519018f9a3c7f6b446b0",
+  "camera_raw_sha256": "b7e541b569623fa0dec245eafe8d590d675a3b43242efdea896b132c2e9b4fae",
+  "sample_count": 2976,
+  "first_timestamp_ms": 0,
+  "last_timestamp_ms": 177276,
+  "matched_count": 2976,
+  "missing_count": 0,
+  "imu_available_count": 0,
+  "imu_unavailable_count": 2976,
+  "alignment_window_ms": 10,
+  "max_abs_alignment_offset_ms": 10,
+  "mean_abs_alignment_offset_ms": 5.008,
+  "median_alignment_offset_ms": -1.0,
+  "p95_abs_alignment_offset_ms": 9,
+  "alignment_offset_distribution": {
+    "wrist_before_camera": 1496,
+    "same_epoch_ms": 147,
+    "wrist_after_camera": 1333
+  },
+  "device_id": "smartwrist-user01",
+  "force_channel": null,
+  "calibration_id": "uncalibrated_smartwrist-user01_four_channel_adc",
+  "units": {
+    "force": "adc_count",
+    "torque": "unavailable",
+    "angle": "unavailable",
+    "acceleration": "firmware_acc_raw_unverified",
+    "angular_speed": "firmware_gyro_raw_unverified"
+  },
+  "simulated_fields": [],
+  "clock_note": "Device NTP epoch was used; nearest-sample offset is not a measured clock accuracy guarantee"
+}

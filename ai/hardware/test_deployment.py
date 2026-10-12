@@ -134,18 +134,35 @@ class DeploymentTests(unittest.TestCase):
     def test_actual_ai_receives_aligned_synthetic_frames(self):
         import cv2
         import numpy as np
+        import time
+        from types import SimpleNamespace
         from hardware.record_hardware import record_hardware
         success, jpeg = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))
         self.assertTrue(success)
         handoffs = []
-        def copy_manifest(source, destination):
-            Path(destination).write_bytes(Path(source).read_bytes())
-
+        finalization_times = []
+        closed = []
+        import mediapipe as mp
+        create_landmarker = mp.tasks.vision.HandLandmarker.create_from_options
+        def model(options):
+            detector = create_landmarker(options)
+            close = detector.close
+            def tracked_close():
+                closed.append('model')
+                close()
+            detector.close = tracked_close
+            return detector
+        def git_version(*args, **kwargs):
+            finalization_times.append(time.monotonic_ns())
+            return SimpleNamespace(stdout='fixture-commit')
         with tempfile.TemporaryDirectory() as temporary, \
-                patch("hardware.record_hardware.os.replace", side_effect=copy_manifest), \
                 patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
                 patch("hardware.record_hardware.CameraReceiver") as camera, \
-                patch("hardware.record_hardware.WristReceiver") as wrist:
+                patch("hardware.record_hardware.WristReceiver") as wrist, \
+                patch.object(mp.tasks.vision.HandLandmarker, 'create_from_options', side_effect=model), \
+                patch("hardware.record_hardware.subprocess.run", side_effect=git_version):
+            camera.return_value.stop.side_effect = lambda: closed.append('camera')
+            wrist.return_value.stop.side_effect = lambda: closed.append('wrist')
             camera.return_value.snapshot.return_value = {"received_jpeg": 3}
             camera.return_value.get.side_effect = [
                 (CameraFrame(jpeg.tobytes(), BASE + index * 40, index), BASE + index * 40 + 2)
@@ -161,6 +178,52 @@ class DeploymentTests(unittest.TestCase):
             self.assertTrue(all(row["live_alignment"]["delta_ms"] == 5 for row in rows))
             self.assertEqual(handoffs[0]["frame"].shape, (240, 320, 3))
             self.assertTrue(output.with_suffix(".avi").is_file())
+            manifest=json.loads((output.parent/'capture_manifest.json').read_text(encoding='utf-8'))
+            events={event['name']:event['host_monotonic_ns'] for event in manifest['events']}
+            self.assertLess(events['capture_started'],events['capture_stopped'])
+            self.assertLessEqual(events['capture_stopped'],finalization_times[0])
+            self.assertEqual(closed, ['camera', 'wrist', 'model'])
+            timings = json.loads((output.parent/'performance.json').read_text())
+            self.assertLess(timings['events_ms']['model_ready'],timings['events_ms']['capture_started'])
+            self.assertEqual(timings['stages']['inference']['count'], 3)
+
+    def test_capture_marks_stalled_camera_failed_after_first_frame(self):
+        import cv2
+        import numpy as np
+        from hardware.record_hardware import record_hardware
+        success, jpeg = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))
+        self.assertTrue(success)
+        clock = 0.0
+        reads = 0
+
+        def receive(timeout):
+            nonlocal clock, reads
+            reads += 1
+            if reads == 1:
+                clock = 0.1
+                return CameraFrame(jpeg.tobytes(), BASE, 1), BASE + 2
+            clock += 16
+            return None
+
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch("hardware.record_hardware.SESSION_ROOT", Path(temporary)), \
+                patch("hardware.record_hardware.CameraReceiver") as camera, \
+                patch("hardware.record_hardware.WristReceiver") as wrist, \
+                patch("hardware.record_hardware.time.monotonic", side_effect=lambda: clock):
+            camera.return_value.get.side_effect = receive
+            camera.return_value.snapshot.return_value = {"received_jpeg": 1, "stream_errors": 2}
+            wrist.return_value.snapshot.return_value = {"received": 0}
+            wrist.return_value.buffer.nearest.return_value = None
+            with self.assertRaisesRegex(TimeoutError, "15 giây"):
+                record_hardware(show_window=False, duration_s=60)
+            marker = next(Path(temporary).glob("*/hardware_capture.json"))
+            document = json.loads(marker.read_text(encoding="utf-8"))
+            self.assertEqual(document["status"], "failed")
+            self.assertEqual(document["inferred_frames"], 1)
+            self.assertEqual(document["camera_stats"]["stream_errors"], 2)
+            self.assertEqual(len((marker.parent / "camera.jsonl").read_text().splitlines()), 1)
+            camera.return_value.stop.assert_called_once()
+            wrist.return_value.stop.assert_called_once()
 
 
 if __name__ == "__main__":

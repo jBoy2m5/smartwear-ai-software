@@ -1,0 +1,452 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261009_135606_130989_pkt4q0on\\camera.jsonl",
+  "camera_sha256": "edfed45e84649efbf4ce99af2827162ecd7e46c32ad9855a0f5b02164dce74d3",
+  "multimodal_sha256": "4c921ebf25b7aeed2208872c24d64cf84681f32f66ef0600799ca27ecbb11428",
+  "segments_sha256": "8dd83dad49fe2fce5b102b3a8fb14022a8ea1cd1217498376a0b28bcb9c4f654",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 6472,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 8836,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 6472,
+      "end_ms": 6641,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 3,
+      "hand": "left",
+      "label": "REACH",
+      "start_ms": 6641,
+      "end_ms": 6922,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0003_left_REACH_frame_000100.png",
+      "frame_id": 100,
+      "timestamp_ms": 6753,
+      "video_frame_index": 100
+    },
+    {
+      "segment_id": 4,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 6922,
+      "end_ms": 8498,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 5,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 8498,
+      "end_ms": 8723,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 6,
+      "hand": "left",
+      "label": "OPEN",
+      "start_ms": 8723,
+      "end_ms": 8779,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0006_left_OPEN_frame_000129.png",
+      "frame_id": 129,
+      "timestamp_ms": 8723,
+      "video_frame_index": 129
+    },
+    {
+      "segment_id": 7,
+      "hand": "left",
+      "label": "REACH",
+      "start_ms": 8779,
+      "end_ms": 8836,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0007_left_REACH_frame_000130.png",
+      "frame_id": 130,
+      "timestamp_ms": 8779,
+      "video_frame_index": 130
+    },
+    {
+      "segment_id": 8,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 8836,
+      "end_ms": 8948,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 9,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 8836,
+      "end_ms": 8948,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 10,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 8948,
+      "end_ms": 9117,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 11,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 8948,
+      "end_ms": 9286,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 12,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 9117,
+      "end_ms": 17784,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 13,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 9286,
+      "end_ms": 9511,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 14,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 9511,
+      "end_ms": 16827,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 15,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 16827,
+      "end_ms": 16940,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 16,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 16940,
+      "end_ms": 24762,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 17,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 17784,
+      "end_ms": 17896,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 18,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 17896,
+      "end_ms": 24650,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 19,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 24650,
+      "end_ms": 24762,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 20,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 24762,
+      "end_ms": 26282,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 21,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 24762,
+      "end_ms": 24987,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 22,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 24987,
+      "end_ms": 25438,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 23,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 25438,
+      "end_ms": 25550,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 24,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 25550,
+      "end_ms": 26226,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 25,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 26226,
+      "end_ms": 26282,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 26,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 26282,
+      "end_ms": 26394,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 27,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 26282,
+      "end_ms": 26394,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 28,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 26394,
+      "end_ms": 26507,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 29,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 26394,
+      "end_ms": 26507,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 30,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 26507,
+      "end_ms": 26620,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 31,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 26507,
+      "end_ms": 26620,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 32,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 26620,
+      "end_ms": 27689,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 33,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 26620,
+      "end_ms": 26845,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 34,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 26845,
+      "end_ms": 27014,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 35,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 27014,
+      "end_ms": 27070,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 36,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 27070,
+      "end_ms": 27745,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 37,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 27689,
+      "end_ms": 27745,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 38,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 27745,
+      "end_ms": 27858,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 39,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 27745,
+      "end_ms": 27858,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 40,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 27858,
+      "end_ms": 27970,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 41,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 27858,
+      "end_ms": 32529,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 42,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 27970,
+      "end_ms": 32529,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261009_135606_130989_pkt4q0on\\camera.avi",
+  "video_sha256": "16ce845f81b7b73d48e9a2f143928245e9660a42faaffd39775ab653d1031f61",
+  "extracted_count": 3,
+  "skipped_count": 40
+}

@@ -1,24 +1,81 @@
 """Dashboard controls and raw-frame previews from the AI workstation camera."""
 
 import json
+import tempfile
+from pathlib import Path as FilePath
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request, status
+from backend.schemas.knowledge import CaptureContext
 from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 from backend.api.auth import require_api_key
+from backend.services.capture import MAX_UPLOAD_BYTES, VIDEO_SUFFIXES
 
 router = APIRouter(prefix="/capture", tags=["Capture"],
                    dependencies=[Depends(require_api_key)])
 JobId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 
+@router.get("/devices")
+def device_health(request: Request, refresh: bool = False) -> dict:
+    return request.app.state.capture_manager.devices(refresh)
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware") -> dict:
+def start_capture(request: Request, capture_mode: Literal["hardware", "demo"] = "hardware",
+                  context: CaptureContext | None = Body(default=None)) -> dict:
     try:
+        if context is not None:
+            if capture_mode == 'demo' and context.role != 'demo':
+                raise ValueError('Expert/worker reference workflows require measured hardware')
+            resolved = request.app.state.knowledge_service.capture_context(context)
+            return request.app.state.capture_manager.start(capture_mode, context=resolved)
         return request.app.state.capture_manager.start(capture_mode)
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
+async def upload_video(request: Request, filename: str, consent: bool = False) -> dict:
+    """Stream one bounded video to disk; decoder validation runs in the AI job."""
+    if not consent:
+        raise HTTPException(status_code=422, detail="Xác nhận quyền sử dụng và xử lý video trước khi tải lên.")
+    if FilePath(filename).suffix.lower() not in VIDEO_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Chỉ nhận MP4, MOV, AVI hoặc WebM.")
+    length = request.headers.get("content-length")
+    if length:
+        try:
+            declared = int(length)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Content-Length không hợp lệ") from exc
+        if declared < 0 or declared > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Video tối đa 50 MiB.")
+    manager = request.app.state.capture_manager
+    if manager.has_active_capture():
+        raise HTTPException(status_code=409, detail="Chờ phiên đang chạy hoàn tất trước khi tải video.")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=manager.root, suffix=".upload", delete=False) as stream:
+            temporary = FilePath(stream.name)
+            count = 0
+            async for chunk in request.stream():
+                count += len(chunk)
+                if count > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="Video tối đa 50 MiB.")
+                stream.write(chunk)
+        if not count:
+            raise HTTPException(status_code=422, detail="Video rỗng.")
+        try:
+            return await run_in_threadpool(manager.start_upload, temporary, filename)
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=503, detail="Không khởi động được AI; kiểm tra cấu hình Python và quyền ghi file.") from exc
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 @router.get("/{job_id}")
@@ -50,6 +107,11 @@ def preview_observation(job_id: JobId, request: Request) -> JSONResponse:
             document = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        import time
+        published = document.get('published_epoch_ms')
+        document['preview_age_ms'] = max(0, time.time_ns() // 1_000_000 - published) if published else None
+        received = document.get('frame_received_epoch_ms')
+        document['frame_age_ms'] = max(0, time.time_ns() // 1_000_000 - received) if received else document['preview_age_ms']
         return JSONResponse(document, headers={"Cache-Control": "no-store, max-age=0"})
     raise HTTPException(status_code=404, detail="Camera chưa có hình")
 

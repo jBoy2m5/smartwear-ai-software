@@ -5,16 +5,22 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import threading
 import uuid
+import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from backend.core.config import Settings
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CAPTURE_SCRIPT = PROJECT_ROOT / "ai" / "integration" / "frontend_capture.py"
+UPLOAD_SCRIPT = PROJECT_ROOT / "ai" / "integration" / "uploaded_video.py"
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+VIDEO_SUFFIXES = {".mp4", ".mov", ".avi", ".webm"}
 
 
 class CaptureManager:
@@ -26,6 +32,24 @@ class CaptureManager:
         self._active_id: str | None = None
         self._python: str | None = None
         self._python_mode: str | None = None
+        self._health_lock = threading.Lock()
+        self._health_cache = None
+        self._health_checked = 0.
+
+    def devices(self, refresh=False):
+        from ai.hardware.config import HardwareConfig
+        from backend.services.device_health import diagnose
+        with self._health_lock:
+            active = self.has_active_capture()
+            if (refresh or self._health_cache is None or time.monotonic()-self._health_checked > 5
+                    or self._health_cache['capture_active'] != active):
+                self._health_cache = diagnose(HardwareConfig.from_environment(), active)
+                self._health_checked = time.monotonic()
+            return self._health_cache
+
+    def has_active_capture(self) -> bool:
+        with self._lock:
+            return self._process is not None and self._process.poll() is None
 
     def _ai_python(self, capture_mode: str) -> str:
         if self._python and self._python_mode == capture_mode:
@@ -50,12 +74,37 @@ class CaptureManager:
                            + (" và Paho MQTT" if capture_mode == "hardware" else "") + ". "
                            "Quản trị viên cần cấu hình SMARTWEAR_AI_PYTHON.")
 
-    def start(self, capture_mode: str = "hardware") -> dict:
+    def _hardware_preflight(self) -> None:
+        """Reject a disconnected camera before creating a failed capture job."""
+        from ai.hardware.config import HardwareConfig
+        config = HardwareConfig.from_environment()
+        if config.mqtt_host == '192.168.137.1':
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                    probe.bind((config.mqtt_host, 0))
+            except OSError as exc:
+                raise RuntimeError(
+                    'Máy chưa có địa chỉ hotspot 192.168.137.1. Bật Windows Mobile Hotspot '
+                    'ok123 (2.4 GHz), rồi kiểm tra lại kết nối SmartCap/SmartWrist.') from exc
+        camera = urlsplit(config.camera_url)
+        if not camera.hostname:
+            raise RuntimeError('SMARTWEAR_CAMERA_URL không có địa chỉ camera hợp lệ.')
+        try:
+            with socket.create_connection((camera.hostname, camera.port or 80), timeout=2):
+                pass
+        except OSError as exc:
+            raise RuntimeError(
+                f'Không kết nối được SmartCap tại {camera.hostname}:{camera.port or 80}. '
+                'Kiểm tra nguồn, kết nối hotspot và trạng thái khởi động camera.') from exc
+
+    def start(self, capture_mode: str = "hardware", context: dict | None = None) -> dict:
         if capture_mode not in ("hardware", "demo"):
             raise RuntimeError("Chế độ quay không hợp lệ")
         with self._lock:
             if self._process is not None and self._process.poll() is None:
                 raise RuntimeError("Một phiên camera đang chạy. Hãy kết thúc phiên đó trước.")
+            if capture_mode == 'hardware':
+                self._hardware_preflight()
             python = self._ai_python(capture_mode)
             if not CAPTURE_SCRIPT.is_file():
                 raise RuntimeError("Không tìm thấy chương trình AI camera")
@@ -66,10 +115,14 @@ class CaptureManager:
             environment = os.environ.copy()
             environment["PYTHONIOENCODING"] = "utf-8"
             environment["SMARTWEAR_CAPTURE_MODE"] = capture_mode
+            arguments = [python, "-B", str(CAPTURE_SCRIPT), "--job-dir", str(directory),
+                         "--backend-url", backend_url]
+            if context is not None:
+                (directory / "context.json").write_text(json.dumps(context, ensure_ascii=False), encoding="utf-8")
+                arguments.extend(["--context", str(directory / "context.json")])
             with (directory / "run.log").open("wb") as log:
                 process = subprocess.Popen(
-                    [python, "-B", str(CAPTURE_SCRIPT), "--job-dir", str(directory),
-                     "--backend-url", backend_url],
+                    arguments,
                     cwd=PROJECT_ROOT, env=environment, stdout=log,
                     stderr=subprocess.STDOUT,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
@@ -88,6 +141,42 @@ class CaptureManager:
         if not directory.is_dir():
             raise FileNotFoundError("Không tìm thấy phiên quay")
         return directory
+
+    def start_upload(self, source: Path, filename: str) -> dict:
+        """Launch file analysis without camera/network probes or DEMO sensors."""
+        suffix = Path(filename).suffix.lower()
+        if suffix not in VIDEO_SUFFIXES:
+            raise ValueError("Chỉ nhận MP4, MOV, AVI hoặc WebM.")
+        with self._lock:
+            if self._process is not None and self._process.poll() is None:
+                raise RuntimeError("Một phiên đang xử lý. Hãy chờ phiên đó hoàn tất.")
+            python = self._ai_python("upload")
+            job_id = uuid.uuid4().hex
+            directory = self.root / job_id
+            directory.mkdir()
+            target = directory / ("input" + suffix)
+            source.replace(target)
+            environment = os.environ.copy()
+            environment.update(PYTHONIOENCODING="utf-8", SMARTWEAR_CAPTURE_MODE="upload")
+            arguments = [python, "-B", str(UPLOAD_SCRIPT), "--job-dir", str(directory),
+                         "--input", str(target), "--backend-url",
+                         os.getenv("SMARTWEAR_CAPTURE_BACKEND_URL", "http://127.0.0.1:8000")]
+            (directory / "status.json").write_text(json.dumps({
+                "stage": "starting", "message": "Đang mở video tải lên", "session_id": None,
+                "capture_mode": "upload"}, ensure_ascii=False), encoding="utf-8")
+            try:
+                with (directory / "run.log").open("wb") as log:
+                    process = subprocess.Popen(arguments, cwd=PROJECT_ROOT, env=environment,
+                        stdout=log, stderr=subprocess.STDOUT,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            except OSError:
+                (directory / "status.json").write_text(json.dumps({
+                    "stage": "failed", "message": "Không khởi động được AI; video đã được giữ lại",
+                    "session_id": None, "capture_mode": "upload"}), encoding="utf-8")
+                raise
+            self._process, self._active_id = process, job_id
+            return {"job_id": job_id, "stage": "starting", "message": "Đang mở video tải lên",
+                    "session_id": None, "capture_mode": "upload"}
 
     def status(self, job_id: str) -> dict:
         directory = self.directory(job_id)

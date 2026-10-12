@@ -1,0 +1,31 @@
+{
+  "source": "simulated_from_camera_observations",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\camera_data_20261006_183941_215344_bvscpl_e\\camera.normalized.jsonl",
+  "camera_sha256": "4c3298b49f05db574362f90011bf19a6d033c9b228bb3ec9a27417f87a7538ec",
+  "sample_count": 250,
+  "first_timestamp_ms": 0,
+  "last_timestamp_ms": 11918,
+  "random_seed": 42,
+  "noise_level": 0.02,
+  "camera_action_counts": {
+    "left": {
+      "NO_HAND": 250
+    },
+    "right": {
+      "NO_HAND": 250
+    }
+  },
+  "simulated_fields": [
+    "imu_head",
+    "hand_sensors.left.imu_wrist",
+    "hand_sensors.left.force_emg_raw",
+    "hand_sensors.left.torque",
+    "hand_sensors.right.imu_wrist",
+    "hand_sensors.right.force_emg_raw",
+    "hand_sensors.right.torque"
+  ],
+  "time_note": "Timestamps copied from camera frames, not independently synchronized clocks",
+  "unit_note": "IMU m/s^2 and rad/s, torque N*m and degrees are simulator assumptions; force_emg_raw is unitless",
+  "sensors_sha256": "833e5c8a1aa1b714ba99b273b62ee4fc882f6625d8d5813f4336fae96498d27e",
+  "schema_version": "smartwear.sensors_meta.v2"
+}

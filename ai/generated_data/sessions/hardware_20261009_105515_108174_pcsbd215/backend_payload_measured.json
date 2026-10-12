@@ -1,0 +1,115 @@
+{
+  "session_id": "MEASURED_hardware_20261009_105515_108174_pcsbd215",
+  "worker_type": "EXPERT",
+  "key_frames": [
+    "segment_0042_left_REACH_frame_000341.png",
+    "segment_0055_left_GRAB_frame_000537.png",
+    "segment_0060_left_GRAB_frame_000541.png",
+    "segment_0063_left_GRAB_frame_000544.png",
+    "segment_0073_left_GRAB_frame_000550.png",
+    "segment_0091_left_REACH_frame_000569.png",
+    "segment_0109_left_REACH_frame_000596.png",
+    "segment_0136_left_OPEN_frame_000795.png",
+    "segment_0154_left_OPEN_frame_000827.png",
+    "segment_0162_left_OPEN_frame_000844.png",
+    "segment_0165_left_OPEN_frame_000849.png",
+    "segment_0168_left_OPEN_frame_000853.png",
+    "segment_0171_left_OPEN_frame_000856.png",
+    "segment_0173_left_REACH_frame_000858.png",
+    "segment_0174_left_OPEN_frame_000860.png",
+    "segment_0181_left_GRAB_frame_000869.png",
+    "segment_0186_left_GRAB_frame_000875.png",
+    "segment_0191_left_OPEN_frame_000880.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 44.179,
+      "end_time": 44.347,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 65.001,
+      "end_time": 65.114,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 66.296,
+      "end_time": 66.408,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 69.841,
+      "end_time": 69.898,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 72.092,
+      "end_time": 72.205,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 76.482,
+      "end_time": 76.539,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 96.742,
+      "end_time": 96.911,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 105.24,
+      "end_time": 106.366,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 109.686,
+      "end_time": 110.08,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 111.037,
+      "end_time": 111.093,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 113.907,
+      "end_time": 114.245,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 114.245,
+      "end_time": 114.582,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 114.582,
+      "end_time": 114.639,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 120.266,
+      "end_time": 120.886,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 100.0,
+    "muda_detected_seconds": 0.0
+  },
+  "robot_trajectory_points": []
+}

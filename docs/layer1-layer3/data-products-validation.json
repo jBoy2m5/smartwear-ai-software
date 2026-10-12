@@ -1,0 +1,18 @@
+{
+  "session_id": "MEASURED_hardware_20261007_150625_216050_uk5sxhc9",
+  "episode_id": "f24dd78dd240b8bb",
+  "verified_artifacts": 12,
+  "frames": 1555,
+  "mcap_counts": {
+    "/smartwear/wrist/fsr_raw": 4610,
+    "/smartwear/wrist/imu": 4610,
+    "/smartwear/camera/frame": 1555,
+    "/smartwear/hand/observations": 1555
+  },
+  "archive_sha256": "13ac15404447b827164a741713d4c70cf59fe328f7019043770f05adc398a636",
+  "archive_bytes": 34568636,
+  "robot_ready": false,
+  "learner_ready": false,
+  "generation_elapsed_ms": 42484,
+  "status": "validated"
+}

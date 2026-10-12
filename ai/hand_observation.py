@@ -11,13 +11,13 @@ STATES = {"OPEN", "CLOSED", "OTHER", "NONE"}
 
 
 def anatomical_handedness(model_label):
-    """Tasks HandLandmarker uses unmirrored-image labels; our input is flipped.
+    """Return anatomical handedness for the mirrored image sent to MediaPipe.
 
-    Tasks' label map is 0=Right, 1=Left, unlike legacy mp.solutions.hands.
-    Swap exactly once after cv2.flip(frame, 1); never infer a side from position
-    or from the number of hands. Raw model labels are retained in each record.
+    MediaPipe's handedness labels assume mirrored input. Capture flips the
+    camera image before inference, so swapping the model label again reverses
+    the operator's actual left and right hands.
     """
-    return {"Left": "Right", "Right": "Left"}.get(model_label, "unknown")
+    return model_label if model_label in ("Left", "Right") else "unknown"
 
 
 def finger_angle(a, b, c):
@@ -119,8 +119,8 @@ def valid_landmarks(points):
 def select_hands(hands):
     """Resolve anatomical sides by corrected camera handedness, never list order.
 
-    This is for one operator. Duplicate labels make that side ambiguous;
-    unknown handedness makes both sides ambiguous rather than guessing.
+    This is for one operator. Duplicate/unknown handedness cannot be safely
+    resolved to left/right: report ambiguity rather than guessing identities.
     """
     if not isinstance(hands, list):
         raise ValueError("hands must be a list")
@@ -137,15 +137,15 @@ def select_hands(hands):
         else:
             grouped[side].append(hand)
             indices.add(index)
-    if ambiguous:
+    if ambiguous or any(len(group) > 1 for group in grouped.values()):
         return {side: ("ambiguous", None) for side in SIDES}
     result = {}
     for side, group in grouped.items():
         if not group:
             result[side] = ("missing", None)
-        elif len(group) > 1:
-            result[side] = ("ambiguous", None)
-        elif not valid_landmarks(group[0].get("landmarks")):
+        elif (not valid_landmarks(group[0].get("landmarks")) or
+              (isinstance(group[0].get("handedness_score"), (int, float))
+               and group[0]["handedness_score"] < 0.5)):
             result[side] = ("ambiguous", None)
         else:
             result[side] = ("detected", group[0])

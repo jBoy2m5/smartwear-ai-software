@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CircleStop, Play, RotateCw } from 'lucide-react';
-import { backendUrl, getCapturePreview, getCaptureStatus, startCapture, stopCapture } from '../backendApi';
-import type { CapturePreview, CaptureStatus } from '../backendApi';
+import { Camera, CircleStop, Play, RotateCw, Upload } from 'lucide-react';
+import { LearningExperimentPanel } from './LearningExperimentPanel';
+import { backendUrl, getCapturePreview, getCaptureStatus, getDeviceHealth, startCapture, stopCapture, listProcedures, listReferences, uploadVideo } from '../backendApi';
+import type { Procedure, ExpertReference, CaptureContext } from '../backendApi';
+import type { CapturePreview, CaptureStatus, DeviceHealth } from '../backendApi';
 
 const ACTIVE = new Set(['starting', 'recording', 'stopping', 'processing', 'publishing']);
+const PREVIEW = new Set(['starting', 'recording', 'stopping']);
 const FINGERS = [[0, 1, 2, 3, 4], [0, 5, 6, 7, 8], [0, 9, 10, 11, 12],
   [0, 13, 14, 15, 16], [0, 17, 18, 19, 20]];
 type DisplayFrame = CapturePreview & { url: string };
@@ -13,15 +16,72 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayFrame, setDisplayFrame] = useState<DisplayFrame | null>(null);
+  const [health, setHealth] = useState<DeviceHealth | null>(null);
+  const [healthError, setHealthError] = useState('');
+  const [clock, setClock] = useState(0);
+  const previewSeenAt = useRef(0);
   const notified = useRef<string | null>(null);
   const imageUrls = useRef<string[]>([]);
   const jobId = job?.job_id;
   const stage = job?.stage;
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [taskKey, setTaskKey] = useState('LOG_KIT:1');
+  const [role, setRole] = useState<'expert' | 'worker' | 'demo'>('expert');
+  const [participant, setParticipant] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [source, setSource] = useState<'upload' | 'hardware'>('upload');
+  const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [uploadConsent, setUploadConsent] = useState(false);
+  const [references, setReferences] = useState<ExpertReference[]>([]);
+  const [reference, setReference] = useState('');
+  const [trialStage, setTrialStage] = useState<'before_learning' | 'after_learning' | 'practice'>('before_learning');
+  const task = procedures.find(p => `${p.task_id}:${p.version}` === taskKey);
+
+  useEffect(() => {
+    if (!file) { setFileUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    if (source === 'upload') return;
+    const controller = new AbortController();
+    let timer: number | undefined;
+    const update = async () => {
+      try {
+        if (!document.hidden) {
+          const current = await getDeviceHealth(controller.signal);
+          if (!controller.signal.aborted) { setHealth(current); setHealthError(''); }
+        }
+      } catch (reason) { if (!controller.signal.aborted) { setHealth(null); setHealthError(String(reason)); } }
+      finally { if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), 5000); }
+    };
+    void update();
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
+  }, [stage, source]);
+
+  useEffect(() => {
+    if (stage !== 'recording') return;
+    const timer = window.setInterval(() => setClock(performance.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [stage]);
+
+  useEffect(() => { void listProcedures().then(setProcedures).catch(reason => setError(String(reason))); }, []);
+  useEffect(() => {
+    let active = true;
+    setReference(''); setReferences([]);
+    if (task) void listReferences(task.task_id, task.version).then(items => { if (active) setReferences(items); }).catch(reason => { if (active) setError(String(reason)); });
+    return () => { active = false; };
+  }, [task]);
 
   useEffect(() => {
     const saved = window.sessionStorage.getItem('smartwear_capture_job');
     if (saved && /^[0-9a-f]{32}$/.test(saved)) {
-      void getCaptureStatus(saved).then(setJob).catch(() => {
+      void getCaptureStatus(saved).then(current => {
+        setJob(current); setSource(current.capture_mode === 'upload' ? 'upload' : 'hardware');
+      }).catch(() => {
         window.sessionStorage.removeItem('smartwear_capture_job');
       });
     }
@@ -38,17 +98,24 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Không đọc được trạng thái camera');
       }
     };
-    const timer = window.setInterval(() => void update(), 700);
-    return () => { controller.abort(); window.clearInterval(timer); };
+    let timer: number | undefined;
+    const poll = async () => {
+      await update();
+      if (!controller.signal.aborted) timer = window.setTimeout(() => void poll(), document.hidden ? 2000 : 700);
+    };
+    void poll();
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
   }, [jobId, stage]);
 
   useEffect(() => {
-    if (!jobId || !stage || !ACTIVE.has(stage)) return;
+    if (!jobId || !stage || !(PREVIEW.has(stage) || (job?.capture_mode === 'upload' && stage === 'processing'))) return;
     const controller = new AbortController();
     let timer: number | undefined;
     let lastFrame = -1;
     const update = async () => {
       try {
+        if (document.hidden) return;
+        const requested = performance.now();
         const preview = await getCapturePreview(jobId, controller.signal);
         if (preview.frame_index !== lastFrame) {
           const url = backendUrl(`/api/v1/capture/${jobId}/frame?index=${preview.frame_index}`);
@@ -61,16 +128,17 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           imageUrls.current.push(imageUrl);
           if (imageUrls.current.length > 3) URL.revokeObjectURL(imageUrls.current.shift()!);
           setDisplayFrame({ ...preview, url: imageUrl });
+          previewSeenAt.current = requested;
         }
       } catch {
         // No preview exists until the camera has captured its first frame.
       } finally {
-        if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), 50);
+        if (!controller.signal.aborted) timer = window.setTimeout(() => void update(), document.hidden ? 1000 : 100);
       }
     };
     void update();
     return () => { controller.abort(); if (timer) window.clearTimeout(timer); };
-  }, [jobId, stage]);
+  }, [jobId, stage, job?.capture_mode]);
 
   useEffect(() => () => {
     imageUrls.current.forEach(url => URL.revokeObjectURL(url));
@@ -88,7 +156,16 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const begin = async (captureMode: 'hardware' | 'demo') => {
     setBusy(true); setError(null); setDisplayFrame(null);
     try {
-      const created = await startCapture(captureMode);
+      if (captureMode === 'demo' && role !== 'demo') throw new Error('Chọn chế độ thử DEMO để dùng webcam mô phỏng.');
+      if (role !== 'demo' && (!task || !participant.trim() || !consent || (role === 'worker' && !reference))) {
+        throw new Error('Chọn công đoạn, người thao tác, đồng ý ghi hình và mẫu chuyên gia đã duyệt (nếu quay học viên).');
+      }
+      const context: CaptureContext = { role, task_id: role === 'demo' ? null : task!.task_id,
+        procedure_version: role === 'demo' ? null : task!.version,
+        reference_session_id: role === 'worker' ? reference : null,
+        participant_id: participant.trim(), consent_confirmed: consent, purpose: 'training_demo',
+        trial_stage: role === 'expert' ? 'reference' : role === 'demo' ? 'technical' : trialStage };
+      const created = await startCapture(captureMode, context);
       notified.current = null;
       window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
       setJob(created);
@@ -108,70 +185,144 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     } finally { setBusy(false); }
   };
 
+  const beginUpload = async () => {
+    setBusy(true); setError(null); setDisplayFrame(null);
+    try {
+      if (!file) throw new Error('Chọn một video trước khi phân tích.');
+      if (!uploadConsent) throw new Error('Xác nhận quyền sử dụng video trước khi tải lên.');
+      if (file.size > 50 * 1024 * 1024) throw new Error('Video tối đa 50 MiB.');
+      const created = await uploadVideo(file, uploadConsent);
+      notified.current = null;
+      window.sessionStorage.setItem('smartwear_capture_job', created.job_id);
+      setJob(created);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Không tải được video');
+    } finally { setBusy(false); }
+  };
+
   const recording = job?.stage === 'recording';
   const working = job && ACTIVE.has(job.stage);
   const width = displayFrame?.camera.frame_width ?? 640;
   const height = displayFrame?.camera.frame_height ?? 480;
-  const landmarks = displayFrame?.right_landmarks ?? [];
-  const points = new Map(landmarks.map(point => [point.id, point]));
-  const wrist = points.get(0);
-  const action = displayFrame?.right_action;
-  const actionLabel = !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
-    : action.tracking_status === 'missing' ? 'KHÔNG THẤY TAY' : action.label;
+  const frameAge = displayFrame ? (displayFrame.frame_age_ms ?? displayFrame.preview_age_ms ?? 0)
+    + Math.max(0, clock-previewSeenAt.current) : null;
+  const stale = recording && (frameAge === null || frameAge > 2000);
+  const hands = (['left', 'right'] as const).map(side => {
+    const landmarks = displayFrame?.[`${side}_landmarks`] ?? [];
+    const action = displayFrame?.[`${side}_action`];
+    const points = new Map(landmarks.map(point => [point.id, point]));
+    return { side, landmarks, points, wrist: points.get(0),
+      title: side === 'left' ? 'Tay trái' : 'Tay phải',
+      color: side === 'left' ? '#fbbf24' : '#22d3ee',
+      label: job?.stage === 'failed' ? 'PHIÊN ĐÃ DỪNG' : stale ? 'CHƯA CÓ ẢNH MỚI'
+        : !action ? 'CHƯA CÓ DỮ LIỆU' : action.tracking_status === 'ambiguous' ? 'KHÔNG RÕ'
+        : action.tracking_status === 'missing' ? 'KHÔNG THẤY TAY' : action.label };
+  });
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
+    <div className="flex flex-wrap gap-2 border-b border-slate-700 p-4">
+      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('upload'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'upload' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Upload size={17} className="mr-2 inline" />Tải video lên · không cần thiết bị</button>
+      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('hardware'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'hardware' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Camera size={17} className="mr-2 inline" />Quay trực tiếp</button>
+    </div>
+    {source === 'upload' ? <div className="space-y-3 border-b border-slate-700 p-4">
+      <label className="block text-sm font-semibold">Video thao tác
+        <input type="file" accept=".mp4,.mov,.avi,.webm" disabled={busy || Boolean(working)} onChange={event => { setFile(event.target.files?.[0] ?? null); setJob(null); setDisplayFrame(null); setError(null); }} className="mt-2 block w-full rounded bg-slate-900 p-3 text-sm" />
+      </label>
+      <p className="text-xs text-gray-400">MP4/MOV/AVI/WebM · tối đa 50 MiB, 3 phút, Full HD. AI phân tích tối đa 10 ảnh/giây; video gốc được giữ trong ZIP nguồn. Nên chọn MP4 H.264 để xem ngay trên trình duyệt.</p>
+      <label className="block text-sm"><input type="checkbox" checked={uploadConsent} disabled={busy || Boolean(working)} onChange={event => setUploadConsent(event.target.checked)} /> Tôi có quyền sử dụng video và đồng ý tải lên để xử lý.</label>
+      <p className="text-sm text-cyan-200">Nhận diện tay, phân đoạn và keyframe từ video. Không có lực/IMU, mẫu so sánh hay điểm đánh giá làm đúng.</p>
+    </div> : <div className="grid gap-3 border-b border-slate-700 p-4 md:grid-cols-2">
+      <label className="text-sm">Mục đích phiên
+        <select value={role} disabled={Boolean(working)} onChange={event => setRole(event.target.value as typeof role)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          <option value="expert">Ghi mẫu người hướng dẫn / chuyên gia</option><option value="worker">Người học — so với mẫu đã duyệt</option><option value="demo">Thử pipeline với mẫu DEMO (không phải expert thật)</option>
+        </select>
+      </label>
+      <label className="text-sm">Công đoạn / phiên bản
+        <select value={taskKey} disabled={Boolean(working)} onChange={event => setTaskKey(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          {procedures.map(p => <option key={`${p.task_id}:${p.version}`} value={`${p.task_id}:${p.version}`}>{p.department} · {p.title} · v{p.version}</option>)}
+        </select>
+      </label>
+      {role === 'worker' && <label className="text-sm">Mẫu đã duyệt cùng công đoạn
+        <select value={reference} disabled={Boolean(working)} onChange={event => setReference(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2">
+          <option value="">Chọn mẫu chuyên gia</option>{references.map(item => <option key={item.session_id} value={item.session_id}>{item.context.participant_id} · {item.session_id} · duyệt bởi {item.reviewer}</option>)}
+        </select>{references.length === 0 && <span className="text-xs text-amber-200">Chưa có mẫu được duyệt; ghi và duyệt mẫu trước.</span>}
+      </label>}
+      <label className="text-sm">Mã người thao tác (dùng bí danh)
+        <input value={participant} disabled={Boolean(working)} onChange={event => setParticipant(event.target.value)} className="mt-1 w-full rounded bg-slate-900 p-2" />
+      </label>
+      {role === 'worker' && <label className="text-sm">Lượt thực nghiệm<select value={trialStage} disabled={Boolean(working)} onChange={event => setTrialStage(event.target.value as typeof trialStage)} className="mt-1 w-full rounded bg-slate-900 p-2"><option value="before_learning">Trước khi học SOP</option><option value="after_learning">Sau khi học SOP</option><option value="practice">Luyện tập</option></select></label>}
+      <label className="text-sm"><input type="checkbox" checked={consent} disabled={Boolean(working)} onChange={event => setConsent(event.target.checked)} /> Người thao tác đồng ý ghi hình cho bài thực hành này.</label>
+      {task && <p className="text-xs text-gray-400">Tiêu chí bài mẫu: {task.success_criteria} · SOP chỉ là nháp trước khi người hướng dẫn duyệt.</p>}
+    </div>}
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
-        <div><h2 className="font-heading text-lg font-bold">Quay và phân tích ngay trên trang</h2>
-          <p className="text-xs text-gray-400">{job?.capture_mode === 'demo'
+        <div><h2 className="font-heading text-lg font-bold">{source === 'upload' ? 'Phân tích video tải lên' : 'Quay và phân tích ngay trên trang'}</h2>
+          <p className="text-xs text-gray-400">{source === 'upload' ? 'Nguồn video tải lên · cảm biến không có dữ liệu' : job?.capture_mode === 'demo'
             ? 'Nguồn phiên này: webcam máy AI + cảm biến DEMO; không dùng phần cứng'
             : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
-              : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · chỉ theo dõi tay phải</p></div></div>
+              : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · nhận diện riêng tay trái và tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working)}
+        {source === 'upload' ? <button type="button" onClick={() => void beginUpload()} disabled={busy || Boolean(working) || !file || !uploadConsent}
+          className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:opacity-40"><Upload size={17} />{busy ? 'Đang tải video...' : 'Tải lên và phân tích'}</button> : <><button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working) || !health?.can_start}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
           <Play size={17} />Quay ESP32 + vòng tay</button>
         <button type="button" onClick={() => void begin('demo')} disabled={busy || Boolean(working)}
           className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-4 py-2 font-bold text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
-          <Camera size={17} />Quay webcam (DEMO)</button>
-        <button type="button" onClick={() => void end()} disabled={busy || !job || !['starting', 'recording'].includes(job.stage)}
+          <Camera size={17} />Quay webcam (DEMO)</button></>}
+        <button type="button" onClick={() => void end()} disabled={busy || !job || !(['starting', 'recording'].includes(job.stage) || (job.capture_mode === 'upload' && job.stage === 'processing'))}
           className="inline-flex items-center gap-2 rounded-lg border border-alertRed/60 bg-alertRed/15 px-4 py-2 font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-40">
-          <CircleStop size={17} />Kết thúc</button>
+          <CircleStop size={17} />{source === 'upload' ? 'Hủy phân tích' : 'Kết thúc'}</button>
       </div>
     </div>
     <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)]">
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
         {displayFrame ? <div className="relative shrink-0 overflow-hidden" style={{ height: `min(100%, ${height}px)`, aspectRatio: `${width} / ${height}`, maxWidth: '100%' }}>
-          <img src={displayFrame.url} alt="Hình camera tay phải" className="h-full w-full object-fill" />
+          <img src={displayFrame.url} alt="Hình camera tay trái và tay phải" className="h-full w-full object-fill" />
           <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-            {FINGERS.map((finger, index) => <polyline key={index} points={finger.map(id => points.get(id)).filter(point => point != null).map(point => `${point!.x * width},${point!.y * height}`).join(' ')}
-              fill="none" stroke="#22d3ee" strokeWidth="2" strokeOpacity="0.85" />)}
-            {landmarks.map(point => <circle key={point.id} cx={point.x * width} cy={point.y * height}
-              r="3" fill="#22d3ee" stroke="#082f49" strokeWidth="1" />)}
-            {wrist && <text x={Math.max(4, Math.min(width - 64, wrist.x * width))}
-              y={Math.max(14, Math.min(height - 4, wrist.y * height - 10))}
-              fill="#22d3ee" stroke="#020617" strokeWidth="2" paintOrder="stroke"
-              fontSize="13" fontWeight="bold">Tay phải</text>}
+            {hands.map(hand => <g key={hand.side}>
+              {FINGERS.map((finger, index) => <polyline key={index} points={finger.map(id => hand.points.get(id)).filter(point => point != null).map(point => `${point!.x * width},${point!.y * height}`).join(' ')}
+                fill="none" stroke={hand.color} strokeWidth="2" strokeOpacity="0.85" />)}
+              {hand.landmarks.map(point => <circle key={point.id} cx={point.x * width} cy={point.y * height}
+                r="3" fill={hand.color} stroke="#082f49" strokeWidth="1" />)}
+              {hand.wrist && <text x={Math.max(4, Math.min(width - 64, hand.wrist.x * width))}
+                y={Math.max(14, Math.min(height - 4, hand.wrist.y * height - 10))}
+                fill={hand.color} stroke="#020617" strokeWidth="2" paintOrder="stroke"
+                fontSize="13" fontWeight="bold">{hand.title}</text>}
+            </g>)}
           </svg>
-        </div> : <div className="px-4 text-center text-sm text-gray-400">{job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
-        {recording && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
+        </div> : source === 'upload' && fileUrl ? <video src={fileUrl} controls className="h-full w-full object-contain" /> : <div className="px-4 text-center text-sm text-gray-400">{source === 'upload' ? 'Chọn video để xem trước và chạy phân tích.' : job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
+        {job?.capture_mode === 'upload' && displayFrame && <span className="absolute right-3 top-3 rounded bg-slate-800 px-2 py-1 text-xs font-bold text-cyan-200">VIDEO TẢI LÊN · {(displayFrame.timestamp_ms/1000).toFixed(1)} s</span>}
+        {recording && !stale && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
+        {stale && <span className="absolute bottom-3 rounded bg-amber-950 px-3 py-1 text-xs text-amber-100">Chưa có ảnh mới — kiểm tra kết nối camera</span>}
       </div>
       <div className="flex flex-col justify-center rounded-lg border border-slate-700 bg-slate-900/60 p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-cyberGreen">
           {working && <RotateCw className="animate-spin" size={17} />}
-          {job ? ({ starting: 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
+          {job ? ({ starting: source === 'upload' ? 'Đang chuẩn bị video' : 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
-            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : 'Sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? 'Đưa tay phải vào hình rồi chọn nguồn camera để bắt đầu.'}</p>
-        {displayFrame && <div className="mt-3 rounded border border-slate-700 bg-slate-950/60 p-2">
-          <div className="text-sm font-bold text-cyan-300">Tay phải</div>
-          <div className="mt-1 text-xs font-semibold text-gray-200">{actionLabel}</div>
-          {wrist && <div className="mt-1 font-mono text-xs text-gray-400">X {wrist.x.toFixed(3)} · Y {wrist.y.toFixed(3)}</div>}
+            completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : source === 'upload' ? 'Phân tích không cần phần cứng' : !health ? 'Đang kiểm tra thiết bị'
+              : health.can_start ? 'Có thể bắt đầu kết nối camera' : 'Thiết bị chưa sẵn sàng'}</div>
+        <p className="mt-2 text-sm text-gray-300">{job?.message ?? (source === 'upload' ? 'Tải video thao tác lên để nhận diện hai tay và phân đoạn hành động.' : health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.')}</p>
+        {source === 'upload' ? <div className="mt-3 rounded border border-slate-700 p-3 text-sm text-amber-200">Lực/FSR, IMU và đồng bộ thiết bị: không có dữ liệu. Nhãn AI cần người xem xác nhận.</div> : <div className="mt-3 space-y-1 rounded border border-slate-700 p-2 text-xs">
+          <p>SmartCap: {health?.camera.message ?? 'Chưa kiểm tra'}</p>
+          <p>MQTT: {health?.mqtt.message ?? 'Chưa kiểm tra'} · NTP: {health ? health.ntp.ok ? 'phản hồi' : 'không phản hồi' : 'chưa kiểm tra'}</p>
+          {health?.camera.board && <p>Bo đã chạy {(health.camera.board.uptime_ms/1000).toFixed(0)} s · lần reset: {health.camera.board.reset_reason} · Wi-Fi {health.camera.board.wifi_rssi} dBm</p>}
+          {healthError && <p className="text-amber-200">Không đọc được trạng thái thiết bị: {healthError}</p>}
+          <button disabled={Boolean(working)} className="underline disabled:opacity-40" onClick={() => {
+            void getDeviceHealth(undefined, true).then(value => { setHealth(value); setHealthError(''); }).catch(reason => setHealthError(String(reason)));
+          }}>Kiểm tra lại thiết bị</button>
         </div>}
-        {displayFrame?.wrist_status && <p className={`mt-3 text-sm ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
+        {displayFrame && <div className="mt-3 grid grid-cols-2 gap-2">
+          {hands.map(hand => <div key={hand.side} className="rounded border border-slate-700 bg-slate-950/60 p-2">
+            <div className="text-sm font-bold" style={{ color: hand.color }}>{hand.title}</div>
+            <div className="mt-1 text-xs font-semibold text-gray-200">{hand.label}</div>
+            {hand.wrist && <div className="mt-1 font-mono text-xs text-gray-400">X {hand.wrist.x.toFixed(3)} · Y {hand.wrist.y.toFixed(3)}</div>}
+          </div>)}
+        </div>}
+        {displayFrame?.wrist_status && recording && !stale && <p className={`mt-3 text-sm ${displayFrame.wrist_status === 'receiving' ? 'text-cyberGreen' : 'text-amber-300'}`}>
           SmartWrist (tay phải): {displayFrame.wrist_status === 'receiving' ? 'đang nhận dữ liệu' : 'chưa có dữ liệu'}
         </p>}
-        {displayFrame?.live_alignment && <div className="mt-3 text-sm text-gray-300">
+        {displayFrame?.live_alignment && recording && !stale && <div className="mt-3 text-sm text-gray-300">
           <p>Ghép camera/vòng tay: {displayFrame.live_alignment.sensor_status === 'matched'
             ? `lệch ${displayFrame.live_alignment.delta_ms} ms` : 'thiếu mẫu phù hợp'}</p>
           {displayFrame.wrist_sample && <p className="mt-1 font-mono text-xs">
@@ -182,11 +333,13 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
               : `IMU: acc ${displayFrame.wrist_sample.acc.map(value => value.toFixed(2)).join(' · ')} / gyro ${displayFrame.wrist_sample.gyro?.map(value => value.toFixed(2)).join(' · ')}`}
           </p>}
         </div>}
+        {displayFrame?.performance && recording && !stale && <p className="mt-2 text-xs text-gray-400">AI p95 {displayFrame.performance.stages.inference?.p95_ms.toFixed(1) ?? '—'} ms · tuổi ảnh {frameAge?.toFixed(0)} ms</p>}
         {job?.stage === 'completed' && <p className="mt-3 text-sm text-cyberGreen">Kết quả đã tự mở ở phía dưới.</p>}
         {job?.stage === 'failed' && <p className="mt-3 text-sm text-red-200">Nếu camera đã ghi được dữ liệu, các file vẫn được giữ trên máy. Báo người quản trị kiểm tra lỗi rồi thử lại.</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-200">{error}</p>}
-        <p className="mt-4 text-xs text-gray-500">Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.</p>
+        <p className="mt-4 text-xs text-gray-500">{source === 'upload' ? 'Video được phân tích trên máy chạy backend. Báo cáo là bản nháp; chưa đánh giá hiệu quả học việc hay điều khiển robot.' : 'Quay tối đa 3 phút. Phiên phần cứng lưu bốn kênh ADC đo từ vòng tay; phiên DEMO dùng số mô phỏng.'}</p>
       </div>
     </div>
+    <LearningExperimentPanel />
   </section>;
 }

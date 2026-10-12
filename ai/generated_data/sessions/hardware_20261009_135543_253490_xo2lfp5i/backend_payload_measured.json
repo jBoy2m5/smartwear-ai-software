@@ -1,0 +1,11 @@
+{
+  "session_id": "MEASURED_hardware_20261009_135543_253490_xo2lfp5i",
+  "worker_type": "EXPERT",
+  "key_frames": [],
+  "action_phases": [],
+  "dtw_metrics": {
+    "similarity_score": 100.0,
+    "muda_detected_seconds": 0.0
+  },
+  "robot_trajectory_points": []
+}

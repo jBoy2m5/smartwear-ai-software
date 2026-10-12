@@ -192,7 +192,7 @@ class DashboardUpdate(StrictSchema):
     session_id: str
     current_action: str
     similarity_score: float = Field(ge=0, le=100)
-    force: float = Field(ge=0, allow_inf_nan=False)
+    force: float | None = Field(ge=0, allow_inf_nan=False)
     warning: str | None = None
 
 

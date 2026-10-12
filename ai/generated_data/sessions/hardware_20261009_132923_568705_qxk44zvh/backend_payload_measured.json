@@ -1,0 +1,146 @@
+{
+  "session_id": "MEASURED_hardware_20261009_132923_568705_qxk44zvh",
+  "worker_type": "EXPERT",
+  "key_frames": [
+    "segment_0005_right_GRAB_frame_000101.png",
+    "segment_0007_right_RELEASE_frame_000126.png",
+    "segment_0009_right_GRAB_frame_000137.png",
+    "segment_0010_right_ASSEMBLY_frame_000143.png",
+    "segment_0015_right_GRAB_frame_000148.png",
+    "segment_0020_right_GRAB_frame_000153.png",
+    "segment_0029_right_GRAB_frame_000161.png",
+    "segment_0034_right_GRAB_frame_000166.png",
+    "segment_0041_left_GRAB_frame_002416.png",
+    "segment_0043_left_ASSEMBLY_frame_002433.png",
+    "segment_0044_left_GRAB_frame_002436.png",
+    "segment_0048_left_GRAB_frame_002874.png",
+    "segment_0050_left_RELEASE_frame_002887.png",
+    "segment_0052_left_OPEN_frame_002944.png",
+    "segment_0054_left_REACH_frame_002956.png",
+    "segment_0055_left_OPEN_frame_002958.png",
+    "segment_0056_left_REACH_frame_002959.png",
+    "segment_0058_left_REACH_frame_002966.png",
+    "segment_0062_right_REACH_frame_003069.png"
+  ],
+  "action_phases": [
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 5.403,
+      "end_time": 6.022,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_RELEASE",
+      "start_time": 7.26,
+      "end_time": 7.654,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 7.935,
+      "end_time": 8.835,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_ASSEMBLY",
+      "start_time": 8.835,
+      "end_time": 9.004,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 9.342,
+      "end_time": 9.567,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 9.905,
+      "end_time": 10.13,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 10.524,
+      "end_time": 10.861,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_GRAB",
+      "start_time": 11.143,
+      "end_time": 11.255,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 137.937,
+      "end_time": 138.388,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_ASSEMBLY",
+      "start_time": 139.063,
+      "end_time": 139.457,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 139.457,
+      "end_time": 139.513,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_GRAB",
+      "start_time": 164.782,
+      "end_time": 165.12,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_RELEASE",
+      "start_time": 165.683,
+      "end_time": 165.908,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 169.903,
+      "end_time": 170.185,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 170.917,
+      "end_time": 171.029,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_OPEN",
+      "start_time": 171.029,
+      "end_time": 171.142,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 171.142,
+      "end_time": 171.254,
+      "peak_force_N": null
+    },
+    {
+      "phase": "LEFT_REACH",
+      "start_time": 171.592,
+      "end_time": 171.873,
+      "peak_force_N": null
+    },
+    {
+      "phase": "RIGHT_REACH",
+      "start_time": 178.627,
+      "end_time": 178.683,
+      "peak_force_N": null
+    }
+  ],
+  "dtw_metrics": {
+    "similarity_score": 100.0,
+    "muda_detected_seconds": 0.0
+  },
+  "robot_trajectory_points": []
+}

@@ -1,0 +1,26 @@
+{
+  "session_id": "MEASURED_hardware_20261007_150625_216050_uk5sxhc9",
+  "episode_id": "3fcfd3e0cc9f8742",
+  "verified_artifacts": 12,
+  "frames": 1555,
+  "mcap_counts": {
+    "/smartwear/wrist/fsr_raw": 4610,
+    "/smartwear/wrist/imu": 4610,
+    "/smartwear/camera/frame": 1555,
+    "/smartwear/hand/observations": 1555
+  },
+  "archive_sha256": "085afc91ef321f699d5baa4021c140344870a18a9866b1d9f798a89c7220f082",
+  "archive_bytes": 34569458,
+  "robot_ready": false,
+  "learner_ready": false,
+  "generation_elapsed_ms": 48703,
+  "status": "validated",
+  "exporter_sha256": "f46fa569e8bde9ff7b16edca883b49583d7b006f6f78ba311fa8c2dd6b115229",
+  "lineage": {
+    "source_archive_sha256": "db1f80dd3df5930747e4f5008c1c187da707df3f05d8d10d037104087e3df089",
+    "recording_sha256": "5fc81fdf73aa42734d26141d5e4267812fa515223b4cef32373417ce040671f8",
+    "reference_manifest_sha256": null,
+    "exporter_sha256": "f46fa569e8bde9ff7b16edca883b49583d7b006f6f78ba311fa8c2dd6b115229"
+  },
+  "verified_checksum_entries": 13
+}

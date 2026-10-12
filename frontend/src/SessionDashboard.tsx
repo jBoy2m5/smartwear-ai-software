@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Images, RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import { getSession, listSessions } from './backendApi';
-import { candidateList, dateTime, defaultFocus, displayHands, number } from './presentation';
+import { Images, RefreshCw, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { deleteSession, getSession, listSessions } from './backendApi';
+import { candidateList, dateTime, defaultFocus, number } from './presentation';
 import type { Focus } from './presentation';
 import type { SessionDetail, SessionSummary } from './sessionTypes';
 import { SessionCharts, ImageViewer } from './components/SessionVisuals';
 import { DtwPanel, Exports, MudaPanel, Phases, SensorPanel } from './components/SessionAnalysis';
 import { CapturePanel } from './components/CapturePanel';
+import { KnowledgePanel } from './components/KnowledgePanel';
 
 function MetricCard({ label, value, note, danger = false }: {
   label: string; value: string; note: string; danger?: boolean;
@@ -27,6 +28,8 @@ export default function SessionDashboard() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -79,6 +82,29 @@ export default function SessionDashboard() {
     chooseSession(id);
     setRefreshKey(value => value + 1);
   }, [chooseSession]);
+  const removeSession = useCallback(async (id: string) => {
+    if (!window.confirm(`Xóa phiên ${id} khỏi dashboard cùng ảnh, video và gói xuất trên backend? Dữ liệu raw gốc của AI vẫn được giữ. Thao tác này không thể hoàn tác trên dashboard.`)) return;
+    setDeletingId(id);
+    setDeleteError(null);
+    try {
+      await deleteSession(id);
+      setSessions(current => current.filter(item => item.session_id !== id));
+      if (selectedId === id) {
+        setSelectedId(null);
+        setDetail(null);
+        setFocus(null);
+        setDetailError(null);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('session');
+        window.history.replaceState({}, '', url);
+      }
+      setRefreshKey(value => value + 1);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Không xóa được phiên');
+    } finally {
+      setDeletingId(null);
+    }
+  }, [selectedId]);
 
   return <div className="min-h-screen bg-background p-4 text-lightGray md:p-6">
     <div className="mx-auto max-w-[1800px] space-y-4">
@@ -103,12 +129,18 @@ export default function SessionDashboard() {
         <aside className="min-w-0 rounded-xl border border-slate-700/60 bg-panelBg p-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-auto">
           <div className="mb-3 flex items-center justify-between"><h2 className="font-heading font-bold">Các phiên đã lưu</h2><span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-gray-400">{sessions.length}</span></div>
           <p className="mb-3 text-xs text-gray-400">Chọn một lần quay để xem kết quả. Không phải chọn công việc cho công nhân.</p>
-          <div className="space-y-2">{sessions.map(item => <button key={item.session_id} type="button" onClick={() => chooseSession(item.session_id)}
-            className={`w-full rounded-lg border p-3 text-left transition ${selectedId === item.session_id ? 'border-cyberGreen/60 bg-cyberGreen/10' : 'border-slate-700 bg-slate-900/50 hover:border-slate-500'}`}>
+          {deleteError && <p role="alert" className="mb-3 rounded-lg border border-alertRed/40 bg-red-950/30 p-3 text-xs text-red-200">Không xóa được phiên: {deleteError}</p>}
+          <div className="space-y-2">{sessions.map(item => <div key={item.session_id}
+            className={`relative rounded-lg border transition ${selectedId === item.session_id ? 'border-cyberGreen/60 bg-cyberGreen/10' : 'border-slate-700 bg-slate-900/50 hover:border-slate-500'}`}>
+            <button type="button" onClick={() => chooseSession(item.session_id)} className="w-full p-3 pr-12 text-left">
             <div className="truncate text-xs font-bold text-gray-200" title={item.session_id}>{item.session_id.replace(/^DEMO_camera_data_/, 'DEMO · ')}</div>
             <div className="mt-2 text-xs text-gray-400">{dateTime(item.created_at)}</div>
             <div className="mt-2 flex gap-2 text-xs"><span className="text-cyberGreen">Điểm {number(item.similarity_score, 1)}</span><span className="text-amber-300">MUDA {number(item.muda_detected_seconds, 2)} s</span></div>
-          </button>)}</div>
+            </button>
+            <button type="button" aria-label={`Xóa phiên ${item.session_id}`} title="Xóa phiên" disabled={deletingId !== null}
+              onClick={() => void removeSession(item.session_id)}
+              className="absolute right-2 top-2 rounded p-1.5 text-gray-400 hover:bg-red-950 hover:text-red-300 disabled:opacity-40"><Trash2 size={16} /></button>
+          </div>)}</div>
           {!loading && sessions.length === 0 && !listError && <p className="rounded-lg bg-slate-800 p-4 text-sm text-gray-400">Chưa có phiên. Bấm “Bắt đầu quay” ở phía trên để tạo phiên đầu tiên.</p>}
         </aside>
 
@@ -119,25 +151,26 @@ export default function SessionDashboard() {
           {selected && <>
             <section className="rounded-xl border border-cyberGreen/25 bg-densoNavy/55 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('MEASURED_') ? 'CẢM BIẾN THẬT · ADC' : selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
+                <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-cyberGreen/15 px-2 py-1 text-xs font-bold text-cyberGreen">{selected.session_id.startsWith('VIDEO_') ? 'VIDEO TẢI LÊN · KHÔNG CÓ CẢM BIẾN' : selected.session_id.startsWith('MEASURED_') ? 'CẢM BIẾN THẬT · ADC' : selected.session_id.startsWith('DEMO_') ? 'DEMO' : 'SESSION'}</span>
                   <span className="text-xs text-gray-400">{selected.worker_type} · {dateTime(selected.created_at)}</span></div>
                 <h2 className="mt-2 break-all font-heading text-lg font-bold">{selected.session_id}</h2>
                 <p className="mt-1 text-sm text-gray-300">Mẫu so sánh: <strong>{selected.analysis_result?.selected_reference?.title ?? selected.analysis_result?.expert_session ?? 'Chưa có'}</strong></p>
               </div><span className="rounded border border-slate-600 px-3 py-1 text-xs text-gray-300">Xuất file: {selected.export_status}</span></div>
             </section>
             <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-              <MetricCard label="Điểm so khớp DEMO" value={number(selected.dtw_metrics.similarity_score, 1)} note="Điểm hiển thị từ DTW; không phải phần trăm làm đúng." />
+              <MetricCard label="Điểm so khớp" value={selected.session_id.startsWith('VIDEO_') ? '—' : number(selected.dtw_metrics.similarity_score, 1)} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không tính DTW.' : 'Điểm hiển thị từ DTW; không phải phần trăm làm đúng.'} />
               <MetricCard label="Đoạn cần xem lại" value={String(candidates.length)} note="Nghi vấn từ AI; chưa kết luận thao tác sai." danger={candidates.length > 0} />
-              <MetricCard label="Tổng thời lượng nghi vấn" value={`${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note={displayHands(selected).length > 1 ? 'Tổng DEMO; hai tay có thể chồng thời gian.' : 'Tổng DEMO của tay phải; chưa phải thời gian lãng phí đã xác nhận.'} danger={candidates.length > 0} />
-              <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh phiên quay · ${selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
+              <MetricCard label="Tổng thời lượng nghi vấn" value={selected.session_id.startsWith('VIDEO_') ? '—' : `${number(selected.dtw_metrics.muda_detected_seconds, 3)} s`} note={selected.session_id.startsWith('VIDEO_') ? 'Chưa có mẫu tham chiếu; không đánh giá MUDA.' : 'Tổng DEMO; hai tay có thể chồng thời gian.'} danger={candidates.length > 0} />
+              <MetricCard label="Đoạn hành động" value={String(selected.action_phases.length)} note={`${selected.key_frames.length} ảnh · ${selected.session_id.startsWith('VIDEO_') ? 'đã nhận diện và phân đoạn video' : selected.analysis_result ? 'có phân tích AI' : 'chưa có phân tích AI'}`} />
             </div>
             <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
               <ImageViewer detail={selected} focus={focus?.sessionId === selected.session_id ? focus : defaultFocus(selected)} setFocus={setFocus} />
               <SessionCharts detail={selected} />
             </div>
-            <MudaPanel detail={selected} setFocus={setFocus} />
+            {!selected.session_id.startsWith('VIDEO_') && <MudaPanel detail={selected} setFocus={setFocus} />}
             <div className="grid items-start gap-4 2xl:grid-cols-2"><Phases detail={selected} /><DtwPanel detail={selected} setFocus={setFocus} /></div>
             <SensorPanel detail={selected} />
+            {!selected.session_id.startsWith('VIDEO_') && <KnowledgePanel detail={selected} />}
             <Exports detail={selected} />
           </>}
         </main>

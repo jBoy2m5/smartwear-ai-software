@@ -1,0 +1,76 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261009_120040_928853_rzwtyu3m\\camera.jsonl",
+  "camera_sha256": "a84204c833176da128957f08beee0d9d51c45b75053d673997dbb656475ec6e1",
+  "multimodal_sha256": "721e68e1db8f734350fa96dbd29ecf6e389dc1e5afca276f4176d4c3ce067ec3",
+  "segments_sha256": "858f004ddba6d0958f61717da7e3814b6c338156b82715c5bfecf38b812a9f0a",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 676,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 676,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 1464,
+      "end_ms": 2477,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 3,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 1464,
+      "end_ms": 2477,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 4,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 3096,
+      "end_ms": 5178,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 5,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 3096,
+      "end_ms": 5178,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261009_120040_928853_rzwtyu3m\\camera.avi",
+  "video_sha256": "bbd318897314e934ebc71d0e68e1408ab5c73889b889a16caf9e1812dd4dad98",
+  "extracted_count": 0,
+  "skipped_count": 6
+}

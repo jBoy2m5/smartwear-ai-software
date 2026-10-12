@@ -1,0 +1,19 @@
+{
+  "schema_version": "smartwear.backend_bridge_measured.v1",
+  "demo_only": false,
+  "sensor_source": "measured_hardware",
+  "session_id": "MEASURED_hardware_20261008_075815_830946_z1rv68iw",
+  "source_session": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261008_075815_830946_z1rv68iw",
+  "source_sha256": {
+    "action_segments.json": "8985617f3bc0dff074b91061ac34c1c8da13092e96942d442ea418c389b83184",
+    "multimodal.jsonl": "1bf4636648d00cbb1bc21f9c6d3958f7a887b6dc837fec4bb011ab5f500055ee",
+    "keyframes.json": "f7ce2e1a1cfd71357977f5144eb36e62872725213921a6f408c26b95c88a170e",
+    "session_role.json": "3b2075000cc03cf03a9794f5d9e96b6a8f67e9fd6bfb3ffc405ea336b1f76299",
+    "real_sensors.meta.json": "00647710fe1d52f83bf9c9a95e2b8e3c4de9e6ba4605cb0f7db0c5ab42d57db2"
+  },
+  "force_rule": "Measured ADC counts remain in real_sensors and analysis; peak_force_N is null because no Newton calibration exists",
+  "phase_rule": "Visible left/right labels share one nonoverlapping phase, e.g. LEFT_GRAB.RIGHT_OPEN",
+  "similarity_rule": "DEMO: 100/(1+weighted mean per-hand normalized DTW cost); no comparison=0, expert baseline=100",
+  "muda_rule": "DEMO sum of deduplicated unconfirmed review-candidate durations; missing action contributes 0; not confirmed waste",
+  "trajectory_rule": "No robot trajectory is exported for measured input without coordinate calibration"
+}

@@ -1,0 +1,320 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261007_144341_614548_vg3d6ibp\\camera.jsonl",
+  "camera_sha256": "6062d26d861bb163a64b6dff3e98ba2fcfc9c40c3276966187a02165d40aac7e",
+  "multimodal_sha256": "dd1424a804eb916e24b47b0f24a446e5ce8374c2fafa71bdc4e50f9eef196b56",
+  "segments_sha256": "89cfd71d46ee088fd1b184303b635802dcadb7f0adc5bd2ca21e1551181f3215",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 2700,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 9904,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 2,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 2700,
+      "end_ms": 2757,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 3,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 2757,
+      "end_ms": 7765,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 4,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 7765,
+      "end_ms": 7822,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 5,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 7822,
+      "end_ms": 9960,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 6,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 9904,
+      "end_ms": 9960,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 7,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 9960,
+      "end_ms": 10073,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 8,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 9960,
+      "end_ms": 10523,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 9,
+      "hand": "left",
+      "label": "GRAB",
+      "start_ms": 10073,
+      "end_ms": 10523,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0009_left_GRAB_frame_000172.png",
+      "frame_id": 172,
+      "timestamp_ms": 10298,
+      "video_frame_index": 172
+    },
+    {
+      "segment_id": 10,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 11086,
+      "end_ms": 11423,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 11,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 11086,
+      "end_ms": 11423,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 12,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 11423,
+      "end_ms": 11480,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 13,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 11423,
+      "end_ms": 11480,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 14,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 11480,
+      "end_ms": 11536,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 15,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 11480,
+      "end_ms": 11536,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 16,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 11536,
+      "end_ms": 11649,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 17,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 11536,
+      "end_ms": 11649,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 18,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 11649,
+      "end_ms": 11817,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 19,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 11649,
+      "end_ms": 12099,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 20,
+      "hand": "left",
+      "label": "GRAB",
+      "start_ms": 11817,
+      "end_ms": 12099,
+      "status": "extracted",
+      "image_path": "keyframes/segment_0020_left_GRAB_frame_000189.png",
+      "frame_id": 189,
+      "timestamp_ms": 11874,
+      "video_frame_index": 189
+    },
+    {
+      "segment_id": 21,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 12099,
+      "end_ms": 12212,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 22,
+      "hand": "right",
+      "label": "OTHER",
+      "start_ms": 12099,
+      "end_ms": 12212,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "ambiguous_hand"
+    },
+    {
+      "segment_id": 23,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 12212,
+      "end_ms": 12324,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 24,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 12212,
+      "end_ms": 15644,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 25,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 12324,
+      "end_ms": 14406,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 26,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 14406,
+      "end_ms": 14463,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 27,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 14463,
+      "end_ms": 15419,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 28,
+      "hand": "left",
+      "label": "OTHER",
+      "start_ms": 15419,
+      "end_ms": 15476,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "unknown_action"
+    },
+    {
+      "segment_id": 29,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 15476,
+      "end_ms": 15644,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261007_144341_614548_vg3d6ibp\\camera.avi",
+  "video_sha256": "c6374618ba2ceac522a41dab1930b5cbaccfd793f44b412186ca936827e76926",
+  "extracted_count": 2,
+  "skipped_count": 28
+}

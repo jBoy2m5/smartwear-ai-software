@@ -42,6 +42,8 @@ def measured_id(name):
 
 
 def bridge_kind(payload):
+    if payload["session_id"].startswith("VIDEO_"):
+        return "video"
     return "measured" if payload["session_id"].startswith("MEASURED_") else "demo"
 
 
@@ -443,8 +445,11 @@ def source_archive_bytes(session_dir):
         "backend_payload_measured.meta.json", "hardware_capture.json",
         "camera_packets.jsonl", "wrist_raw.jsonl",
         "real_sensors.jsonl", "real_sensors.meta.json",
+        "capture_context.json", "capture_manifest.json",
+        "uploaded_video.json", "backend_payload_video.json",
     )
     paths = [session / name for name in filenames if (session / name).is_file()]
+    paths.extend(sorted(session.glob("source_video.*")))
     # Raw JPEG bytes always remain in the local session. Include them in the
     # backend's bounded ZIP only when the file is small enough for its API.
     raw_jpeg = session / "camera_raw.mjpeg"

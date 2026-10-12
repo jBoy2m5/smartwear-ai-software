@@ -32,6 +32,14 @@ class SessionRepository:
         )
         return self.session.scalar(statement)
 
+    def delete(self, session_id: str) -> bool:
+        entity = self.get(session_id)
+        if entity is None:
+            return False
+        self.session.delete(entity)
+        self.session.flush()
+        return True
+
     def upsert(self, payload: SessionInput) -> tuple[AnalysisSession, bool]:
         """Create or replace a complete aggregate atomically."""
         entity = self.get(payload.session_id)

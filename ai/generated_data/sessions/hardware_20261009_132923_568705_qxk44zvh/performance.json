@@ -1,0 +1,86 @@
+{
+  "schema": "smartwear.performance/1",
+  "events_ms": {
+    "model_ready": 49.817,
+    "capture_started": 76.848,
+    "first_jpeg_consumed": 146.354,
+    "first_inference": 162.481,
+    "recording_ended": 179262.584,
+    "capture_stopped": 179333.981
+  },
+  "elapsed_s": 179.339,
+  "percentile_scope": "latest_2048_samples",
+  "stages": {
+    "host_receive_to_consume": {
+      "count": 3079,
+      "mean_ms": 41.172,
+      "max_ms": 401.823,
+      "p50_ms": 6.186,
+      "p95_ms": 305.0,
+      "percentile_samples": 2048
+    },
+    "jpeg_decode": {
+      "count": 3079,
+      "mean_ms": 0.75,
+      "max_ms": 8.395,
+      "p50_ms": 0.642,
+      "p95_ms": 1.332,
+      "percentile_samples": 2048
+    },
+    "alignment_wait": {
+      "count": 3079,
+      "mean_ms": 3.488,
+      "max_ms": 62.396,
+      "p50_ms": 0.076,
+      "p95_ms": 36.933,
+      "percentile_samples": 2048
+    },
+    "inference": {
+      "count": 3079,
+      "mean_ms": 40.492,
+      "max_ms": 133.507,
+      "p50_ms": 38.461,
+      "p95_ms": 72.802,
+      "percentile_samples": 2048
+    },
+    "video_and_observation_write": {
+      "count": 3079,
+      "mean_ms": 1.225,
+      "max_ms": 4.555,
+      "p50_ms": 1.185,
+      "p95_ms": 1.739,
+      "percentile_samples": 2048
+    },
+    "preview_submit": {
+      "count": 3079,
+      "mean_ms": 0.056,
+      "max_ms": 1.012,
+      "p50_ms": 0.016,
+      "p95_ms": 0.157,
+      "percentile_samples": 2048
+    },
+    "frame_processing": {
+      "count": 3079,
+      "mean_ms": 46.743,
+      "max_ms": 139.632,
+      "p50_ms": 42.445,
+      "p95_ms": 85.36,
+      "percentile_samples": 2048
+    }
+  },
+  "camera_stats": {
+    "received_jpeg": 3181,
+    "dropped_for_inference": 101,
+    "boot_id": "1570f13e98cbd71a",
+    "queue_size": 1
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 8961,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 137
+  },
+  "inferred_frames": 3079
+}

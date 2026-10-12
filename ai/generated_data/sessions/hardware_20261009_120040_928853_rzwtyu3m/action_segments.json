@@ -1,0 +1,128 @@
+{
+  "schema_version": "smartwear.action_segments.v2",
+  "source_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261009_120040_928853_rzwtyu3m\\multimodal.jsonl",
+  "source_sha256": "721e68e1db8f734350fa96dbd29ecf6e389dc1e5afca276f4176d4c3ce067ec3",
+  "method": "consecutive_camera_labels_per_hand",
+  "action_source": "camera_landmarks_heuristic",
+  "uses_simulated_sensors": false,
+  "max_gap_ms": 500,
+  "frame_count": 46,
+  "segment_count": 6,
+  "first_timestamp_ms": 0,
+  "last_timestamp_ms": 5178,
+  "duration_note": "Label-change boundaries use the next frame time. Gap/end boundaries stop at the last observation; true action end is unknown.",
+  "data_gaps": [
+    {
+      "after_frame_id": 5,
+      "before_frame_id": 6,
+      "start_ms": 676,
+      "end_ms": 1464,
+      "duration_ms": 788
+    },
+    {
+      "after_frame_id": 20,
+      "before_frame_id": 21,
+      "start_ms": 2477,
+      "end_ms": 3096,
+      "duration_ms": 619
+    }
+  ],
+  "segments": [
+    {
+      "segment_id": 0,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 5,
+      "frame_count": 6,
+      "start_ms": 0,
+      "last_observed_ms": 676,
+      "end_ms": 676,
+      "duration_ms": 676,
+      "end_reason": "data_gap",
+      "end_is_observation_limit": true,
+      "hand": "left",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 1,
+      "label": "NO_HAND",
+      "start_frame_id": 0,
+      "end_frame_id": 5,
+      "frame_count": 6,
+      "start_ms": 0,
+      "last_observed_ms": 676,
+      "end_ms": 676,
+      "duration_ms": 676,
+      "end_reason": "data_gap",
+      "end_is_observation_limit": true,
+      "hand": "right",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 2,
+      "label": "NO_HAND",
+      "start_frame_id": 6,
+      "end_frame_id": 20,
+      "frame_count": 15,
+      "start_ms": 1464,
+      "last_observed_ms": 2477,
+      "end_ms": 2477,
+      "duration_ms": 1013,
+      "end_reason": "data_gap",
+      "end_is_observation_limit": true,
+      "hand": "left",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 3,
+      "label": "NO_HAND",
+      "start_frame_id": 6,
+      "end_frame_id": 20,
+      "frame_count": 15,
+      "start_ms": 1464,
+      "last_observed_ms": 2477,
+      "end_ms": 2477,
+      "duration_ms": 1013,
+      "end_reason": "data_gap",
+      "end_is_observation_limit": true,
+      "hand": "right",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 4,
+      "label": "NO_HAND",
+      "start_frame_id": 21,
+      "end_frame_id": 45,
+      "frame_count": 25,
+      "start_ms": 3096,
+      "last_observed_ms": 5178,
+      "end_ms": 5178,
+      "duration_ms": 2082,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "left",
+      "tracking_status": "missing"
+    },
+    {
+      "segment_id": 5,
+      "label": "NO_HAND",
+      "start_frame_id": 21,
+      "end_frame_id": 45,
+      "frame_count": 25,
+      "start_ms": 3096,
+      "last_observed_ms": 5178,
+      "end_ms": 5178,
+      "duration_ms": 2082,
+      "end_reason": "recording_end",
+      "end_is_observation_limit": true,
+      "hand": "right",
+      "tracking_status": "missing"
+    }
+  ],
+  "hand_identity": "camera_recorded_handedness",
+  "segment_counts_by_hand": {
+    "left": 3,
+    "right": 3
+  },
+  "duration_scope": "Per hand; simultaneous left/right durations must not be added"
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "smartwear.keyframes.v1",
+  "camera_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261007_142254_436256_i1uwuwl2\\camera.jsonl",
+  "camera_sha256": "0f88b8b3b58d7881aa1ad70f91e1412a71057abef9c5777bf771670667a3e243",
+  "multimodal_sha256": "b41bbd1e81f3c33d66d9f1f05f0ef3349ff46d218711ba5cd94c4c26767147fb",
+  "segments_sha256": "83ac726efaf12f19d63e90ffe32905db000caa270210640926f8abac463ceadf",
+  "selection_method": "nearest_observed_time_midpoint; earlier frame wins ties",
+  "image_content": "full mirrored camera frame without overlay; not a hand crop",
+  "entries": [
+    {
+      "segment_id": 0,
+      "hand": "left",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 59993,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    },
+    {
+      "segment_id": 1,
+      "hand": "right",
+      "label": "NO_HAND",
+      "start_ms": 0,
+      "end_ms": 59993,
+      "status": "skipped",
+      "image_path": null,
+      "reason": "no_hand"
+    }
+  ],
+  "status": "completed",
+  "video_file": "D:\\MyProject\\Denso2\\smartwear-ai-software\\ai\\generated_data\\sessions\\hardware_20261007_142254_436256_i1uwuwl2\\camera.avi",
+  "video_sha256": "ef148e50a159afbb44137e5faa5d483781704f1ee9a5cd561270640aad4662d1",
+  "extracted_count": 0,
+  "skipped_count": 2
+}

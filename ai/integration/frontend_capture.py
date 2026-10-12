@@ -35,14 +35,18 @@ def publish_preview(job_dir, jpeg_bytes, data, keep=30):
     temporary.write_bytes(jpeg_bytes)
     os.replace(temporary, job_dir / f"{name}.jpg")
     document = {"frame_index": frame_index, "timestamp_ms": data["timestamp"],
+                "published_epoch_ms": time.time_ns() // 1_000_000,
+                "frame_received_epoch_ms": data.get('received_epoch_ms'),
+                "performance": data.get('performance'),
+                "preview_encode_ms": data.get('preview_encode_ms'),
                 "camera": data["camera"]}
-    action = data["hand_actions"]["right"]
-    # Ambiguous duplicate classifications must not render as one certain hand.
-    hand = next((hand for hand in data["hands"]
-                 if hand["handedness"].lower() == "right"
-                 and hand["hand_index"] == action["hand_index"]), None)
-    document["right_action"] = action
-    document["right_landmarks"] = hand["landmarks"] if hand else []
+    for side in ("left", "right"):
+        action = data["hand_actions"][side]
+        # Ambiguous duplicate classifications must not render as one certain hand.
+        hand = next((hand for hand in data["hands"]
+                     if hand["hand_index"] == action["hand_index"]), None)
+        document[f"{side}_action"] = action
+        document[f"{side}_landmarks"] = hand["landmarks"] if hand else []
     if "wrist_status" in data:
         document["wrist_status"] = data["wrist_status"]
         document["live_alignment"] = data.get("live_alignment")
@@ -60,16 +64,19 @@ def publish_preview(job_dir, jpeg_bytes, data, keep=30):
 
 
 def encode_and_publish_preview(cv2, frame, data, job_dir):
+    started = time.perf_counter()
     success, encoded = cv2.imencode(".jpg", frame,
-                                    [cv2.IMWRITE_JPEG_QUALITY, 88])
+                                    [cv2.IMWRITE_JPEG_QUALITY, 80])
     if success:
-        publish_preview(job_dir, encoded.tobytes(), data)
+        publish_preview(job_dir, encoded.tobytes(), {**data,
+            'preview_encode_ms': round((time.perf_counter()-started)*1000, 3)})
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--job-dir", type=Path, required=True)
     parser.add_argument("--backend-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--context", type=Path)
     args = parser.parse_args(argv)
     job_dir = args.job_dir.resolve()
     if not job_dir.is_dir():
@@ -77,6 +84,7 @@ def main(argv=None):
     last_preview = 0.0
     preview_error_logged = False
     preview_future = None
+    recording_announced = False
 
     def check_preview_error():
         nonlocal preview_error_logged
@@ -91,12 +99,15 @@ def main(argv=None):
                 preview_error_logged = True
 
     def preview(cv2, frame, data):
-        nonlocal last_preview, preview_future
+        nonlocal last_preview, preview_future, recording_announced
+        if not recording_announced:
+            write_status(job_dir, 'recording', 'Đang ghi ảnh; trạng thái tay và vòng tay ở hình xem trước')
+            recording_announced = True
         now = time.monotonic()
         if preview_future is not None and not preview_future.done():
             return
         check_preview_error()
-        if now - last_preview < 0.06:
+        if now - last_preview < 0.1:
             return
         # Only copy on the capture thread; JPEG compression and file writes run
         # separately so the next camera frame need not wait for the web preview.
@@ -106,11 +117,14 @@ def main(argv=None):
 
     try:
         capture_mode = os.getenv("SMARTWEAR_CAPTURE_MODE", "demo").strip().lower()
+        context = json.loads(args.context.read_text(encoding="utf-8")) if args.context else {"role": "demo"}
+        public_context = {key: context[key] for key in ("role", "task_id", "procedure_version", "reference_session_id",
+                         "participant_id", "consent_confirmed", "purpose", "trial_stage") if key in context}
         if capture_mode not in ("demo", "hardware"):
             raise ValueError("SMARTWEAR_CAPTURE_MODE must be demo or hardware")
-        write_status(job_dir, "recording", ("Đang nhận ảnh ESP32 của tay phải; kiểm tra vòng tay ở hình xem trước"
+        write_status(job_dir, "starting", ("Đang chuẩn bị AI và kết nối ESP32"
                                             if capture_mode == "hardware" else
-                                            "Camera đang ghi tay phải"))
+                                            "Camera đang ghi tay trái và tay phải"))
         started = time.monotonic()
         with ThreadPoolExecutor(max_workers=1) as executor:
             stop_requested = lambda: (job_dir / "stop.flag").exists() or time.monotonic() - started >= 180
@@ -125,15 +139,31 @@ def main(argv=None):
                     force_channel=(int(os.environ["SMARTWEAR_FORCE_CHANNEL"])
                                    if os.getenv("SMARTWEAR_FORCE_CHANNEL") else None),
                     device_id=os.getenv("SMARTWEAR_WRIST_ID", "smartwrist-user01"),
-                    stop_requested=stop_requested, on_frame=preview, show_window=False)
+                    stop_requested=stop_requested, on_frame=preview, show_window=False,
+                    capture_context=public_context)
             else:
                 output = record_camera(stop_requested=stop_requested,
                                        on_frame=preview, show_window=False)
         check_preview_error()
         write_status(job_dir, "processing", "Đang phân tích hành động và so với mẫu")
-        finish_recording(output)
+        context = json.loads(args.context.read_text(encoding="utf-8")) if args.context else {"role": "demo"}
+        role = context.get("role", "demo")
+        (output.parent / "capture_context.json").write_text(json.dumps(
+            {key: value for key, value in context.items() if key != 'expert_session_path'},
+            ensure_ascii=False), encoding="utf-8")
+        finish_recording(output, role=role if role in ("expert", "worker") else None,
+                         expert_session=context.get("expert_session_path") if role == "worker" else None)
         write_status(job_dir, "publishing", "Đang lưu kết quả lên backend")
         receipt = publish(output.parent, args.backend_url, os.getenv("SMARTWEAR_API_KEY"))
+        if role in ("expert", "worker"):
+            from integration.backend_bridge import request_json, encoded
+            fields = ("role", "task_id", "procedure_version", "reference_session_id", "participant_id",
+                      "consent_confirmed", "purpose", "trial_stage")
+            document = {"context": {key: context[key] for key in fields if key in context},
+                        "source_session_name": output.parent.name,
+                        "reference_revision": context.get("reference_revision")}
+            request_json(args.backend_url.rstrip("/") + "/api/v1/knowledge/sessions/" + receipt["session_id"],
+                         "PUT", encoded(document), os.getenv("SMARTWEAR_API_KEY"))
         write_status(job_dir, "completed", "Đã lưu phiên và kết quả",
                      receipt["session_id"])
     except Exception as exc:

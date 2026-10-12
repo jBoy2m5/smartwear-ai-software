@@ -1,0 +1,72 @@
+{
+  "schema_version": "smartwear.capture/1.0",
+  "source_kind": "measured",
+  "source_session_name": "hardware_20261008_214248_578349__hjh2rxn",
+  "context": {
+    "role": "expert",
+    "task_id": "LOG_KIT",
+    "procedure_version": "1",
+    "reference_session_id": null,
+    "participant_id": "d",
+    "consent_confirmed": true,
+    "purpose": "training_demo",
+    "trial_stage": "reference"
+  },
+  "pipeline_version": "e5caf0469bf3b470face2dae097c88ae9cad738e",
+  "capture_script_sha256": "34dfbec3ba7a8fc99b5a2ff737b04817a65b7d4261efe934a58740846bac5402",
+  "model_sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+  "camera": {
+    "mirror_for_inference": true,
+    "rotation_degrees": 0,
+    "firmware_version": "unknown; not reported by device"
+  },
+  "events": [
+    {
+      "name": "capture_started",
+      "host_monotonic_ns": 440933203000000
+    },
+    {
+      "name": "capture_stopped",
+      "host_monotonic_ns": 441112703000000
+    }
+  ],
+  "clock_domain": "device_NTP_epoch_with_recorder_receive_monotonic",
+  "clock_accuracy": "unknown",
+  "artifacts": [
+    {
+      "path": "camera.avi",
+      "size_bytes": 10572194,
+      "sha256": "dd809d07f0ae9ddc323349e6f6c33577fc602645915d0024daede668ae42fa98"
+    },
+    {
+      "path": "camera.jsonl",
+      "size_bytes": 3702908,
+      "sha256": "49fb52510df720c57cbd2b2fcee6cbc4d297bf622d0da12f37db8cf46ad9bc41"
+    },
+    {
+      "path": "camera.video.json",
+      "size_bytes": 521,
+      "sha256": "c7cd058c31f48bbdf45383937d050d0e30e9b93067bfcbeb06c4b1d36876207b"
+    },
+    {
+      "path": "camera_packets.jsonl",
+      "size_bytes": 734155,
+      "sha256": "0be546bad9f749f5b435afea136aabca17e01f0f3658d5337474270df63a7efd"
+    },
+    {
+      "path": "camera_raw.mjpeg",
+      "size_bytes": 16751209,
+      "sha256": "20be83b7d468ec7e0e7bd9ea01b41e4c79ad3d0a0ba28fdff0c9d9f858af7551"
+    },
+    {
+      "path": "hardware_capture.json",
+      "size_bytes": 890,
+      "sha256": "50866223b3a27679a2187bad6ea728bd97a7467e3a50c06cce4030df26d9f17c"
+    },
+    {
+      "path": "wrist_raw.jsonl",
+      "size_bytes": 4916179,
+      "sha256": "ffa76ccc162f71209400a823a8757388a665d1bfa53c47a18b5516cf972fa0a5"
+    }
+  ]
+}

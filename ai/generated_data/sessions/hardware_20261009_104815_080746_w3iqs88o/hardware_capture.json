@@ -1,0 +1,30 @@
+{
+  "schema_version": "smartwear.hardware_capture.v1",
+  "status": "failed",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "force_channel": null,
+  "device_id": "smartwrist-user01",
+  "alignment_window_ms": 10,
+  "error": "Camera reader failed: SmartCap sequence quay về đầu khi đang quay (seq 240 -> 0, time 1791517699318 -> 1791517706000). Bo có thể đã khởi động lại. Kiểm tra nguồn/cáp USB, rồi bắt đầu phiên mới; không mở Serial Monitor khi đang quay.",
+  "camera_stats": {
+    "received_jpeg": 72,
+    "dropped_for_inference": 66,
+    "stream_errors": 1,
+    "http_503": 1,
+    "clock_or_sequence_resets": 1,
+    "last_stream_error": "SmartCap sequence quay về đầu khi đang quay (seq 240 -> 0, time 1791517699318 -> 1791517706000). Bo có thể đã khởi động lại. Kiểm tra nguồn/cáp USB, rồi bắt đầu phiên mới; không mở Serial Monitor khi đang quay.",
+    "queue_size": 0
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 619,
+    "connected": true,
+    "queue_size": 0,
+    "newest_sample_age_ms": 77
+  },
+  "inferred_frames": 6
+}

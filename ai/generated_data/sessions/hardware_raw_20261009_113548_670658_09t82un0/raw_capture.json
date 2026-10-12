@@ -1,0 +1,37 @@
+{
+  "schema_version": "smartwear.raw_capture.v1",
+  "status": "raw_complete",
+  "camera_url": "http://192.168.137.111:81/stream",
+  "mqtt_host": "192.168.137.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "wearable/user01/wrist/data",
+  "wrist_side": "right",
+  "duration_requested_s": 15,
+  "camera_stats": {
+    "received_jpeg": 152,
+    "boot_id": "03a0200673dfa441",
+    "queue_size": 1
+  },
+  "wrist_stats": {
+    "connects": 1,
+    "received": 760,
+    "disconnects": 1,
+    "connected": false,
+    "queue_size": 0,
+    "newest_sample_age_ms": 114
+  },
+  "capture_elapsed_s": 15.047,
+  "camera_received_fps": 10.102,
+  "wrist_received_hz": 50.508,
+  "source_sha256": {
+    "camera_raw.mjpeg": "f2a842a48492c23dae6f4e3db329c291fd9bfcac02ccb6ddf24a8e985f1201b1",
+    "camera_packets.jsonl": "d50a2c232e658a0132d46195759946084acc4600463f2ec3183a9ac1595d0c8b",
+    "wrist_raw.jsonl": "63da74ed42edd76cedf66af466360ad17ad07b5d8130d1dd6ececd1d690964f4"
+  },
+  "camera_device_minus_receive_ms": {
+    "min": -1570,
+    "max": -51,
+    "mean": -329.092
+  },
+  "clock_note": "Device-minus-PC receive time includes transport delay; it is not a camera-to-wrist clock accuracy measurement"
+}

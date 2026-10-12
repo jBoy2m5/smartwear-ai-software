@@ -1,6 +1,7 @@
 """Camera-free regression checks for real-input parsing and no-DEMO alignment."""
 
 import io
+import http.client
 import json
 import math
 import sys
@@ -21,7 +22,7 @@ from camera_test import make_frame_data  # noqa: E402
 from analysis.compare_sensors import load_sensor_stream  # noqa: E402
 from hardware.align import align_session  # noqa: E402
 from hardware.camera_receiver import CameraReceiver  # noqa: E402
-from hardware.mjpeg import read_parts  # noqa: E402
+from hardware.mjpeg import CameraFrame, read_parts  # noqa: E402
 from hardware.mqtt_wrist import WristReceiver, validate_wrist_payload  # noqa: E402
 from integration.backend_bridge import build_payload  # noqa: E402
 from process_recording import process_recording  # noqa: E402
@@ -48,24 +49,23 @@ class HardwareTests(unittest.TestCase):
                                          handedness=[category(model_side)])
                 frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
                 self.assertEqual(len(frame["hands"]), 1)
-                side = "right" if model_side == "Left" else "left"
+                side = model_side.lower()
                 other = "left" if side == "right" else "right"
                 self.assertEqual(frame["hands"][0]["handedness"].lower(), side)
                 self.assertEqual(frame["hand_actions"][side]["tracking_status"], "detected")
                 self.assertEqual(frame["hand_actions"][other]["tracking_status"], "missing")
                 filtered = make_frame_data(result, 0, 320, 240, TwoHandActionDetector(), tracked_side="right")
                 self.assertEqual(len(filtered["hands"]), int(side == "right"))
-                self.assertEqual(filtered["hand_actions"]["left"]["label"], "NO_HAND")
-                if side == "left":
-                    self.assertEqual(filtered["hand_actions"]["right"]["label"], "NO_HAND")
 
         result = SimpleNamespace(hand_landmarks=[points, points],
                                  hand_world_landmarks=[points, points],
                                  handedness=[category("Right"), category("Left")])
         frame = make_frame_data(result, 0, 320, 240, TwoHandActionDetector())
-        self.assertEqual([hand["handedness"] for hand in frame["hands"]], ["Left", "Right"])
-        self.assertEqual(frame["hand_actions"]["left"]["hand_index"], 0)
-        self.assertEqual(frame["hand_actions"]["right"]["hand_index"], 1)
+        self.assertEqual([hand["handedness"] for hand in frame["hands"]], ["Right", "Left"])
+        self.assertEqual(frame["hand_actions"]["left"]["hand_index"], 1)
+        self.assertEqual(frame["hand_actions"]["right"]["hand_index"], 0)
+        self.assertTrue(all(hand["handedness_convention"] ==
+                            "anatomical_from_mirrored_camera_v2" for hand in frame["hands"]))
 
     def test_partial_wrist_requires_explicit_null_imu(self):
         payload = {"t_ms": BASE, "seq": 1, "acc": None, "gyro": None,
@@ -97,38 +97,29 @@ class HardwareTests(unittest.TestCase):
                 self.assertIsNone(row["hand_sensors"]["right"]["imu_wrist"])
             self.assertTrue(any(row["hand_sensors"]["right"]["force_adc"] for row in sensors))
 
-    def test_preview_only_publishes_right_hand_when_detection_order_changes(self):
+    def test_preview_keeps_both_sides_when_detection_order_changes(self):
         from integration.frontend_capture import publish_preview
         points = lambda x: [SimpleNamespace(x=x, y=index / 30, z=0.0) for index in range(21)]
         category = lambda name: [SimpleNamespace(category_name=name, score=0.99)]
         detector = TwoHandActionDetector()
-        def copy_published_file(source, destination):
-            Path(destination).write_bytes(Path(source).read_bytes())
-
-        with tempfile.TemporaryDirectory() as temporary, patch(
-                "integration.frontend_capture.os.replace", side_effect=copy_published_file):
+        with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            for index, sides in enumerate((("Right", "Left"), ("Left", "Right"),
-                                           ("Right", "Right"), ("Left", "Left"))):
+            for index, sides in enumerate((("Right", "Left"), ("Left", "Right"), ("Right", "Right"))):
                 result = SimpleNamespace(hand_landmarks=[points(0.2), points(0.8)],
                                          hand_world_landmarks=[[], []],
                                          handedness=[category(side) for side in sides])
-                data = make_frame_data(result, index * 40, 320, 240, detector,
-                                       tracked_side="right")
+                data = make_frame_data(result, index * 40, 320, 240, detector)
                 data["video_frame_index"] = index
                 publish_preview(directory, b"test JPEG", data)
                 preview = json.loads((directory / f"preview_{index:08d}.json").read_text())
-                self.assertNotIn("left_action", preview)
-                self.assertNotIn("left_landmarks", preview)
-                self.assertEqual(data["hand_actions"]["left"]["label"], "NO_HAND")
-                if index < 2:
-                    self.assertEqual(preview["right_action"]["tracking_status"], "detected")
-                    self.assertEqual(preview["right_landmarks"][0]["x"],
-                                     0.2 if sides[0] == "Left" else 0.8)
-                else:
-                    self.assertEqual(preview["right_action"]["tracking_status"],
-                                     "missing" if index == 2 else "ambiguous")
-                    self.assertEqual(preview["right_landmarks"], [])
+                for side, model_side in (("left", "Left"), ("right", "Right")):
+                    if index == 2:
+                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "ambiguous")
+                        self.assertEqual(preview[f"{side}_landmarks"], [])
+                    else:
+                        self.assertEqual(preview[f"{side}_action"]["tracking_status"], "detected")
+                        self.assertEqual(preview[f"{side}_landmarks"][0]["x"],
+                                         0.2 if sides[0] == model_side else 0.8)
 
     def test_mjpeg_split_jpeg_case_insensitive_headers_and_multiple_parts(self):
         jpeg = b"\xff\xd8some-jpeg\xff\xd9"
@@ -174,6 +165,80 @@ class HardwareTests(unittest.TestCase):
             self.assertEqual((Path(temporary) / "camera_raw.mjpeg").read_bytes(), jpeg)
             self.assertEqual(receiver.snapshot()["http_503"], 1)
             self.assertIn("last_stream_error", receiver.snapshot())
+
+    def test_camera_reconnect_skips_exact_replay_but_reports_real_reset(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            receiver = CameraReceiver(Path(temporary), "http://camera")
+            first = CameraFrame(b"jpeg-a", BASE, 8)
+            self.assertTrue(receiver._accept_frame(first))
+            self.assertFalse(receiver._accept_frame(first))
+            self.assertEqual(receiver.snapshot()["duplicate_frames"], 1)
+            self.assertTrue(receiver._accept_frame(CameraFrame(b"jpeg-b", BASE + 60, 9)))
+            with self.assertRaisesRegex(RuntimeError, r"seq 9 -> 0"):
+                receiver._accept_frame(CameraFrame(b"jpeg-c", BASE + 1000, 0))
+            self.assertEqual(receiver.snapshot()["clock_or_sequence_resets"], 1)
+            self.assertIn("nguồn/cáp USB", receiver.snapshot()["last_stream_error"])
+
+    def test_camera_recovers_truncated_http_chunks_without_saving_partial_jpeg(self):
+        jpeg = b"\xff\xd8original-jpeg\xff\xd9"
+
+        def part(seq, boot_id="0123456789abcdef"):
+            return (f"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {len(jpeg)}\r\n"
+                    f"X-Timestamp-Ms: {BASE + seq * 33}\r\nX-Frame-Seq: {seq}\r\n"
+                    f"X-Boot-Id: {boot_id}\r\n\r\n".encode() + jpeg + b"\r\n")
+
+        def response(chunks, complete):
+            wire = (b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+                    b"Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n")
+            for declared_length, payload in chunks:
+                wire += f"{declared_length:x}\r\n".encode() + payload
+                if len(payload) == declared_length:
+                    wire += b"\r\n"
+            if complete:
+                wire += b"0\r\n\r\n"
+            result = http.client.HTTPResponse(SimpleNamespace(
+                makefile=lambda *_: io.BufferedReader(io.BytesIO(wire))))
+            result.begin()
+            return result
+
+        second = part(1)
+        for cut in (4, 35, second.index(jpeg) + 3):
+            for reboot in (False, True):
+                with self.subTest(cut=cut, reboot=reboot), tempfile.TemporaryDirectory() as temporary:
+                    receiver = CameraReceiver(Path(temporary), "http://camera")
+                    first = response([(len(part(0)), part(0)), (len(second), second[:cut])], False)
+                    resumed = part(1, "fedcba9876543210" if reboot else "0123456789abcdef")
+                    recovered = response([(len(resumed), resumed)], True)
+                    original_record = receiver._record
+                    recorded = 0
+
+                    def record(*args):
+                        nonlocal recorded
+                        original_record(*args)
+                        recorded += 1
+                        if recorded == 2:
+                            receiver.stop_event.set()
+
+                    with patch("hardware.camera_receiver.open_camera_stream",
+                               side_effect=[first, recovered]) as opened, \
+                            patch.object(receiver, "_record", side_effect=record):
+                        receiver._receive()
+                    self.assertEqual(opened.call_count, 2, repr(receiver.error))
+                    self.assertEqual(receiver.snapshot()["stream_errors"], 1)
+                    rows = [json.loads(line) for line in
+                            (Path(temporary) / "camera_packets.jsonl").read_text().splitlines()]
+                    if reboot:
+                        self.assertIsInstance(receiver.error, RuntimeError)
+                        self.assertIn("khởi động lại", str(receiver.error))
+                        self.assertEqual([row["seq"] for row in rows], [0])
+                        self.assertEqual(receiver.snapshot()["clock_or_sequence_resets"], 1)
+                    else:
+                        self.assertIsNone(receiver.error)
+                        self.assertEqual([row["seq"] for row in rows], [0, 1])
+                        self.assertIn("IncompleteRead", receiver.snapshot()["last_stream_error"])
+                    self.assertEqual((Path(temporary) / "camera_raw.mjpeg").read_bytes(),
+                                     jpeg * len(rows))
+                    self.assertTrue(all(row["sha256"] == sha256(jpeg).hexdigest() for row in rows))
 
     def test_wrist_validation_rejects_malformed_and_nonfinite(self):
         valid = {"t_ms": BASE, "seq": 1, "acc": [0, 0, 1],
@@ -272,9 +337,6 @@ class HardwareTests(unittest.TestCase):
             self.assertTrue(all(item["peak_force_N"] is None
                                 for item in payload["action_phases"]))
             self.assertEqual(meta["sensor_source"], "measured_hardware")
-            self.assertTrue(all(item["phase"].startswith("RIGHT_")
-                                for item in payload["action_phases"]))
-            self.assertIn("Only visible right-hand actions", meta["phase_rule"])
 
     def test_missing_or_reset_wrist_never_falls_back_to_simulator(self):
         for missing, reset in ((True, False), (False, True)):
