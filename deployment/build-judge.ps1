@@ -32,7 +32,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Không xuất được image TAR.' }
     Copy-Item (Join-Path $root 'compose.judge.yaml') (Join-Path $release 'compose.judge.yaml')
     Copy-Item (Join-Path $root 'docs/JUDGE_QUICKSTART.md') (Join-Path $release 'JUDGE_QUICKSTART.md')
-    Copy-Item (Join-Path $root 'deployment/THIRD_PARTY_NOTICES.md') (Join-Path $release 'THIRD_PARTY_NOTICES.md')
+    Copy-Item (Join-Path $root 'docs/deployment/THIRD_PARTY_NOTICES.md') (Join-Path $release 'THIRD_PARTY_NOTICES.md')
 
     $head = (& git rev-parse HEAD).Trim()
     $dirty = [bool]((& git status --porcelain=v1 --untracked-files=no) | Select-Object -First 1)

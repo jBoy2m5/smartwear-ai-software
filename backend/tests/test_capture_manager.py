@@ -128,3 +128,13 @@ class CaptureManagerTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'Không kết nối được SmartCap'):
                     manager.start()
             self.assertEqual(list(manager.root.iterdir()),[])
+
+    def test_docker_hardware_preflight_checks_camera_without_binding_host_hotspot(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manager = CaptureManager(Settings(environment='test', static_dir=Path(temporary) / 'static'))
+            with patch.dict('os.environ', {'SMARTWEAR_DOCKER_HARDWARE': 'true'}), \
+                    patch('backend.services.capture.socket.socket') as probe, \
+                    patch('backend.services.capture.socket.create_connection') as connect:
+                manager._hardware_preflight()
+            probe.assert_not_called()
+            connect.assert_called_once_with(('192.168.137.111', 81), timeout=2)

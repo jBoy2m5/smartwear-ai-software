@@ -4,7 +4,9 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
-ENV VITE_JUDGE_MODE=true
+ARG VITE_JUDGE_MODE=true
+ENV VITE_JUDGE_MODE=${VITE_JUDGE_MODE}
+ENV VITE_DOCKER_MODE=true
 RUN npm run build
 
 FROM python:3.12-slim-bookworm
@@ -38,8 +40,8 @@ RUN test -s /app/ai/hand_landmarker.task \
     && groupadd --system smartwear \
     && useradd --system --gid smartwear --home-dir /app smartwear \
     && mkdir -p /app/backend/data /app/backend/static/pdf \
-       /app/backend/static/images /app/backend/static/dataset \
-    && chown -R smartwear:smartwear /app/backend/data /app/backend/static
+       /app/backend/static/images /app/backend/static/dataset /app/ai/generated_data/sessions \
+    && chown -R smartwear:smartwear /app/backend/data /app/backend/static /app/ai/generated_data
 
 USER smartwear
 EXPOSE 8000
