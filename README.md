@@ -372,7 +372,7 @@ flowchart LR
 
 Thí nghiệm học việc: **trước học → xem SOP → sau học**, cùng participant/task/version/reference/review và điều kiện tương đương; giữ cả thất bại, số lỗi/gợi ý và mốc thật. Cycle time không bằng thời lượng quay; một cặp chưa chứng minh hiệu quả tổng quát.
 
-Đọc [LEARNING_EXPERIMENT](docs/demo-kit/LEARNING_EXPERIMENT.md), [EVIDENCE](docs/demo-kit/EVIDENCE.md), [kịch bản 120 giây](docs/KICH_BAN_VIDEO_DEMO_120_GIAY.md).
+Đọc [LEARNING_EXPERIMENT](docs/demo-kit/LEARNING_EXPERIMENT.md), [EVIDENCE](docs/demo-kit/EVIDENCE.md).
 
 ## 10. CLI và firmware
 
@@ -556,7 +556,6 @@ Chi tiết: [hướng dẫn chạy](docs/HUONG_DAN_CHAY_DU_AN.md), [camera incid
 | [IMPROVEMENTS_20261009](docs/IMPROVEMENTS_20261009.md) | Diagnostics/hiệu suất/học việc |
 | [DATA_PRODUCTS_ROADMAP](docs/DATA_PRODUCTS_ROADMAP.md) | Readiness gates và phát triển |
 | [DEMO_TWO_WORKFLOWS](docs/DEMO_TWO_WORKFLOWS.md) | Task, vật dụng/checklist, sân khấu |
-| [KICH_BAN_VIDEO_DEMO_120_GIAY](docs/KICH_BAN_VIDEO_DEMO_120_GIAY.md) | Timeline, pitch, overlay/fallback |
 | [Ý tưởng dữ liệu công nhân](docs/Y_TUONG_DU_LIEU_CONG_NHAN_HUAN_LUYEN_HUMANOID.md) | Quan sát người tới nghiên cứu humanoid |
 | [Backend README](backend/README.md) | API, persistence, cấu hình/export legacy |
 
@@ -567,3 +566,121 @@ README thành phần có thể có mô tả lịch sử/đường dẫn máy cũ
 Quản lý video/bí danh/consent/review theo mục đích sử dụng. Không đưa raw/private artifacts hoặc secrets lên Git để chia sẻ README. `.venv`, `.platformio`, `frontend/dist`, `frontend/node_modules`, `backend/data` được gitignore.
 
 Repository chưa khai báo license dự án; dependencies có license riêng. Có mã nguồn/checksum không tự cấp quyền dùng video/notes cho training hoặc phát hành.
+
+## 16. Chạy bằng Docker (chế độ giám khảo)
+
+Docker chạy giao diện, backend và AI trên CPU trong một ứng dụng. Chế độ này phân tích video tải lên, không cần cài Python/Node, ESP32, vòng tay, webcam, MQTT hoặc GPU. Video upload không có dữ liệu lực/IMU, điểm so với chuyên gia hoặc kết luận MUDA.
+
+### Chuẩn bị
+
+Cài và mở [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/), chọn **WSL 2 / Linux containers** và đợi **Engine running**. Lần build đầu cần Internet để tải image nền và dependencies.
+
+Mở PowerShell tại thư mục gốc repository, kiểm tra:
+
+```powershell
+docker version
+docker compose version
+```
+
+`docker version` cần hiện cả **Client** và **Server**. Nếu chưa kết nối được Server, mở Docker Desktop và đợi Engine sẵn sàng.
+
+### Build và khởi chạy
+
+Trên Windows, có thể nhấp đúp **`START_JUDGE.cmd`** ở thư mục gốc. Script build image, khởi chạy, đợi ứng dụng sẵn sàng và mở trình duyệt.
+
+Hoặc chạy trực tiếp trong PowerShell tại thư mục gốc:
+
+```powershell
+docker build --platform linux/amd64 -f Dockerfile.judge -t smartwear-judge:1.0.0 .
+docker compose -f .\compose.judge.yaml up -d --pull never --no-build
+docker compose -f .\compose.judge.yaml ps
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+Mở **[http://localhost:8000](http://localhost:8000)**. `/ready` trả về `{"status":"ready"}` khi ứng dụng sẵn sàng. Sau khi sửa mã nguồn, chạy lại lệnh build rồi lệnh `up` để cập nhật container.
+
+Để build kèm kiểm thử upload AI và lưu kết quả qua restart, dùng script có sẵn (bỏ qua xuất gói TAR):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deployment\build-judge.ps1 -SkipExport
+```
+
+### Tải video và xem kết quả
+
+1. Chọn video MP4/MOV/AVI/WebM, tối đa **50 MiB, 3 phút**; khuyên dùng MP4 H.264.
+2. Xác nhận quyền sử dụng video rồi bấm **Tải lên và phân tích**.
+3. Chờ **Đã hoàn tất**, mở phiên để xem hành động tay trái/tay phải, ảnh tiêu biểu và báo cáo.
+4. Tải báo cáo PDF/HTML và ZIP nguồn ở phần kết quả. Video không thấy tay sẽ không được tạo hành động giả.
+
+### Dừng, mở lại và xử lý sự cố
+
+Dừng ứng dụng và giữ dữ liệu:
+
+```powershell
+docker compose -f .\compose.judge.yaml down
+```
+
+Mở lại bằng image đã build:
+
+```powershell
+docker compose -f .\compose.judge.yaml up -d --pull never --no-build
+```
+
+Database, video và báo cáo nằm trong hai Docker volumes. **Không dùng `down -v` nếu muốn giữ kết quả.**
+
+Nếu cổng 8000 đang được dùng, đặt cổng khác trước lệnh `up`:
+
+```powershell
+$env:SMARTWEAR_PORT = '8001'
+docker compose -f .\compose.judge.yaml up -d --pull never --no-build
+```
+
+Sau đó mở **http://localhost:8001**. Compose chỉ cho phép truy cập từ máy chạy Docker (`127.0.0.1`).
+
+Nếu ứng dụng chưa sẵn sàng, xem trạng thái và log:
+
+```powershell
+docker compose -f .\compose.judge.yaml ps
+docker compose -f .\compose.judge.yaml logs --tail 100 smartwear
+```
+
+Hướng dẫn đầy đủ về cài Docker, xuất/nạp gói offline và sao lưu dữ liệu: [JUDGE_QUICKSTART](docs/JUDGE_QUICKSTART.md). Hướng dẫn chạy nhanh từ repo: [JUDGE_START_HERE](JUDGE_START_HERE.md).
+
+### Checklist kiểm thử dành cho ban giám khảo
+
+Sau khi ứng dụng sẵn sàng, thực hiện các bước dưới đây. Chuẩn bị video ngắn có quyền sử dụng, thấy rõ hai tay thao tác (vươn tay, nắm, thả), ánh sáng đủ và ít che khuất; nên dùng MP4 H.264 dài 10–30 giây. Chuẩn bị thêm một video ngắn không có tay để kiểm tra trường hợp không nhận diện được.
+
+| Bước | Thao tác kiểm thử | Kết quả mong đợi |
+| --- | --- | --- |
+| 1. Kiểm tra khởi động | Mở `http://localhost:8000` và `http://localhost:8000/ready` | Giao diện tải được; API trả về `{"status":"ready"}`. Nếu đổi cổng, dùng cổng đã cấu hình. |
+| 2. Phân tích video có tay | Chọn video, xác nhận quyền sử dụng, bấm **Tải lên và phân tích**; chờ **Đã hoàn tất** | Một phiên mới xuất hiện trong danh sách, mở được trang kết quả. |
+| 3. Đối chiếu nhận diện | Mở phiên vừa tạo, xem chuỗi hành động từng tay và ảnh tiêu biểu; so với video gốc | Video có hai tay rõ ràng cần có kết quả cho cả tay trái và tay phải. Kiểm tra ảnh và nhãn có phù hợp thao tác thực tế; ghi nhận nhãn sai hoặc đoạn bị bỏ sót. |
+| 4. Kiểm tra tải kết quả | Tải báo cáo PDF/HTML và ZIP nguồn, mở các file đã tải | Báo cáo đọc được, ảnh hiển thị được; ZIP giải nén được và có video nguồn cùng dữ liệu kết quả. |
+| 5. Video không có tay | Tải video không có tay bằng cùng quy trình | Phiên xử lý hoàn tất nhưng không sinh hành động tay giả. |
+| 6. Kiểm tra dữ liệu thiếu | Xem báo cáo của phiên video upload | Lực/FSR và IMU được ghi là thiếu dữ liệu; không có điểm so với chuyên gia hoặc kết luận MUDA từ video đơn lẻ. |
+| 7. Kiểm tra lưu dữ liệu | Ghi lại mã phiên, đợi xử lý hoàn tất rồi dừng/mở lại bằng hai lệnh bên dưới; tải lại trang và mở phiên cũ | Phiên, kết quả và các file tải xuống vẫn truy cập được. |
+
+Chạy tại thư mục gốc repo để kiểm tra bước 7:
+
+```powershell
+docker compose -f .\compose.judge.yaml down
+docker compose -f .\compose.judge.yaml up -d --pull never --no-build
+```
+
+Đợi `/ready` trả về `ready` trước khi mở lại phiên. Không thêm `-v` vào lệnh `down` vì tùy chọn đó xóa volumes chứa kết quả.
+
+**Đánh giá kết quả:** luồng kỹ thuật đạt khi khởi động, upload, xử lý, tải báo cáo/ZIP và lưu qua khởi động lại đều hoạt động. Chất lượng nhận diện cần đối chiếu bằng mắt trên video có tay; không xem việc xử lý hoàn tất là bằng chứng mọi nhãn đều đúng. Nhãn `ASSEMBLY` là suy luận từ tư thế/chuyển động, không xác nhận chất lượng sản phẩm lắp ráp.
+
+Nếu một bước không đạt, ghi lại tên video, mã phiên/job, thao tác đã thực hiện và thông báo lỗi; lấy log bằng:
+
+```powershell
+docker compose -f .\compose.judge.yaml logs --tail 100 smartwear
+```
+
+**Kiểm thử tự động (tùy chọn):** với image đã build, chạy lệnh dưới đây để kiểm giao diện, `/ready`, upload video đen, ZIP nguồn và lưu qua restart trong container/volumes thử riêng:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deployment\verify-judge.ps1
+```
+
+Script báo **ĐẠT** khi các kiểm tra thành công. Kiểm tra video đen xác minh luồng xử lý; vẫn cần thực hiện bước 3 để đánh giá chất lượng nhận diện trên video thật.
