@@ -57,7 +57,7 @@ này từng được thử với một video AVI có tay phải. Mã hiện tạ
 trên image mới. Video thử không có trong gói bàn giao.
 Trước khi bàn giao, vẫn nên thử thêm MP4 H.264 có quyền sử dụng và kiểm chất
 lượng nhận diện bằng mắt. Xem
-`deployment/THIRD_PARTY_NOTICES.md` để kiểm tra quyền phân phối dependencies
+`docs/deployment/THIRD_PARTY_NOTICES.md` để kiểm tra quyền phân phối dependencies
 và model trước khi gửi image ra ngoài.
 
 ## 2B. Máy chấm chỉ nhận gói đã xuất, không cần mã nguồn

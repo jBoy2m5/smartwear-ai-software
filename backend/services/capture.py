@@ -115,7 +115,7 @@ class CaptureManager:
         """Reject a disconnected camera before creating a failed capture job."""
         from ai.hardware.config import HardwareConfig
         config = HardwareConfig.from_environment()
-        if config.mqtt_host == '192.168.137.1':
+        if config.mqtt_host == '192.168.137.1' and os.getenv('SMARTWEAR_DOCKER_HARDWARE') != 'true':
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
                     probe.bind((config.mqtt_host, 0))

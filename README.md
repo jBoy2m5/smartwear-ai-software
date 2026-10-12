@@ -1,6 +1,6 @@
 # SmartWear AI
 
-**Giám khảo:** [Chạy nhanh bằng Docker](JUDGE_START_HERE.md) — tải repo, mở Docker Desktop và nhấp đúp `START_JUDGE.cmd` trên Windows.
+**Giám khảo:** [Chạy nhanh bằng Docker](docs/JUDGE_START_HERE.md) — tải repo, mở Docker Desktop và nhấp đúp `START_JUDGE.cmd` trên Windows.
 
 **Ghi lại thao tác và bí quyết của người hướng dẫn, tạo Digital SOP có bằng chứng, và xuất dữ liệu quan sát cho nghiên cứu học máy/robot.**
 
@@ -558,7 +558,7 @@ Chi tiết: [hướng dẫn chạy](docs/HUONG_DAN_CHAY_DU_AN.md), [camera incid
 | [DEMO_TWO_WORKFLOWS](docs/DEMO_TWO_WORKFLOWS.md) | Task, vật dụng/checklist, sân khấu |
 | [KICH_BAN_VIDEO_DEMO_120_GIAY](docs/KICH_BAN_VIDEO_DEMO_120_GIAY.md) | Timeline, pitch, overlay/fallback |
 | [Ý tưởng dữ liệu công nhân](docs/Y_TUONG_DU_LIEU_CONG_NHAN_HUAN_LUYEN_HUMANOID.md) | Quan sát người tới nghiên cứu humanoid |
-| [Backend README](backend/README.md) | API, persistence, cấu hình/export legacy |
+| [Backend README](docs/backend/README.md) | API, persistence, cấu hình/export legacy |
 
 README thành phần có thể có mô tả lịch sử/đường dẫn máy cũ; đối chiếu mã/runbook mới khi khác biệt. Capture hiện gọi `num_hands=2` và giữ trái/phải; cảm biến vật lý chỉ tay phải.
 

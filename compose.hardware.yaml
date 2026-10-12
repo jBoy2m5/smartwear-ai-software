@@ -1,0 +1,30 @@
+name: smartwear-judge
+services:
+  smartwear:
+    image: smartwear-hardware:1.0.0
+    pull_policy: never
+    init: true
+    restart: unless-stopped
+    environment:
+      SMARTWEAR_ENVIRONMENT: development
+      SMARTWEAR_JUDGE_MODE: "false"
+      SMARTWEAR_DOCKER_HARDWARE: "true"
+      SMARTWEAR_AI_PYTHON: /usr/local/bin/python
+      SMARTWEAR_CAPTURE_BACKEND_URL: http://127.0.0.1:8000
+      SMARTWEAR_DATABASE_URL: sqlite:////app/backend/data/smartwear.db
+      SMARTWEAR_CAMERA_URL: ${SMARTWEAR_CAMERA_URL:-http://192.168.137.111:81/stream}
+      SMARTWEAR_MQTT_HOST: ${SMARTWEAR_MQTT_HOST:-192.168.137.1}
+      SMARTWEAR_MQTT_PORT: ${SMARTWEAR_MQTT_PORT:-1883}
+      SMARTWEAR_MQTT_TOPIC: ${SMARTWEAR_MQTT_TOPIC:-wearable/user01/wrist/data}
+    ports:
+      - "127.0.0.1:${SMARTWEAR_PORT:-8000}:8000"
+    volumes:
+      - smartwear_data:/app/backend/data
+      - smartwear_artifacts:/app/backend/static
+      - smartwear_hardware_sessions:/app/ai/generated_data/sessions
+    stop_grace_period: 30s
+
+volumes:
+  smartwear_data:
+  smartwear_artifacts:
+  smartwear_hardware_sessions:

@@ -49,7 +49,7 @@ hoặc ADC ngoài phạm vi sẽ bị loại và tăng bộ đếm `malformed`. 
 đòi firmware gửi** `device_id`, `generation`, `received_epoch_ms`, `topic` hay
 `raw_payload`; các thông tin đó do AI cấu hình/tự thêm sau khi nhận. Thứ tự
 bốn kênh ADC phải được nhóm phần cứng cung cấp riêng: hiện **chưa xác nhận kênh
-nào nằm ở vị trí nào trên tay**. Xem [bộ kiểm tra MQTT](mqtt_wrist.py).
+nào nằm ở vị trí nào trên tay**. Xem [bộ kiểm tra MQTT](../../../ai/hardware/mqtt_wrist.py).
 
 ### AI lưu lại tin MQTT: `wrist_raw.jsonl`
 
@@ -97,7 +97,7 @@ Header mỗi phần không phân biệt chữ hoa/thường. Camera báo HTTP 50
 `NTP not synchronized` thì **chưa có ảnh hợp lệ**; không thay giờ camera bằng giờ
 PC để che lỗi. Trình duyệt đang giữ `/stream` có thể chiếm kết nối duy nhất
 của firmware, nên đóng tab đó trước khi quay trên dashboard. Xem
-[parser MJPEG](mjpeg.py) và [bộ nhận camera](camera_receiver.py).
+[parser MJPEG](../../../ai/hardware/mjpeg.py) và [bộ nhận camera](../../../ai/hardware/camera_receiver.py).
 
 ### AI lưu lại luồng camera
 
@@ -130,8 +130,8 @@ video_frame_index           # vị trí khung hình tương ứng trong camera.a
 `OTHER`, `NO_HAND`. Đây là **ước lượng từ hình bàn tay**, không chứng minh
 người dùng đã nắm/lắp một vật thật. Nhánh phần cứng chỉ đưa **tọa độ tay phải**
 vào `hands`; schema vẫn có khóa `left` với trạng thái `NO_HAND`/`missing` để
-pipeline cũ đọc được. Xem [camera_test.py](../camera_test.py) và
-[hand_observation.py](../hand_observation.py).
+pipeline cũ đọc được. Xem [camera_test.py](../../../ai/camera_test.py) và
+[hand_observation.py](../../../ai/hand_observation.py).
 
 ## 4. AI ghép hai nguồn theo giờ thiết bị
 
@@ -189,8 +189,8 @@ các giá trị đo của dòng đó là `null`.
    `hand_actions`, `hand_sensors`, `imu_head`, `provenance`. Khi dùng phần cứng,
    `provenance.sensors` là `measured_hardware` và `simulated_fields` rỗng.
 
-Xem [align.py](align.py), [normalize_camera.py](../preprocessing/normalize_camera.py)
-và [build_multimodal.py](../preprocessing/build_multimodal.py).
+Xem [align.py](../../../ai/hardware/align.py), [normalize_camera.py](../../../ai/preprocessing/normalize_camera.py)
+và [build_multimodal.py](../../../ai/preprocessing/build_multimodal.py).
 
 ## 5. File phân tích sau khi ghép
 
@@ -238,8 +238,8 @@ không phải chỉ số chất lượng đã hiệu chuẩn. File `.meta.json` 
 ghi nguồn, hash, quy tắc chuyển đổi và giới hạn. Backend nhận thêm
 `analysis_result.json`, ảnh, video và gói nguồn qua **các endpoint riêng**;
 frontend chỉ đọc kết quả đã lưu từ backend. Xem
-[SessionInput](../../backend/schemas/session.py) và
-[backend_bridge.py](../integration/backend_bridge.py).
+[SessionInput](../../../backend/schemas/session.py) và
+[backend_bridge.py](../../../ai/integration/backend_bridge.py).
 
 Khi đang quay, frontend đọc `/api/v1/capture/{job_id}` để lấy `stage`,
 `message`, `capture_mode`, rồi lấy `/preview` và `/frame` để hiển thị ảnh,

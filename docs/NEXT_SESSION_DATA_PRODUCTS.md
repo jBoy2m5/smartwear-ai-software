@@ -135,4 +135,4 @@ Kết quả: **58 passed, 8 subtests passed** (lượt cuối khoảng 8.77 giâ
 
 ## 9. Câu nhắc cho phiên sau
 
-> Đọc docs/NEXT_SESSION_DATA_PRODUCTS.md và NEXT-SESSION.md. Tiếp tục hoàn thiện workflow chuyên gia/SOP/data products theo hai tài liệu trong docs, bắt đầu từ review code còn lại, reload backend an toàn và real-archive round-trip. Không tự quay hay approve mẫu A/B khi chưa có xác nhận người/vật dụng.
+> Đọc docs/NEXT_SESSION_DATA_PRODUCTS.md và docs/NEXT-SESSION.md. Tiếp tục hoàn thiện workflow chuyên gia/SOP/data products theo hai tài liệu trong docs, bắt đầu từ review code còn lại, reload backend an toàn và real-archive round-trip. Không tự quay hay approve mẫu A/B khi chưa có xác nhận người/vật dụng.

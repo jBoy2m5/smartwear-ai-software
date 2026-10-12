@@ -8,6 +8,7 @@ import type { CapturePreview, CaptureStatus, DeviceHealth } from '../backendApi'
 const ACTIVE = new Set(['starting', 'recording', 'stopping', 'processing', 'publishing']);
 const PREVIEW = new Set(['starting', 'recording', 'stopping']);
 const JUDGE_MODE = import.meta.env.VITE_JUDGE_MODE === 'true';
+const DOCKER_MODE = import.meta.env.VITE_DOCKER_MODE === 'true';
 const FINGERS = [[0, 1, 2, 3, 4], [0, 5, 6, 7, 8], [0, 9, 10, 11, 12],
   [0, 13, 14, 15, 16], [0, 17, 18, 19, 20]];
 type DisplayFrame = CapturePreview & { url: string };
@@ -33,6 +34,11 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
   const [source, setSource] = useState<'upload' | 'hardware'>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [webcamRecording, setWebcamRecording] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const webcamVideo = useRef<HTMLVideoElement | null>(null);
+  const webcamRecorder = useRef<MediaRecorder | null>(null);
+  const webcamTimer = useRef<number | null>(null);
   const [uploadConsent, setUploadConsent] = useState(false);
   const [references, setReferences] = useState<ExpertReference[]>([]);
   const [reference, setReference] = useState('');
@@ -45,6 +51,16 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     setFileUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  useEffect(() => {
+    if (webcamVideo.current) webcamVideo.current.srcObject = webcamStream;
+  }, [webcamStream]);
+
+  useEffect(() => () => {
+    if (webcamTimer.current !== null) window.clearTimeout(webcamTimer.current);
+    if (webcamRecorder.current?.state === 'recording') webcamRecorder.current.stop();
+    webcamRecorder.current?.stream.getTracks().forEach(track => track.stop());
+  }, []);
 
   useEffect(() => {
     if (source === 'upload') return;
@@ -207,6 +223,47 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     } finally { setBusy(false); }
   };
 
+  const stopWebcam = () => {
+    if (webcamTimer.current !== null) window.clearTimeout(webcamTimer.current);
+    webcamTimer.current = null;
+    if (webcamRecorder.current?.state === 'recording') webcamRecorder.current.stop();
+  };
+
+  const beginWebcam = async () => {
+    window.sessionStorage.removeItem('smartwear_capture_job');
+    setError(null); setFile(null); setJob(null); setDisplayFrame(null); setSource('upload');
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined' ||
+        !MediaRecorder.isTypeSupported('video/webm')) {
+      setError('Trình duyệt không hỗ trợ quay WebM. Hãy dùng Chrome trên localhost hoặc tải video lên.');
+      return;
+    }
+    let stream: MediaStream | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: false,
+      });
+      const chunks: Blob[] = [];
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 2_000_000 });
+      webcamRecorder.current = recorder;
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        stream?.getTracks().forEach(track => track.stop());
+        setWebcamStream(null); setWebcamRecording(false);
+        webcamRecorder.current = null;
+        const video = new File(chunks, `webcam-${Date.now()}.webm`, { type: 'video/webm' });
+        if (!video.size) setError('Webcam chưa ghi được khung hình nào.');
+        else if (video.size > 50 * 1024 * 1024) setError('Video vượt quá 50 MiB; hãy quay ngắn hơn.');
+        else setFile(video);
+      };
+      recorder.start(1000);
+      setWebcamStream(stream); setWebcamRecording(true);
+      webcamTimer.current = window.setTimeout(stopWebcam, 180_000);
+    } catch (reason) {
+      stream?.getTracks().forEach(track => track.stop());
+      setError(reason instanceof Error ? `Không mở được webcam: ${reason.message}` : 'Không mở được webcam.');
+    }
+  };
+
   const recording = job?.stage === 'recording';
   const working = job && ACTIVE.has(job.stage);
   const width = displayFrame?.camera.frame_width ?? 640;
@@ -228,13 +285,20 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
 
   return <section className="overflow-hidden rounded-xl border border-cyberGreen/30 bg-panelBg shadow-lg">
     {!JUDGE_MODE && <div className="flex flex-wrap gap-2 border-b border-slate-700 p-4">
-      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('upload'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'upload' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Upload size={17} className="mr-2 inline" />Tải video lên · không cần thiết bị</button>
-      <button disabled={busy || Boolean(working)} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('hardware'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'hardware' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Camera size={17} className="mr-2 inline" />Quay trực tiếp</button>
+      <button disabled={busy || Boolean(working) || webcamRecording} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('upload'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'upload' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Upload size={17} className="mr-2 inline" />Tải video lên · không cần thiết bị</button>
+      <button disabled={busy || Boolean(working) || webcamRecording} onClick={() => { window.sessionStorage.removeItem('smartwear_capture_job'); setSource('hardware'); setJob(null); setDisplayFrame(null); }} className={`rounded-lg px-4 py-2 ${source === 'hardware' ? 'bg-cyberGreen text-densoNavy font-bold' : 'bg-slate-900 text-gray-300'}`}><Camera size={17} className="mr-2 inline" />Quay trực tiếp</button>
     </div>}
     {source === 'upload' ? <div className="space-y-3 border-b border-slate-700 p-4">
       <label className="block text-sm font-semibold">Video thao tác
-        <input type="file" accept=".mp4,.mov,.avi,.webm" disabled={busy || Boolean(working)} onChange={event => { setFile(event.target.files?.[0] ?? null); setJob(null); setDisplayFrame(null); setError(null); }} className="mt-2 block w-full rounded bg-slate-900 p-3 text-sm" />
+        <input type="file" accept=".mp4,.mov,.avi,.webm" disabled={busy || Boolean(working) || webcamRecording} onChange={event => { setFile(event.target.files?.[0] ?? null); setJob(null); setDisplayFrame(null); setError(null); }} className="mt-2 block w-full rounded bg-slate-900 p-3 text-sm" />
       </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => webcamRecording ? stopWebcam() : void beginWebcam()} disabled={busy || Boolean(working)}
+          className="rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-3 py-2 text-sm font-bold text-cyan-200 disabled:opacity-40">
+          {webcamRecording ? 'Dừng quay webcam' : 'Quay bằng camera máy tính'}</button>
+        <span className="text-xs text-gray-400">Quay trong trình duyệt tối đa 3 phút; dừng quay rồi bấm Tải lên và phân tích. Không có dữ liệu lực/IMU.</span>
+      </div>
+      {file?.name.startsWith('webcam-') && <p className="text-xs text-cyan-200">Video vừa quay: {file.name}</p>}
       <p className="text-xs text-gray-400">MP4/MOV/AVI/WebM · tối đa 50 MiB, 3 phút, Full HD. AI phân tích tối đa 10 ảnh/giây; video gốc được giữ trong ZIP nguồn. Nên chọn MP4 H.264 để xem ngay trên trình duyệt.</p>
       <label className="block text-sm"><input type="checkbox" checked={uploadConsent} disabled={busy || Boolean(working)} onChange={event => setUploadConsent(event.target.checked)} /> Tôi có quyền sử dụng video và đồng ý tải lên để xử lý.</label>
       <p className="text-sm text-cyan-200">Nhận diện tay, phân đoạn và keyframe từ video. Không có lực/IMU, mẫu so sánh hay điểm đánh giá làm đúng.</p>
@@ -263,19 +327,19 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     </div>}
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 p-4">
       <div className="flex items-center gap-3"><div className="rounded-lg bg-cyberGreen/10 p-2 text-cyberGreen"><Camera size={22} /></div>
-        <div><h2 className="font-heading text-lg font-bold">{source === 'upload' ? 'Phân tích video tải lên' : 'Quay và phân tích ngay trên trang'}</h2>
-          <p className="text-xs text-gray-400">{source === 'upload' ? 'Nguồn video tải lên · cảm biến không có dữ liệu' : job?.capture_mode === 'demo'
+        <div><h2 className="font-heading text-lg font-bold">{webcamRecording ? 'Quay camera máy tính' : source === 'upload' ? 'Phân tích video tải lên' : 'Quay và phân tích ngay trên trang'}</h2>
+          <p className="text-xs text-gray-400">{source === 'upload' ? 'Nguồn video từ file hoặc webcam trình duyệt · cảm biến không có dữ liệu' : job?.capture_mode === 'demo'
             ? 'Nguồn phiên này: webcam máy AI + cảm biến DEMO; không dùng phần cứng'
             : job && !job.capture_mode ? 'Nguồn phiên cũ: chưa xác định'
               : 'Chọn quay ESP32 + SmartWrist hoặc webcam máy AI (DEMO)'} · nhận diện riêng tay trái và tay phải</p></div></div>
       <div className="flex flex-wrap gap-2">
-        {source === 'upload' ? <button type="button" onClick={() => void beginUpload()} disabled={busy || Boolean(working) || !file || !uploadConsent}
+        {source === 'upload' ? <button type="button" onClick={() => void beginUpload()} disabled={busy || Boolean(working) || webcamRecording || !file || !uploadConsent}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:opacity-40"><Upload size={17} />{busy ? 'Đang tải video...' : 'Tải lên và phân tích'}</button> : <><button type="button" onClick={() => void begin('hardware')} disabled={busy || Boolean(working) || !health?.can_start}
           className="inline-flex items-center gap-2 rounded-lg bg-cyberGreen px-4 py-2 font-bold text-densoNavy disabled:cursor-not-allowed disabled:opacity-40">
           <Play size={17} />Quay ESP32 + vòng tay</button>
-        <button type="button" onClick={() => void begin('demo')} disabled={busy || Boolean(working)}
+        <button type="button" onClick={() => DOCKER_MODE ? void beginWebcam() : void begin('demo')} disabled={busy || Boolean(working) || webcamRecording}
           className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-4 py-2 font-bold text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
-          <Camera size={17} />Quay webcam (DEMO)</button></>}
+          <Camera size={17} />{DOCKER_MODE ? 'Quay camera máy tính (DEMO)' : 'Quay webcam (DEMO)'}</button></>}
         <button type="button" onClick={() => void end()} disabled={busy || !job || !(['starting', 'recording'].includes(job.stage) || (job.capture_mode === 'upload' && job.stage === 'processing'))}
           className="inline-flex items-center gap-2 rounded-lg border border-alertRed/60 bg-alertRed/15 px-4 py-2 font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-40">
           <CircleStop size={17} />{source === 'upload' ? 'Hủy phân tích' : 'Kết thúc'}</button>
@@ -283,7 +347,7 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
     </div>
     <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)]">
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
-        {displayFrame ? <div className="relative shrink-0 overflow-hidden" style={{ height: `min(100%, ${height}px)`, aspectRatio: `${width} / ${height}`, maxWidth: '100%' }}>
+        {webcamRecording ? <video ref={webcamVideo} autoPlay muted playsInline className="h-full w-full object-contain" /> : displayFrame ? <div className="relative shrink-0 overflow-hidden" style={{ height: `min(100%, ${height}px)`, aspectRatio: `${width} / ${height}`, maxWidth: '100%' }}>
           <img src={displayFrame.url} alt="Hình camera tay trái và tay phải" className="h-full w-full object-fill" />
           <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
             {hands.map(hand => <g key={hand.side}>
@@ -299,17 +363,17 @@ export function CapturePanel({ onCompleted }: { onCompleted: (sessionId: string)
           </svg>
         </div> : source === 'upload' && fileUrl ? <video src={fileUrl} controls className="h-full w-full object-contain" /> : <div className="px-4 text-center text-sm text-gray-400">{source === 'upload' ? 'Chọn video để xem trước và chạy phân tích.' : job ? 'Đang nhận hình camera...' : 'Chọn một trong hai nút quay để xem hình và nhãn hành động.'}</div>}
         {job?.capture_mode === 'upload' && displayFrame && <span className="absolute right-3 top-3 rounded bg-slate-800 px-2 py-1 text-xs font-bold text-cyan-200">VIDEO TẢI LÊN · {(displayFrame.timestamp_ms/1000).toFixed(1)} s</span>}
-        {recording && !stale && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
+        {(webcamRecording || recording && !stale) && <span className="absolute right-3 top-3 rounded bg-alertRed px-2 py-1 text-xs font-bold text-white">● LIVE</span>}
         {stale && <span className="absolute bottom-3 rounded bg-amber-950 px-3 py-1 text-xs text-amber-100">Chưa có ảnh mới — kiểm tra kết nối camera</span>}
       </div>
       <div className="flex flex-col justify-center rounded-lg border border-slate-700 bg-slate-900/60 p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-cyberGreen">
           {working && <RotateCw className="animate-spin" size={17} />}
-          {job ? ({ starting: source === 'upload' ? 'Đang chuẩn bị video' : 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
+          {webcamRecording ? 'Đang quay webcam' : job ? ({ starting: source === 'upload' ? 'Đang chuẩn bị video' : 'Đang mở camera', recording: 'Đang quay', stopping: 'Đang dừng',
             processing: 'Đang phân tích', publishing: 'Đang lưu kết quả',
             completed: 'Đã hoàn tất', failed: 'Có lỗi' }[job.stage]) : source === 'upload' ? 'Phân tích không cần phần cứng' : !health ? 'Đang kiểm tra thiết bị'
               : health.can_start ? 'Có thể bắt đầu kết nối camera' : 'Thiết bị chưa sẵn sàng'}</div>
-        <p className="mt-2 text-sm text-gray-300">{job?.message ?? (source === 'upload' ? 'Tải video thao tác lên để nhận diện hai tay và phân đoạn hành động.' : health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.')}</p>
+        <p className="mt-2 text-sm text-gray-300">{webcamRecording ? 'Camera máy tính đang quay trong trình duyệt. Dừng quay để tạo video, rồi tải lên phân tích hai tay.' : job?.message ?? (source === 'upload' ? 'Tải video thao tác lên để nhận diện hai tay và phân đoạn hành động.' : health?.camera.message ?? 'Đang kiểm tra camera, broker và đồng hồ.')}</p>
         {source === 'upload' ? <div className="mt-3 rounded border border-slate-700 p-3 text-sm text-amber-200">Lực/FSR, IMU và đồng bộ thiết bị: không có dữ liệu. Nhãn AI cần người xem xác nhận.</div> : <div className="mt-3 space-y-1 rounded border border-slate-700 p-2 text-xs">
           <p>SmartCap: {health?.camera.message ?? 'Chưa kiểm tra'}</p>
           <p>MQTT: {health?.mqtt.message ?? 'Chưa kiểm tra'} · NTP: {health ? health.ntp.ok ? 'phản hồi' : 'không phản hồi' : 'chưa kiểm tra'}</p>
