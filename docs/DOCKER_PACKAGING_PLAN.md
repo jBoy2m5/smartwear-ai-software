@@ -1,6 +1,10 @@
 # Kế hoạch đóng gói Docker để bàn giao ban tổ chức
 
-Ngày lập: 11/10/2026. Trạng thái: kế hoạch triển khai; chưa phải gói Docker đã kiểm thử và phát hành.
+Ngày lập: 11/10/2026. Cập nhật: 12/10/2026. Mã Docker đã được áp lại trên nền `main` nhận diện hai tay; cần build và kiểm thử image mới trước khi bàn giao. Gói đã build trước đó thuộc phiên bản cũ và được giữ ở thư mục sao lưu ngoài repo.
+
+Kiểm thử image cũ đã đạt: giao diện và `/ready` trên volume mới, upload video không có tay, AI xử lý và tạo ZIP nguồn, dữ liệu còn sau khi restart container. Mã hai tay hiện tại đã xử lý video mẫu cục bộ với 3 đoạn tay trái và 5 đoạn tay phải; chưa xác nhận image Docker mới cho đến khi chạy lại `BUILD_JUDGE.cmd` và `VERIFY_REAL_VIDEO.cmd`.
+
+Chưa xác nhận: video MP4 H.264 và các codec khác trong container, các tình huống lỗi của bảng kiểm thử bên dưới, chạy trên máy chấm riêng không có Internet, số đo tài nguyên và quyền phân phối model. Không xem các mục này là đã đạt cho đến khi kiểm tra riêng.
 
 ## 1. Phương án đề xuất
 
