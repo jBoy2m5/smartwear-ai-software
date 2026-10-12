@@ -1,5 +1,7 @@
 # SmartWear AI
 
+**Giám khảo:** [Chạy nhanh bằng Docker](JUDGE_START_HERE.md) — tải repo, mở Docker Desktop và nhấp đúp `START_JUDGE.cmd` trên Windows.
+
 **Ghi lại thao tác và bí quyết của người hướng dẫn, tạo Digital SOP có bằng chứng, và xuất dữ liệu quan sát cho nghiên cứu học máy/robot.**
 
 SmartWear kết hợp camera FPV SmartCap và vòng tay SmartWrist để thu hình ảnh, timestamp, IMU khi khả dụng và bốn kênh FSR. Gateway nhận MJPEG/MQTT, ghép thời gian, chạy MediaPipe và phân đoạn hành động. Backend lưu phiên, phục vụ dashboard, quản lý reference/SOP được duyệt và xuất gói dữ liệu có manifest/checksum.
